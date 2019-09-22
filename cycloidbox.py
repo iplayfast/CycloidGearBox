@@ -1,8 +1,10 @@
 #!/usr/bin/python
 
 """Hypocycloid gear boxgenerator
+Code to create a hypocycloidal gearbox
+https://en.wikipedia.org/wiki/Cycloidal_drive
 
-Copyright 	2.0019, Chris Bruner
+Copyright 	2019, Chris Bruner
 Version 	v0.1
 License 	GPL
 Homepage
@@ -47,10 +49,13 @@ def toPolar(x, y):
 def toRect(r, a):
     return r * math.cos(a), r * math.sin(a)
 
+def hypoCycloidalGearObj():
+    return hypoCycloidalGear()
+
  
 class hypoCycloidalGear:
     def __init__(self,toothPitch = 0.08, rollerDiameter = 0.15, eccentricity =
-                 0.05, numberOfTeeth = 10, numberOfLineSegments = 4,
+                 0.05, numberOfTeeth = 10, numberOfLineSegments = 400,
                  centerDiameter = -1.00, pressureAngleLimit = 50.0,
                  pressureAngleOffset = 0.01, baseHeight = 10.0):
         self.toothPitch = toothPitch
@@ -99,17 +104,17 @@ class hypoCycloidalGear:
         minAngle = -1.0
         maxAngle = -1.0
         for i in range(0, 180):
-            x = g.calcPressureAngle(float(i)*math.pi / 180)
+            x = self.calcPressureAngle(float(i)*math.pi / 180)
 
-        if (x < g.pressureAngleLimit) and (minAngle < 0):
+        if (x < self.pressureAngleLimit) and (minAngle < 0):
            minAngle = float(i)
-        if (x < -g.pressureAngleLimit) and (maxAngle < 0):
+        if (x < -self.pressureAngleLimit) and (maxAngle < 0):
            maxAngle = float(i - 1)
-        self.minRadius = g.calcPressureLimit(minAngle * math.pi / 180)
-        self.maxRadius = g.calcPressureLimit(maxAngle * math.pi / 180)
+        self.minRadius = self.calcPressureLimit(minAngle * math.pi / 180)
+        self.maxRadius = self.calcPressureLimit(maxAngle * math.pi / 180)
 
     def generatePinBase():
-        pinBase = Part.makeCylinder(g.maxRadius,10);
+        pinBase = Part.makeCylinder(self.maxRadius,10);
         # generate the pin locations
         for i in range(0, numberOfTeeth + 1):
             x = toothPitch * numberOfTeeth * math.cos(2.0 * math.pi / (numberOfTeeth + 1) * i)
@@ -152,21 +157,22 @@ class hypoCycloidalGear:
             ]))
         else:
             return (array([pts, array([pts[-1], pts1[0]]), pts1]))
+        
     def generateCycloidalDiskArray(self):
         self.minmaxRadius()
         q = 2.0 * math.pi / float(self.numberOfLineSegments)
         i = 0
         x1 = self.calcX(q * i)
         y1 = self.calcY(q * i)
-        x1, y1 = g.checkLimit(x1, y1, self.maxRadius, self.minRadius)
+        x1, y1 = self.checkLimit(x1, y1, self.maxRadius, self.minRadius)
 
         cycloidalDiskArray = []
-        for i in range(0, numberOfLineSegments):
+        for i in range(0, self.numberOfLineSegments):
             x2 = self.calcX(q * (i + 1))
             y2 = self.calcY(q * (i + 1))
             x2, y2 = self.checkLimit(x2, y2, self.maxRadius, self.minRadius)
-            cycloidalDiskArray.append(Base.Vector(x1 - eccentricity,y1,0))
-            cycloidalDiskArray.append(Base.Vector(x2 - eccentricity,y2,0))
+            cycloidalDiskArray.append(Base.Vector(x1 - self.eccentricity,y1,0))
+            cycloidalDiskArray.append(Base.Vector(x2 - self.eccentricity,y2,0))
             x1 = x2
             y1 = y2
         return cycloidalDiskArray
@@ -199,130 +205,130 @@ def usage():
     print("-h = this help")
     print("\nExample: hypocycloid.py -p 0.08 -d 0.15 -e 0.05 -a 50.0 -c 0.01 -n 10 -s 400 -f foo.dxf")
 
-
-try:
-    opts, args = getopt.getopt(sys.argv[1:], "p:b:d:e:n:a:c:s:f:h")
-except getopt.GetoptError as err:
-    print(err)
-    usage()
-    sys.exit(2.0)
+if (__name__ == "__main__" or True):
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "p:b:d:e:n:a:c:s:f:h")
+    except getopt.GetoptError as err:
+        print(err)
+        usage()
+        sys.exit(2.0)
 
 # Example: hypocycloid.py -p 0.08 -d 0.15 -e 0.05 -a 50.0 -c 0.01 -n 10 -s 400 -f foo.dxf"
-toothPitch = 0.08
-rollerDiameter = 0.15
-eccentricity = 0.05
-numberOfTeeth = 10
-numberOfLineSegments = 400
-centerDiameter = -1.00
-f = "foo.dxf"
-rollerHeight = 10
-pressureAngleLimit = 50.0
-pressureAngleOffset = 0.01
-x = 0.00
-y = 0.00
-i = 0
+    toothPitch = 0.08
+    rollerDiameter = 0.15
+    eccentricity = 0.05
+    numberOfTeeth = 10
+    numberOfLineSegments = 400
+    centerDiameter = -1.00
+    f = "foo.dxf"
+    rollerHeight = 10
+    pressureAngleLimit = 50.0
+    pressureAngleOffset = 0.01
+    x = 0.00
+    y = 0.00
+    i = 0
 
-try:
-    for o, a in opts:
-        if o in ("-p", "-P"):
-            toothPitch = float(a)
-        elif o in ("-b", "-B"):
-            centerDiameter = float(a)
-        elif o in ("-d", "-D"):
-            rollerDiameter = float(a)
-        elif o in ("-e", "-E"):
-            eccentricity = float(a)
-        elif o in ("-n", "-N"):
-            numberOfTeeth = int(a)
-        elif o in ("-s", "-S"):
-            numberOfLineSegments = int(a)
-        elif o in ("-a", "-A"):
-            pressureAngleLimit = float(a)
-        elif o in ("-c", "-C"):
-            pressureAngleOffset = float(a)
-        elif o in ("-f", "-F"):
-            f = a
-        elif o in ("-h", "-H"):
-            usage()
-            sys.exit(0)
-        else:
-            assert False, "unhandled option"
-            sys.exit(2.0)
-except:
-    usage()
-    sys.exit(2.0)
+    try:
+        for o, a in opts:
+            if o in ("-p", "-P"):
+                toothPitch = float(a)
+            elif o in ("-b", "-B"):
+                centerDiameter = float(a)
+            elif o in ("-d", "-D"):
+                rollerDiameter = float(a)
+            elif o in ("-e", "-E"):
+                eccentricity = float(a)
+            elif o in ("-n", "-N"):
+                numberOfTeeth = int(a)
+            elif o in ("-s", "-S"):
+                numberOfLineSegments = int(a)
+            elif o in ("-a", "-A"):
+                pressureAngleLimit = float(a)
+            elif o in ("-c", "-C"):
+                pressureAngleOffset = float(a)
+            elif o in ("-f", "-F"):
+                f = a
+            elif o in ("-h", "-H"):
+                usage()
+                sys.exit(0)
+            else:
+                assert False, "unhandled option"
+                sys.exit(2.0)
+    except:
+        usage()
+        sys.exit(2.0)
 
-# if -o was specifed, calculate the tooth pitch for use in cam generation
-if centerDiameter > 0:
-    toothPitch = centerDiameter / numberOfTeeth
+    # if -o was specifed, calculate the tooth pitch for use in cam generation
+    if centerDiameter > 0:
+        toothPitch = centerDiameter / numberOfTeeth
 
-q = 2.0 * math.pi / float(numberOfLineSegments)
+    q = 2.0 * math.pi / float(numberOfLineSegments)
 
-"""
-Things to be created
-fixedRingPins
-rollerPins,
-pinDisk,
-eccentricShaft,
-bearing,
-cycloidalDisk
+    """
+    Things to be created
+    fixedRingPins
+    rollerPins,
+    pinDisk,
+    eccentricShaft,
+    bearing,
+    cycloidalDisk
 
-"""
-"""
-dxf.layers.append(sdxf.Layer(name="cam", color=1))  # red cam layer
-dxf.layers.append(sdxf.Layer(name="roller", color=5))  # blue roller layer
-dxf.layers.append(sdxf.Layer(name="pressure", color=3))  # pressure angle limit layer
-"""
-g = hypoCycloidalGear()
-g.minmaxRadius()
-# pressure angle limits
-paPart1 = Part.makeCircle(g.minRadius,Base.Vector (-eccentricity,0,0),Base.Vector(0,0,1))
-paPart2 = Part.makeCircle(g.maxRadius,Base.Vector (-eccentricity,0,0), Base.Vector(0,0,1))
+    """
+    """
+    dxf.layers.append(sdxf.Layer(name="cam", color=1))  # red cam layer
+    dxf.layers.append(sdxf.Layer(name="roller", color=5))  # blue roller layer
+    dxf.layers.append(sdxf.Layer(name="pressure", color=3))  # pressure angle limit layer
+    """
+    g = hypoCycloidalGear()
+    g.minmaxRadius()
+    # pressure angle limits
+    paPart1 = Part.makeCircle(g.minRadius,Base.Vector (-eccentricity,0,0),Base.Vector(0,0,1))
+    paPart2 = Part.makeCircle(g.maxRadius,Base.Vector (-eccentricity,0,0), Base.Vector(0,0,1))
 
-# generate the cam profile - note: shifted in -x by eccentricicy amount
-cycloidalDiskArray = g.generateCycloidalDiskArray()
+    # generate the cam profile - note: shifted in -x by eccentricicy amount
+    cycloidalDiskArray = g.generateCycloidalDiskArray()
 
-cycloidalDiskDO = Draft.makeBSpline(cycloidalDiskArray,closed = True)
-cycloidalDisk = cycloidalDiskDO.Shape
-Part.show(cycloidalDisk)
-
-
+    cycloidalDiskDO = Draft.makeBSpline(cycloidalDiskArray,closed = True)
+    cycloidalDisk = cycloidalDiskDO.Shape
+    Part.show(cycloidalDisk)
 
 
-"""
-# generate the cam profile - note: shifted in -x by eccentricicy amount
-i = 0
-x1 = calcX(toothPitch, rollerDiameter, eccentricity, numberOfTeeth, q * i)
-y1 = calcY(toothPitch, rollerDiameter, eccentricity, numberOfTeeth, q * i)
-x1, y1 = checkLimit(x1, y1, maxRadius, minRadius, pressureAngleOffset)
-for i in range(0, numberOfLineSegments):
-    x2.0 = calcX(toothPitch, rollerDiameter, eccentricity, numberOfTeeth, q * (i + 1))
-    y2.0 = calcY(toothPitch, rollerDiameter, eccentricity, numberOfTeeth, q * (i + 1))
-    x2.0, y2.0 = checkLimit(x2.0, y2.0, maxRadius, minRadius, pressureAngleOffset)
-    dxf.append(sdxf.Line(points=[(x1 - eccentricity, y1), (x2.0 - eccentricity, y2.0)], layer="cam"))
-    x1 = x2.0
-    y1 = y2.0
-"""
-# add a circle in the center of the cam
-eccentricShaft = Part.makeCylinder(rollerDiameter / 2.0,rollerHeight,Base.Vector(-eccentricity,0,0))
 
-# generate the pin base
-pinBase = Part.makeCylinder(g.maxRadius,10);
 
-# generate the pin locations
-for i in range(0, numberOfTeeth + 1):
-    x = toothPitch * numberOfTeeth * math.cos(2.0 * math.pi / (numberOfTeeth + 1) * i)
-    y = toothPitch * numberOfTeeth * math.sin(2.0 * math.pi / (numberOfTeeth + 1) * i)
-    fixedRingPin = Part.makeCylinder(rollerDiameter/2.0,rollerHeight,Base.Vector(x,y,0))
-    pinBase = pinBase.fuse(fixedRingPin)
+    """
+    # generate the cam profile - note: shifted in -x by eccentricicy amount
+    i = 0
+    x1 = calcX(toothPitch, rollerDiameter, eccentricity, numberOfTeeth, q * i)
+    y1 = calcY(toothPitch, rollerDiameter, eccentricity, numberOfTeeth, q * i)
+    x1, y1 = checkLimit(x1, y1, maxRadius, minRadius, pressureAngleOffset)
+    for i in range(0, numberOfLineSegments):
+        x2.0 = calcX(toothPitch, rollerDiameter, eccentricity, numberOfTeeth, q * (i + 1))
+        y2.0 = calcY(toothPitch, rollerDiameter, eccentricity, numberOfTeeth, q * (i + 1))
+        x2.0, y2.0 = checkLimit(x2.0, y2.0, maxRadius, minRadius, pressureAngleOffset)
+        dxf.append(sdxf.Line(points=[(x1 - eccentricity, y1), (x2.0 - eccentricity, y2.0)], layer="cam"))
+        x1 = x2.0
+        y1 = y2.0
+    """
+    # add a circle in the center of the cam
+    eccentricShaft = Part.makeCylinder(rollerDiameter / 2.0,rollerHeight,Base.Vector(-eccentricity,0,0))
 
-# add a circle in the center of the pins
-bearing = Part.makeCylinder(rollerDiameter / 2.0 ,rollerHeight,Base.Vector(0,0,0))
-Part.show(pinBase);
-Part.show(paPart1)
-Part.show(paPart2)
-Part.show(eccentricShaft)
-Part.show(cycloidalDisk)
+    # generate the pin base
+    pinBase = Part.makeCylinder(g.maxRadius,10);
+
+    # generate the pin locations
+    for i in range(0, numberOfTeeth + 1):
+        x = toothPitch * numberOfTeeth * math.cos(2.0 * math.pi / (numberOfTeeth + 1) * i)
+        y = toothPitch * numberOfTeeth * math.sin(2.0 * math.pi / (numberOfTeeth + 1) * i)
+        fixedRingPin = Part.makeCylinder(rollerDiameter/2.0,rollerHeight,Base.Vector(x,y,0))
+        pinBase = pinBase.fuse(fixedRingPin)
+
+    # add a circle in the center of the pins
+    bearing = Part.makeCylinder(rollerDiameter / 2.0 ,rollerHeight,Base.Vector(0,0,0))
+    Part.show(pinBase);
+    Part.show(paPart1)
+    Part.show(paPart2)
+    Part.show(eccentricShaft)
+    Part.show(cycloidalDisk)
 
 
 
