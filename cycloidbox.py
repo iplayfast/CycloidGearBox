@@ -288,9 +288,9 @@ if (__name__ == "__main__" or True):
     cycloidalDiskArray = g.generateCycloidalDiskArray()
 
 #    cycloidalDiskDO = Draft.makeBSpline(cycloidalDiskArray,closed = True)
-    cycloidalDisk = Part.BSplineCurve(cycloidalDiskArray,closed = True)
+    cycloidalDisk = Part.BSplineCurve(cycloidalDiskArray)
 #    cycloidalDisk = cycloidalDiskDO.Shape
-    Part.show(cycloidalDisk)
+    Part.show(cycloidalDisk.toShape())
 
 
 
@@ -328,7 +328,6 @@ if (__name__ == "__main__" or True):
     Part.show(paPart1)
     Part.show(paPart2)
     Part.show(eccentricShaft)
-    Part.show(cycloidalDisk)
 
 
 
