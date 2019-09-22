@@ -49,10 +49,6 @@ def toPolar(x, y):
 def toRect(r, a):
     return r * math.cos(a), r * math.sin(a)
 
-def hypoCycloidalGearObj():
-    return hypoCycloidalGear()
-
- 
 class hypoCycloidalGear:
     def __init__(self,toothPitch = 0.08, rollerDiameter = 0.15, eccentricity =
                  0.05, numberOfTeeth = 10, numberOfLineSegments = 400,
@@ -67,6 +63,9 @@ class hypoCycloidalGear:
         self.pressureAngleLimit = pressureAngleLimit
         self.pressureAngleOffset = pressureAngleOffset
         self.baseHeight = baseHeight
+        if centerDiameter > 0:
+            self.toothPitch = centerDiameter / numberOfTeeth
+
 
 
     def calcyp(self,a):
@@ -86,21 +85,41 @@ class hypoCycloidalGear:
                 self.rollerDiameter / 2.0 * math.sin(self.calcyp(a) + a)
 
     def clean1(self,a):
+        """ return -1 < a < 1 """
         return min(1, max(a, -1))
 
-    def calcPressureAngle(self, a):
+    def calcPressureAngle(self, angle):
+        """ calculate the angle of the cycloidalDisk teeth at the angle """
         ex = 2.0 ** 0.5
         r3 = self.toothPitch * self.numberOfTeeth 
 #        p * n
         rg = r3 / ex
-        pp = rg * (ex ** 2.0 + 1 - 2.0 * ex * math.cos(a)) ** 0.5 - self.rollerDiameter / 2.0
+        pp = rg * (ex ** 2.0 + 1 - 2.0 * ex * math.cos(angle)) ** 0.5 - self.rollerDiameter / 2.0
         ppd2 = pp + self.rollerDiameter / 2.0
-        r3cos = r3 * math.cos(a) - rg
-        return math.asin(self.clean1(((r3 * math.cos(a) - rg) / (pp +
-                                                            self.rollerDiameter / 2.0)))) * 180 / math.pi
+        r3cos = r3 * math.cos(angle) - rg
+        return math.asin(self.clean1(((r3 * math.cos(angle) - rg) / (pp + self.rollerDiameter / 2.0)))) * 180 / math.pi
 
-            # Find the pressure angle limit circles
+    def calcPressureLimit(self,a):
+        ex = 2.0 ** 0.5
+        r3 = self.toothPitch * self.numberOfTeeth
+        rg = r3 / ex
+        q = (r3 ** 2.0 + rg ** 2.0 - 2.0 * r3 * rg * math.cos(a)) ** 0.5
+        x = rg - self.eccentricity + (q - self.rollerDiameter / 2.0) * (r3 * math.cos(a) - rg) / q
+        y = (q - self.rollerDiameter / 2.0) * r3 * math.sin(a) / q
+        return (x ** 2.0 + y ** 2.0) ** 0.5
+
+    def checkLimit(self,v,maxrad,minrad):
+        """ if x,y outside limit return x,y as at limit, else return x,y """
+        r, a = toPolar(v.x, v.y)
+        if (r > maxrad) or (r < minrad):
+            r = r - self.pressureAngleOffset
+            v.x, v.y = toRect(r, a)
+        return v
+
+
+
     def minmaxRadius(self):
+        """ Find the pressure angle limit circles """
         minAngle = -1.0
         maxAngle = -1.0
         for i in range(0, 180):
@@ -114,6 +133,7 @@ class hypoCycloidalGear:
         self.maxRadius = self.calcPressureLimit(maxAngle * math.pi / 180)
 
     def generatePinBase():
+        """ create the base that the fixedRingPins will be attached to """
         pinBase = Part.makeCylinder(self.maxRadius,10);
         # generate the pin locations
         for i in range(0, numberOfTeeth + 1):
@@ -121,24 +141,9 @@ class hypoCycloidalGear:
             y = toothPitch * numberOfTeeth * math.sin(2.0 * math.pi / (numberOfTeeth + 1) * i)
             fixedRingPin = Part.makeCylinder(rollerDiameter/2.0,rollerHeight,Base.Vector(x,y,0))
             pinBase = pinBase.fuse(fixedRingPin)
-    # add a circle in the center of the pins
-    #bearing = Part.makeCylinder(rollerDiameter / 2.0 ,rollerHeight,Base.Vector(0,0,0))
 
-    def calcPressureLimit(self,a):
-        ex = 2.0 ** 0.5
-        r3 = self.toothPitch * self.numberOfTeeth
-        rg = r3 / ex
-        q = (r3 ** 2.0 + rg ** 2.0 - 2.0 * r3 * rg * math.cos(a)) ** 0.5
-        x = rg - self.eccentricity + (q - self.rollerDiameter / 2.0) * (r3 * math.cos(a) - rg) / q
-        y = (q - self.rollerDiameter / 2.0) * r3 * math.sin(a) / q
-        return (x ** 2.0 + y ** 2.0) ** 0.5
-
-    def checkLimit(self,x, y, maxrad, minrad):
-        r, a = toPolar(x, y)
-        if (r > maxrad) or (r < minrad):
-            r = r - self.pressureAngleOffset
-            x, y = toRect(r, a)
-        return x, y
+        # add a circle in the center of the pins (todo)
+        #bearing = Part.makeCylinder(rollerDiameter / 2.0 ,rollerHeight,Base.Vector(0,0,0))
 
     def points(self, num=10):
         pts = self.involute_points(num=num)
@@ -159,22 +164,22 @@ class hypoCycloidalGear:
             return (array([pts, array([pts[-1], pts1[0]]), pts1]))
         
     def generateCycloidalDiskArray(self):
+        """ make the array to be used in the bspline 
+            that is the cycloidalDisk
+        """
         self.minmaxRadius()
         q = 2.0 * math.pi / float(self.numberOfLineSegments)
         i = 0
-        x1 = self.calcX(q * i)
-        y1 = self.calcY(q * i)
-        x1, y1 = self.checkLimit(x1, y1, self.maxRadius, self.minRadius)
+
+        v1 = Base.Vector(self.calcX(q*i),self.calcY(q*i),0)
+        v1 = self.checkLimit(v1,self.maxRadius,self.minRadius)
 
         cycloidalDiskArray = []
+        cycloidalDiskArray.append(v1)
         for i in range(0, self.numberOfLineSegments):
-            x2 = self.calcX(q * (i + 1))
-            y2 = self.calcY(q * (i + 1))
-            x2, y2 = self.checkLimit(x2, y2, self.maxRadius, self.minRadius)
-            cycloidalDiskArray.append(Base.Vector(x1 - self.eccentricity,y1,0))
-            cycloidalDiskArray.append(Base.Vector(x2 - self.eccentricity,y2,0))
-            x1 = x2
-            y1 = y2
+            v2 = Base.Vector(self.calcX(q*(i+1)),self.calcY(q*(i+1)),0)
+            v2 = self.checkLimit(v2,self.maxRadius,self.minRadius)
+            cycloidalDiskArray.append(v2)
         return cycloidalDiskArray
     
 
@@ -258,12 +263,6 @@ if (__name__ == "__main__" or True):
         usage()
         sys.exit(2.0)
 
-    # if -o was specifed, calculate the tooth pitch for use in cam generation
-    if centerDiameter > 0:
-        toothPitch = centerDiameter / numberOfTeeth
-
-    q = 2.0 * math.pi / float(numberOfLineSegments)
-
     """
     Things to be created
     fixedRingPins
@@ -288,8 +287,9 @@ if (__name__ == "__main__" or True):
     # generate the cam profile - note: shifted in -x by eccentricicy amount
     cycloidalDiskArray = g.generateCycloidalDiskArray()
 
-    cycloidalDiskDO = Draft.makeBSpline(cycloidalDiskArray,closed = True)
-    cycloidalDisk = cycloidalDiskDO.Shape
+#    cycloidalDiskDO = Draft.makeBSpline(cycloidalDiskArray,closed = True)
+    cycloidalDisk = Part.BSplineCurve(cycloidalDiskArray,closed = True)
+#    cycloidalDisk = cycloidalDiskDO.Shape
     Part.show(cycloidalDisk)
 
 
