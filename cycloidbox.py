@@ -38,6 +38,7 @@ import getopt
 import math
 import sys
 from PySide import QtCore,QtGui
+import FreeCAD
 from FreeCAD import Base
 import Part
 import Draft
@@ -329,5 +330,8 @@ if (__name__ == "__main__" or True):
     Part.show(paPart2)
     Part.show(eccentricShaft)
 
+    doc = FreeCAD.activeDocument()
+    pinBase1 = doc.addObject('Part::compound','pinBase')
+    pinBase1.Links = pinBase;
 
 
