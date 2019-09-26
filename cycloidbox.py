@@ -40,10 +40,25 @@ import sys
 from PySide import QtCore,QtGui
 import FreeCAD
 from FreeCAD import Base
+import FreeCADGui        
 import Part
 import Draft
+import os,re
+import cycloidpath_locator
 
+smWBpath = os.path.dirname(cycloidpath_locator.__file__)
+smWB_icons_path =  os.path.join( smWBpath, 'icons')
+global main_CGB_Icon
+main_CGB_Icon = os.path.join( smWB_icons_path , 'cycloidgearbox.svg')
 
+__dir__ = os.path.dirname(__file__)
+#iconPath = os.path.join( __dir__, 'Resources', 'icons' )
+keepToolbar = False
+version = 0.01
+
+def QT_TRANSLATE_NOOP(scope, text):
+    return text
+    
 def toPolar(x, y):
     return (x ** 2.0 + y ** 2.0) ** 0.5, math.atan2(y, x)
 
@@ -51,12 +66,14 @@ def toRect(r, a):
     return r * math.cos(a), r * math.sin(a)
 
 class hypoCycloidalGear:
-    def __init__(self,toothPitch = 0.08, rollerDiameter = 0.15, eccentricity =
+    """ Create Object command"""
+    def __init__(self,toothPitch = 0.08, rollerDiameter = 0.15,rollerHeight=40, eccentricity =
                  0.05, numberOfTeeth = 10, numberOfLineSegments = 400,
                  centerDiameter = -1.00, pressureAngleLimit = 50.0,
                  pressureAngleOffset = 0.01, baseHeight = 10.0):
         self.toothPitch = toothPitch
         self.rollerDiameter = rollerDiameter
+        self.rollerHeight = rollerHeight
         self.eccentricity = eccentricity
         self.numberOfTeeth = numberOfTeeth
         self.numberOfLineSegments = numberOfLineSegments
@@ -66,6 +83,7 @@ class hypoCycloidalGear:
         self.baseHeight = baseHeight
         if centerDiameter > 0:
             self.toothPitch = centerDiameter / numberOfTeeth
+        self.minmaxRadius();
 
 
 
@@ -133,18 +151,30 @@ class hypoCycloidalGear:
         self.minRadius = self.calcPressureLimit(minAngle * math.pi / 180)
         self.maxRadius = self.calcPressureLimit(maxAngle * math.pi / 180)
 
-    def generatePinBase():
+    def generatePinBase(self):
         """ create the base that the fixedRingPins will be attached to """
         pinBase = Part.makeCylinder(self.maxRadius,10);
         # generate the pin locations
-        for i in range(0, numberOfTeeth + 1):
-            x = toothPitch * numberOfTeeth * math.cos(2.0 * math.pi / (numberOfTeeth + 1) * i)
-            y = toothPitch * numberOfTeeth * math.sin(2.0 * math.pi / (numberOfTeeth + 1) * i)
-            fixedRingPin = Part.makeCylinder(rollerDiameter/2.0,rollerHeight,Base.Vector(x,y,0))
+        for i in range(0, self.numberOfTeeth + 1):
+            x = self.toothPitch * self.numberOfTeeth * math.cos(2.0 * math.pi /
+                                                           (self.numberOfTeeth + 1) * i)
+            y = self.toothPitch * self.numberOfTeeth * math.sin(2.0 * math.pi /
+                                                           (self.numberOfTeeth + 1) * i)
+            fixedRingPin = Part.makeCylinder(self.rollerDiameter/2.0,self.rollerHeight,Base.Vector(x,y,0))
             pinBase = pinBase.fuse(fixedRingPin)
+        return pinBase
 
+    def generateBearingHole(self):
         # add a circle in the center of the pins (todo)
-        #bearing = Part.makeCylinder(rollerDiameter / 2.0 ,rollerHeight,Base.Vector(0,0,0))
+        bearing = Part.makeCylinder(self.rollerDiameter / 2.0 ,self.rollerHeight,Base.Vector(0,0,0))
+        return bearing
+    def generateEccentricShaft(self):
+    # add a circle in the center of the cam
+        eccentricShaft = Part.makeCylinder(self.rollerDiameter / 2.0,self.rollerHeight,Base.Vector(-eccentricity,0,0))
+        return eccentricShaft
+
+
+
 
     def points(self, num=10):
         pts = self.involute_points(num=num)
@@ -187,6 +217,7 @@ class hypoCycloidalGear:
     def _update(self):
         self.__init__(toothPitch = self.toothPitch,
                       rollerDiameter=self.rollerDiameter,
+                      rollerHeight = self.rollerHeight,
                       eccentricity=self.eccentricity,
                       numberOfTeeth=self.numberOfTeeth,
                       numberOfLineSegments=self.numberOfLineSegments,
@@ -211,7 +242,8 @@ def usage():
     print("-h = this help")
     print("\nExample: hypocycloid.py -p 0.08 -d 0.15 -e 0.05 -a 50.0 -c 0.01 -n 10 -s 400 -f foo.dxf")
 
-if (__name__ == "__main__" or True):
+if (__name__ == "__main__"):
+    print("main found")
     try:
         opts, args = getopt.getopt(sys.argv[1:], "p:b:d:e:n:a:c:s:f:h")
     except getopt.GetoptError as err:
@@ -290,7 +322,7 @@ if (__name__ == "__main__" or True):
 
 #    cycloidalDiskDO = Draft.makeBSpline(cycloidalDiskArray,closed = True)
     cycloidalDisk = Part.BSplineCurve(cycloidalDiskArray)
-#    cycloidalDisk = cycloidalDiskDO.Shape
+    #    cycloidalDisk = cycloidalDiskDO.Shape
     Part.show(cycloidalDisk.toShape())
 
 
@@ -312,9 +344,7 @@ if (__name__ == "__main__" or True):
     """
     # add a circle in the center of the cam
     eccentricShaft = Part.makeCylinder(rollerDiameter / 2.0,rollerHeight,Base.Vector(-eccentricity,0,0))
-
-    # generate the pin base
-    pinBase = Part.makeCylinder(g.maxRadius,10);
+    Part.show(g.generatePinBase())
 
     # generate the pin locations
     for i in range(0, numberOfTeeth + 1):
@@ -335,3 +365,74 @@ if (__name__ == "__main__" or True):
     pinBase1.Links = pinBase;
 
 
+class CycloidGearBoxCreateObject():
+    def GetResources(self):
+        print(os.path.join( 'icons','cycloidgearbox.svg'))
+        return {'Pixmap' : main_CGB_Icon,             
+            'MenuText': "&Create hypoCycloidalGear", 
+            'ToolTip' : "Create default gearbox" }
+    
+    def __init__(self):
+        pass
+        
+        #ViewProviderBox(a.ViewObject)
+    def Activated(self):            
+        if not FreeCAD.ActiveDocument:
+            FreeCAD.newDocument()
+        doc = FreeCAD.ActiveDocument
+        a=doc.addObject("Part::FeaturePython","CycloidalGearBox")        
+        CycloidalGearBox(a)        
+
+
+        
+        
+    def Deactivated(self):
+        " This function is executed when the workbench is deactivated"
+        print ("CycloidalGearBox.Deactivated()\n") 
+
+    def execute(self, obj):
+        print('cycloidgearboxCreateObject execute')
+        
+
+class   CycloidalGearBox():
+    def __init__(self, obj):        
+        
+#        _DraftObject.__init__(self, obj, "CycloidGearBox")           
+        obj.addProperty("App::PropertyFloat","Version","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","The version of CycloidGearBox Workbench used to create this object")).Version = version
+        obj.addProperty("App::PropertyInteger", "ToothCount", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Number of teeth of the cycloidal disk")).ToothCount=10
+        obj.addProperty("App::PropertyInteger", "LineSegmentCount", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Number of line segments to make up the cycloidal disk")).LineSegmentCount= 400
+        obj.addProperty("App::PropertyLength", "RollerDiameter", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Diameter of the rollers")).RollerDiameter = 0.15
+        obj.addProperty("App::PropertyFloat","ToothPitch","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Tooth Pitch")).ToothPitch = 0.08
+        obj.addProperty("App::PropertyFloat","Eccentricity","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Eccentricity")).Eccentricity = 0.05
+        obj.addProperty("App::PropertyFloat","CenterDiameter","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Center Diameter")).CenterDiameter = -1.0
+        obj.addProperty("App::PropertyFloat","PressureAngleLimit","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Pressure Angle Limit")).PressureAngleLimit= 50.0
+        obj.addProperty("App::PropertyFloat","PressureAngleOffset","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Pressure Angle Offset")).PressureAngleOffset= 0.01
+        obj.addProperty("App::PropertyLength", "BaseHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).BaseHeight = 10        
+        self.gearBox = hypoCycloidalGear()
+        Part.show(self.gearBox.generatePinBase());
+        Part.show(Part.BSplineCurve(self.gearBox.generateCycloidalDiskArray()).toShape())
+        Part.show(self.gearBox.generateBearingHole())
+        Part.show(self.gearBox.generateEccentricShaft())
+        
+
+        print('gearbox created')
+       
+    def parameterization(self, pts, a,  closed):
+        print("parameterization")
+        return 0
+        
+    def makePoints(selfself, obj):
+        print("makepoints")
+        return []
+
+    def Activated(self):            
+        print ("Cycloidal.Activated()\n")               
+            
+    def onChanged(self, fp, prop):
+        print("onchanged", fp, prop)
+        
+    def execute(self, obj):
+        print('cycloidgearbox execute')
+
+FreeCADGui.addCommand('CycloidGearBoxCreateObject',CycloidGearBoxCreateObject())
+    
