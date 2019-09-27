@@ -170,7 +170,7 @@ class hypoCycloidalGear:
         return bearing
     def generateEccentricShaft(self):
     # add a circle in the center of the cam
-        eccentricShaft = Part.makeCylinder(self.rollerDiameter / 2.0,self.rollerHeight,Base.Vector(-eccentricity,0,0))
+        eccentricShaft = Part.makeCylinder(self.rollerDiameter / 2.0,self.rollerHeight,Base.Vector(-self.eccentricity,0,0))
         return eccentricShaft
 
 
@@ -259,7 +259,7 @@ if (__name__ == "__main__"):
     numberOfLineSegments = 400
     centerDiameter = -1.00
     f = "foo.dxf"
-    rollerHeight = 10
+    rollerHeight = 5
     pressureAngleLimit = 50.0
     pressureAngleOffset = 0.01
     x = 0.00
@@ -352,9 +352,10 @@ if (__name__ == "__main__"):
         y = toothPitch * numberOfTeeth * math.sin(2.0 * math.pi / (numberOfTeeth + 1) * i)
         fixedRingPin = Part.makeCylinder(rollerDiameter/2.0,rollerHeight,Base.Vector(x,y,0))
         pinBase = pinBase.fuse(fixedRingPin)
-
+    
     # add a circle in the center of the pins
     bearing = Part.makeCylinder(rollerDiameter / 2.0 ,rollerHeight,Base.Vector(0,0,0))
+    
     Part.show(pinBase);
     Part.show(paPart1)
     Part.show(paPart2)
@@ -380,7 +381,8 @@ class CycloidGearBoxCreateObject():
         if not FreeCAD.ActiveDocument:
             FreeCAD.newDocument()
         doc = FreeCAD.ActiveDocument
-        a=doc.addObject("Part::FeaturePython","CycloidalGearBox")        
+        a=doc.addObject("Part::FeaturePython","CycloidalGearBox")
+        FreeCAD.ActiveDocument.ActiveObject.Label = "GearBox"        
         CycloidalGearBox(a)        
 
 
@@ -409,10 +411,16 @@ class   CycloidalGearBox():
         obj.addProperty("App::PropertyFloat","PressureAngleOffset","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Pressure Angle Offset")).PressureAngleOffset= 0.01
         obj.addProperty("App::PropertyLength", "BaseHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).BaseHeight = 10        
         self.gearBox = hypoCycloidalGear()
+        doc = FreeCAD.ActiveDocument;
+        
         Part.show(self.gearBox.generatePinBase());
+        FreeCAD.ActiveDocument.ActiveObject.Label = 'PinBase'
         Part.show(Part.BSplineCurve(self.gearBox.generateCycloidalDiskArray()).toShape())
+        FreeCAD.ActiveDocument.ActiveObject.Label =  'cycloidalDisk'
         Part.show(self.gearBox.generateBearingHole())
+        FreeCAD.ActiveDocument.ActiveObject.Label = 'bearing'
         Part.show(self.gearBox.generateEccentricShaft())
+        FreeCAD.ActiveDocument.ActiveObject.Label = 'Eccentric Shaft'
         
 
         print('gearbox created')
