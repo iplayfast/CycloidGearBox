@@ -416,7 +416,13 @@ class   CycloidalGearBox():
         
         Part.show(self.gearBox.generatePinBase());
         FreeCAD.ActiveDocument.ActiveObject.Label = 'PinBase'
-        Part.show(Part.BSplineCurve(self.gearBox.generateCycloidalDiskArray()).toShape())
+        #Part.show(Part.BSplineCurve(self.gearBox.generateCycloidalDiskArray()).toShape())
+        a = Part.BSplineCurve(self.gearBox.generateCycloidalDiskArray()).toShape()
+        #a= Part.BSplineCurve(cycloidalDiskArray).toShape()
+        w = Part.Wire([a])
+        f = Part.Face(w)
+        e = f.extrude(FreeCAD.Vector(0,0,2))
+        Part.show(e)
         FreeCAD.ActiveDocument.ActiveObject.Label =  'cycloidalDisk'
         Part.show(self.gearBox.generateBearingHole())
         FreeCAD.ActiveDocument.ActiveObject.Label = 'bearing'
