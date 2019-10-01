@@ -67,10 +67,10 @@ def toRect(r, a):
 
 class hypoCycloidalGear:
     """ Create Object command"""
-    def __init__(self,toothPitch = 0.08, rollerDiameter = 0.15,rollerHeight=40, eccentricity =
+    def __init__(self,toothPitch = 0.08, rollerDiameter = 0.15,rollerHeight=10, eccentricity =
                  0.05, numberOfTeeth = 10, numberOfLineSegments = 400,
                  centerDiameter = -1.00, pressureAngleLimit = 50.0,
-                 pressureAngleOffset = 0.01, baseHeight = 10.0):
+                 pressureAngleOffset = 0.01, baseHeight = 5.0):
         self.toothPitch = toothPitch
         self.rollerDiameter = rollerDiameter
         self.rollerHeight = rollerHeight
@@ -153,7 +153,7 @@ class hypoCycloidalGear:
 
     def generatePinBase(self):
         """ create the base that the fixedRingPins will be attached to """
-        pinBase = Part.makeCylinder(self.maxRadius,10);
+        pinBase = Part.makeCylinder(self.maxRadius,self.baseHeight);
         # generate the pin locations
         for i in range(0, self.numberOfTeeth + 1):
             x = self.toothPitch * self.numberOfTeeth * math.cos(2.0 * math.pi /
@@ -213,7 +213,17 @@ class hypoCycloidalGear:
             cycloidalDiskArray.append(v2)
         return cycloidalDiskArray
     
-
+    def generateCycloidalDisk(self):
+        """
+        make the complete cycloidal disk
+        """
+        a = Part.BSplineCurve(self.generateCycloidalDiskArray()).toShape()
+        w = Part.Wire([a])
+        f = Part.Face(w)
+        e = f.extrude(FreeCAD.Vector(0,0,self.rollerHeight))
+        e.translate(Base.Vector(0, 0, self.baseHeight+0.1))
+        return e
+        
     def _update(self):
         self.__init__(toothPitch = self.toothPitch,
                       rollerDiameter=self.rollerDiameter,
@@ -416,13 +426,9 @@ class   CycloidalGearBox():
         
         Part.show(self.gearBox.generatePinBase());
         FreeCAD.ActiveDocument.ActiveObject.Label = 'PinBase'
-        #Part.show(Part.BSplineCurve(self.gearBox.generateCycloidalDiskArray()).toShape())
-        a = Part.BSplineCurve(self.gearBox.generateCycloidalDiskArray()).toShape()
-        #a= Part.BSplineCurve(cycloidalDiskArray).toShape()
-        w = Part.Wire([a])
-        f = Part.Face(w)
-        e = f.extrude(FreeCAD.Vector(0,0,2))
-        Part.show(e)
+       
+        
+        Part.show(self.gearBox.generateCycloidalDisk())
         FreeCAD.ActiveDocument.ActiveObject.Label =  'cycloidalDisk'
         Part.show(self.gearBox.generateBearingHole())
         FreeCAD.ActiveDocument.ActiveObject.Label = 'bearing'

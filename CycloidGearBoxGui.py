@@ -2,10 +2,47 @@ import FreeCAD as App
 import Part
 import cycloidbox
 
+import os
 
+
+
+smWBpath = os.path.dirname(cycloidpath_locator.__file__)
+smWB_icons_path =  os.path.join( smWBpath, 'icons')
+global main_CGB_Icon
+main_CGB_Icon = os.path.join( smWB_icons_path , 'cycloidgearbox.svg')
 def QT_TRANSLATE_NOOP(scope, text):
     return text
 
+class CycloidGearBoxCreateObject():
+    def GetResources(self):
+        print(os.path.join( 'icons','cycloidgearbox.svg'))
+        return {'Pixmap' : main_CGB_Icon,             
+            'MenuText': "&Create hypoCycloidalGear", 
+            'ToolTip' : "Create default gearbox" }
+    
+    def __init__(self):
+        pass
+        
+        #ViewProviderBox(a.ViewObject)
+    def Activated(self):            
+        if not App.ActiveDocument:
+            App.newDocument()
+        doc = App.ActiveDocument
+        a=doc.addObject("Part::FeaturePython","CycloidalGearBox")
+        App.ActiveDocument.ActiveObject.Label = "GearBox"
+            ViewProviderCGB()obj.ViewObject)
+        CycloidalGearBox(a)        
+
+
+        
+        
+    def Deactivated(self):
+        " This function is executed when the workbench is deactivated"
+        print ("CycloidalGearBox.Deactivated()\n") 
+
+    def execute(self, obj):
+        print('cycloidgearboxCreateObject execute')
+        
 
 def create(obj_name):
    """
@@ -16,14 +53,14 @@ def create(obj_name):
 
    fpo = box(obj)
 
-   ViewProviderBox(obj.ViewObject)
+   ViewProviderCGBox(obj.ViewObject)
 
    App.ActiveDocument.recompute()
 
    return fpo
 
 
-class box():
+class CycloidalGearBox():
 
    def __init__(self, obj):
         """
@@ -68,7 +105,7 @@ class box():
        #obj.Shape = Part.BSplineCurve(self.gearBox.generateCycloidalDiskArray()).toShape()
 
 
-class ViewProviderBox:
+class ViewProviderCGBox:
    def __init__(self, obj):
        """
        Set this object to the proxy object of the actual view provider
