@@ -1,7 +1,7 @@
 import FreeCAD as App
 import Part
 import cycloidbox
-
+import cycloidpath_locator
 import os
 
 
@@ -28,17 +28,17 @@ class CycloidGearBoxCreateObject():
         if not App.ActiveDocument:
             App.newDocument()
         doc = App.ActiveDocument
-        a=doc.addObject("Part::FeaturePython","CycloidalGearBox")
+        obj=doc.addObject("Part::FeaturePython","CycloidalGearBox")
         App.ActiveDocument.ActiveObject.Label = "GearBox"
-            ViewProviderCGB()obj.ViewObject)
-        CycloidalGearBox(a)        
+        ViewProviderCGBox(obj.ViewObject)
+        CycloidalGearBox(obj)        
 
 
         
         
     def Deactivated(self):
         " This function is executed when the workbench is deactivated"
-        print ("CycloidalGearBox.Deactivated()\n") 
+        print ("CycloidalGearBox.Deactivated()") 
 
     def execute(self, obj):
         print('cycloidgearboxCreateObject execute')
@@ -51,7 +51,7 @@ def create(obj_name):
 
    obj = App.ActiveDocument.addObject('Part::FeaturePython', obj_name)
 
-   fpo = box(obj)
+   fpo = CycloidalGearBox(obj)
 
    ViewProviderCGBox(obj.ViewObject)
 

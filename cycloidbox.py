@@ -67,13 +67,13 @@ def toRect(r, a):
 
 class hypoCycloidalGear:
     """ Create Object command"""
-    def __init__(self,toothPitch = 0.08, rollerDiameter = 0.15,rollerHeight=10, eccentricity =
+    def __init__(self,toothPitch = 0.08, rollerDiameter = 0.15,pinHeight=4, eccentricity =
                  0.05, numberOfTeeth = 10, numberOfLineSegments = 400,
                  centerDiameter = -1.00, pressureAngleLimit = 50.0,
-                 pressureAngleOffset = 0.01, baseHeight = 5.0):
+                 pressureAngleOffset = 0.01, baseHeight = 2.0):
         self.toothPitch = toothPitch
         self.rollerDiameter = rollerDiameter
-        self.rollerHeight = rollerHeight
+        self.pinHeight = pinHeight
         self.eccentricity = eccentricity
         self.numberOfTeeth = numberOfTeeth
         self.numberOfLineSegments = numberOfLineSegments
@@ -143,38 +143,34 @@ class hypoCycloidalGear:
         maxAngle = -1.0
         for i in range(0, 180):
             x = self.calcPressureAngle(float(i)*math.pi / 180)
-
-        if (x < self.pressureAngleLimit) and (minAngle < 0):
-           minAngle = float(i)
-        if (x < -self.pressureAngleLimit) and (maxAngle < 0):
-           maxAngle = float(i - 1)
+            if (x < self.pressureAngleLimit) and (minAngle < 0):
+                minAngle = float(i)
+            if (x < -self.pressureAngleLimit) and (maxAngle < 0):
+                maxAngle = float(i - 1)
         self.minRadius = self.calcPressureLimit(minAngle * math.pi / 180)
         self.maxRadius = self.calcPressureLimit(maxAngle * math.pi / 180)
 
     def generatePinBase(self):
         """ create the base that the fixedRingPins will be attached to """
-        pinBase = Part.makeCylinder(self.maxRadius,self.baseHeight);
+        pinBase = Part.makeCylinder(self.maxRadius+self.rollerDiameter,self.baseHeight);
         # generate the pin locations
         for i in range(0, self.numberOfTeeth + 1):
             x = self.toothPitch * self.numberOfTeeth * math.cos(2.0 * math.pi /
                                                            (self.numberOfTeeth + 1) * i)
             y = self.toothPitch * self.numberOfTeeth * math.sin(2.0 * math.pi /
                                                            (self.numberOfTeeth + 1) * i)
-            fixedRingPin = Part.makeCylinder(self.rollerDiameter/2.0,self.rollerHeight,Base.Vector(x,y,0))
+            fixedRingPin = Part.makeCylinder(self.rollerDiameter/2.0,self.pinHeight,Base.Vector(x,y,0))
             pinBase = pinBase.fuse(fixedRingPin)
         return pinBase
 
     def generateBearingHole(self):
         # add a circle in the center of the pins (todo)
-        bearing = Part.makeCylinder(self.rollerDiameter / 2.0 ,self.rollerHeight,Base.Vector(0,0,0))
+        bearing = Part.makeCylinder( 1.0 ,self.pinHeight,Base.Vector(-self.eccentricity,0,0))
         return bearing
     def generateEccentricShaft(self):
     # add a circle in the center of the cam
-        eccentricShaft = Part.makeCylinder(self.rollerDiameter / 2.0,self.rollerHeight,Base.Vector(-self.eccentricity,0,0))
+        eccentricShaft = Part.makeCylinder(self.rollerDiameter / 2.0,self.pinHeight,Base.Vector(-self.eccentricity,0,0))
         return eccentricShaft
-
-
-
 
     def points(self, num=10):
         pts = self.involute_points(num=num)
@@ -220,14 +216,14 @@ class hypoCycloidalGear:
         a = Part.BSplineCurve(self.generateCycloidalDiskArray()).toShape()
         w = Part.Wire([a])
         f = Part.Face(w)
-        e = f.extrude(FreeCAD.Vector(0,0,self.rollerHeight))
-        e.translate(Base.Vector(0, 0, self.baseHeight+0.1))
+        e = f.extrude(FreeCAD.Vector(0,0,self.pinHeight/2))
+        e.translate(Base.Vector(-self.eccentricity, 0, self.baseHeight+0.1))
         return e
         
     def _update(self):
         self.__init__(toothPitch = self.toothPitch,
                       rollerDiameter=self.rollerDiameter,
-                      rollerHeight = self.rollerHeight,
+                      pinHeight = self.pinHeight,
                       eccentricity=self.eccentricity,
                       numberOfTeeth=self.numberOfTeeth,
                       numberOfLineSegments=self.numberOfLineSegments,
@@ -269,7 +265,7 @@ if (__name__ == "__main__"):
     numberOfLineSegments = 400
     centerDiameter = -1.00
     f = "foo.dxf"
-    rollerHeight = 5
+    pinHeight = 2
     pressureAngleLimit = 50.0
     pressureAngleOffset = 0.01
     x = 0.00
@@ -353,18 +349,18 @@ if (__name__ == "__main__"):
         y1 = y2.0
     """
     # add a circle in the center of the cam
-    eccentricShaft = Part.makeCylinder(rollerDiameter / 2.0,rollerHeight,Base.Vector(-eccentricity,0,0))
+    eccentricShaft = Part.makeCylinder(rollerDiameter / 2.0,pinHeight,Base.Vector(-eccentricity,0,0))
     Part.show(g.generatePinBase())
 
     # generate the pin locations
     for i in range(0, numberOfTeeth + 1):
         x = toothPitch * numberOfTeeth * math.cos(2.0 * math.pi / (numberOfTeeth + 1) * i)
         y = toothPitch * numberOfTeeth * math.sin(2.0 * math.pi / (numberOfTeeth + 1) * i)
-        fixedRingPin = Part.makeCylinder(rollerDiameter/2.0,rollerHeight,Base.Vector(x,y,0))
+        fixedRingPin = Part.makeCylinder(rollerDiameter/2.0,pinHeight,Base.Vector(x,y,0))
         pinBase = pinBase.fuse(fixedRingPin)
     
     # add a circle in the center of the pins
-    bearing = Part.makeCylinder(rollerDiameter / 2.0 ,rollerHeight,Base.Vector(0,0,0))
+    bearing = Part.makeCylinder(5 ,pinHeight,Base.Vector(-self.eccentricy,0,0))
     
     Part.show(pinBase);
     Part.show(paPart1)
@@ -420,7 +416,7 @@ class   CycloidalGearBox():
         obj.addProperty("App::PropertyFloat","CenterDiameter","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Center Diameter")).CenterDiameter = -1.0
         obj.addProperty("App::PropertyFloat","PressureAngleLimit","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Pressure Angle Limit")).PressureAngleLimit= 50.0
         obj.addProperty("App::PropertyFloat","PressureAngleOffset","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Pressure Angle Offset")).PressureAngleOffset= 0.01
-        obj.addProperty("App::PropertyLength", "BaseHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).BaseHeight = 10        
+        obj.addProperty("App::PropertyLength", "BaseHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).BaseHeight = 2        
         self.gearBox = hypoCycloidalGear()
         doc = FreeCAD.ActiveDocument;
         
