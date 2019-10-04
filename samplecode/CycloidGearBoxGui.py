@@ -30,8 +30,8 @@ class CycloidGearBoxCreateObject():
         doc = App.ActiveDocument
         obj=doc.addObject("Part::FeaturePython","CycloidalGearBox")
         App.ActiveDocument.ActiveObject.Label = "GearBox"
-        ViewProviderCGBox(obj.ViewObject)
         CycloidalGearBox(obj)        
+        ViewProviderCGBox(obj.ViewObject)
 
 
         
@@ -48,7 +48,7 @@ def create(obj_name):
    """
    Object creation method
    """
-
+   print("cgbg create")
    obj = App.ActiveDocument.addObject('Part::FeaturePython', obj_name)
 
    fpo = CycloidalGearBox(obj)
@@ -111,6 +111,7 @@ class ViewProviderCGBox:
        Set this object to the proxy object of the actual view provider
        """
        obj.Proxy = self
+
 
    def attach(self, obj):
        """

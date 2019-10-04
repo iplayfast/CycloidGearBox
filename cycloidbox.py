@@ -56,6 +56,18 @@ __dir__ = os.path.dirname(__file__)
 keepToolbar = False
 version = 0.01
 
+
+"""
+def create(obj_name):
+   """
+#   Object creation method
+"""
+   print("cgb create")
+   obj = App.ActiveDocument.addObject('Part::FeaturePython', obj_name)
+   fpo = CycloidalGearBox(obj)
+   ViewProviderCGBox(obj.ViewObject)
+"""
+
 def QT_TRANSLATE_NOOP(scope, text):
     return text
     
@@ -70,7 +82,7 @@ class hypoCycloidalGear:
     def __init__(self,toothPitch = 0.08, rollerDiameter = 0.15,pinHeight=4, eccentricity =
                  0.05, numberOfTeeth = 10, numberOfLineSegments = 400,
                  centerDiameter = -1.00, pressureAngleLimit = 50.0,
-                 pressureAngleOffset = 0.01, baseHeight = 2.0):
+                 pressureAngleOffset = 0.01, baseHeight = 2.0,driverPinDiameter = 0.25):
         self.toothPitch = toothPitch
         self.rollerDiameter = rollerDiameter
         self.pinHeight = pinHeight
@@ -80,6 +92,7 @@ class hypoCycloidalGear:
         self.centerDiameter = centerDiameter
         self.pressureAngleLimit = pressureAngleLimit
         self.pressureAngleOffset = pressureAngleOffset
+        self.driverPinDiameter = driverPinDiameter
         self.baseHeight = baseHeight
         if centerDiameter > 0:
             self.toothPitch = centerDiameter / numberOfTeeth
@@ -161,12 +174,10 @@ class hypoCycloidalGear:
                                                            (self.numberOfTeeth + 1) * i)
             fixedRingPin = Part.makeCylinder(self.rollerDiameter/2.0,self.pinHeight,Base.Vector(x,y,0))
             pinBase = pinBase.fuse(fixedRingPin)
+        accesshole = Part.makeCylinder(self.driverPinDiameter/2.0,10000);
+        pinBase.cut(accesshole);
         return pinBase
 
-    def generateBearingHole(self):
-        # add a circle in the center of the pins (todo)
-        bearing = Part.makeCylinder( 1.0 ,self.pinHeight,Base.Vector(-self.eccentricity,0,0))
-        return bearing
     def generateEccentricShaft(self):
     # add a circle in the center of the cam
         eccentricShaft = Part.makeCylinder(self.rollerDiameter / 2.0,self.pinHeight,Base.Vector(-self.eccentricity,0,0))
@@ -229,10 +240,11 @@ class hypoCycloidalGear:
                       numberOfLineSegments=self.numberOfLineSegments,
                       centerDiameter=self.centerDiameter,
                       pressureAngleLimit=self.pressureAngleLimit,
-                      pressureAngleOffset=self.pressureAngleOffset)
+                      pressureAngleOffset=self.pressureAngleOffset,
+                      driverPinDiameter=self.driverPinDiameter)
 
 
-
+"""
 def usage():
     print("Useage:")
     print("-p = Tooth Pitch              (float)")
@@ -302,7 +314,9 @@ if (__name__ == "__main__"):
         usage()
         sys.exit(2.0)
 
-    """
+"""
+
+"""
     Things to be created
     fixedRingPins
     rollerPins,
@@ -312,11 +326,12 @@ if (__name__ == "__main__"):
     cycloidalDisk
 
     """
-    """
+"""
     dxf.layers.append(sdxf.Layer(name="cam", color=1))  # red cam layer
     dxf.layers.append(sdxf.Layer(name="roller", color=5))  # blue roller layer
     dxf.layers.append(sdxf.Layer(name="pressure", color=3))  # pressure angle limit layer
     """
+"""
     g = hypoCycloidalGear()
     g.minmaxRadius()
     # pressure angle limits
@@ -330,11 +345,11 @@ if (__name__ == "__main__"):
     cycloidalDisk = Part.BSplineCurve(cycloidalDiskArray)
     #    cycloidalDisk = cycloidalDiskDO.Shape
     Part.show(cycloidalDisk.toShape())
+"""
 
 
 
-
-    """
+"""
     # generate the cam profile - note: shifted in -x by eccentricicy amount
     i = 0
     x1 = calcX(toothPitch, rollerDiameter, eccentricity, numberOfTeeth, q * i)
@@ -348,6 +363,9 @@ if (__name__ == "__main__"):
         x1 = x2.0
         y1 = y2.0
     """
+
+
+"""
     # add a circle in the center of the cam
     eccentricShaft = Part.makeCylinder(rollerDiameter / 2.0,pinHeight,Base.Vector(-eccentricity,0,0))
     Part.show(g.generatePinBase())
@@ -370,6 +388,10 @@ if (__name__ == "__main__"):
     doc = FreeCAD.activeDocument()
     pinBase1 = doc.addObject('Part::compound','pinBase')
     pinBase1.Links = pinBase;
+"""
+
+
+
 
 
 class CycloidGearBoxCreateObject():
@@ -384,13 +406,16 @@ class CycloidGearBoxCreateObject():
         
         #ViewProviderBox(a.ViewObject)
     def Activated(self):            
+        print("cycloidbox Activated")
         if not FreeCAD.ActiveDocument:
             FreeCAD.newDocument()
         doc = FreeCAD.ActiveDocument
-        a=doc.addObject("Part::FeaturePython","CycloidalGearBox")
+        obj=doc.addObject("Part::FeaturePython","CycloidalGearBox")
         FreeCAD.ActiveDocument.ActiveObject.Label = "GearBox"        
-        CycloidalGearBox(a)        
-
+        CycloidalGearBox(obj)
+        print("here")        
+        ViewProviderCGBox(obj.ViewObject)
+        print("now here")
 
         
         
@@ -404,7 +429,7 @@ class CycloidGearBoxCreateObject():
 
 class   CycloidalGearBox():
     def __init__(self, obj):        
-        
+        print("CGB __init__") 
 #        _DraftObject.__init__(self, obj, "CycloidGearBox")           
         obj.addProperty("App::PropertyFloat","Version","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","The version of CycloidGearBox Workbench used to create this object")).Version = version
         obj.addProperty("App::PropertyFloat","Radius",)
@@ -418,20 +443,12 @@ class   CycloidalGearBox():
         obj.addProperty("App::PropertyFloat","PressureAngleOffset","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Pressure Angle Offset")).PressureAngleOffset= 0.01
         obj.addProperty("App::PropertyLength", "BaseHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).BaseHeight = 2        
         self.gearBox = hypoCycloidalGear()
-        doc = FreeCAD.ActiveDocument;
-        
         Part.show(self.gearBox.generatePinBase());
         FreeCAD.ActiveDocument.ActiveObject.Label = 'PinBase'
-       
-        
         Part.show(self.gearBox.generateCycloidalDisk())
         FreeCAD.ActiveDocument.ActiveObject.Label =  'cycloidalDisk'
-        Part.show(self.gearBox.generateBearingHole())
-        FreeCAD.ActiveDocument.ActiveObject.Label = 'bearing'
         Part.show(self.gearBox.generateEccentricShaft())
         FreeCAD.ActiveDocument.ActiveObject.Label = 'Eccentric Shaft'
-        
-
         print('gearbox created')
        
     def parameterization(self, pts, a,  closed):
@@ -450,6 +467,95 @@ class   CycloidalGearBox():
         
     def execute(self, obj):
         print('cycloidgearbox execute')
+
+class ViewProviderCGBox:
+   def __init__(self, obj):
+       """
+       Set this object to the proxy object of the actual view provider
+       """
+       print("ViewProviderCGBox init start")
+       obj.Proxy = self
+       print("ViewProviderCGBox init end")
+       
+
+   def attach(self, obj):
+       """
+       Setup the scene sub-graph of the view provider, this method is mandatory
+       """
+       return
+
+   def updateData(self, fp, prop):
+       """
+       If a property of the handled feature has changed we have the chance to handle this here
+       """
+
+       return
+
+   def getDisplayModes(self,obj):
+       """
+       Return a list of display modes.
+       """
+       return None
+
+   def getDefaultDisplayMode(self):
+       """
+       Return the name of the default display mode. It must be defined in getDisplayModes.
+       """
+       return "Shaded"
+
+   def setDisplayMode(self,mode):
+       """
+       Map the display mode defined in attach with those defined in getDisplayModes.
+       Since they have the same names nothing needs to be done.
+       This method is optional.
+       """
+       return mode
+
+   def onChanged(self, vobj, prop):
+       """
+       Print the name of the property that has changed
+       """
+       FreeCAD.Console.PrintMessage("Change property: " + str(prop) + "\n")
+
+   def getIcon(self):
+       """
+       Return the icon in XMP format which will appear in the tree view. This method is optional and if not defined a default icon is shown.
+       """
+
+       return """
+           /* XPM */
+           static const char * ViewProviderBox_xpm[] = {
+           "16 16 6 1",
+           " 	c None",
+           ".	c #141010",
+           "+	c #615BD2",
+           "@	c #C39D55",
+           "#	c #000000",
+           "$	c #57C355",
+           "        ........",
+           "   ......++..+..",
+           "   .@@@@.++..++.",
+           "   .@@@@.++..++.",
+           "   .@@  .++++++.",
+           "  ..@@  .++..++.",
+           "###@@@@ .++..++.",
+           "##$.@@$#.++++++.",
+           "#$#$.$$$........",
+           "#$$#######      ",
+           "#$$#$$$$$#      ",
+           "#$$#$$$$$#      ",
+           "#$$#$$$$$#      ",
+           " #$#$$$$$#      ",
+           "  ##$$$$$#      ",
+           "   #######      "};
+           """
+
+   def __getstate__(self):
+       return None
+
+   def __setstate__(self,state):
+       return None
+
 
 FreeCADGui.addCommand('CycloidGearBoxCreateObject',CycloidGearBoxCreateObject())
     
