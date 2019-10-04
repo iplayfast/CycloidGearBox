@@ -79,42 +79,42 @@ def toRect(r, a):
 
 class hypoCycloidalGear:
     """ Create Object command"""
-    def __init__(self,toothPitch = 0.08, rollerDiameter = 0.15,pinHeight=4, eccentricity =
-                 0.05, numberOfTeeth = 10, numberOfLineSegments = 400,
-                 centerDiameter = -1.00, pressureAngleLimit = 50.0,
-                 pressureAngleOffset = 0.01, baseHeight = 2.0,driverPinDiameter = 0.25):
-        self.toothPitch = toothPitch
-        self.rollerDiameter = rollerDiameter
-        self.pinHeight = pinHeight
-        self.eccentricity = eccentricity
-        self.numberOfTeeth = numberOfTeeth
-        self.numberOfLineSegments = numberOfLineSegments
-        self.centerDiameter = centerDiameter
-        self.pressureAngleLimit = pressureAngleLimit
-        self.pressureAngleOffset = pressureAngleOffset
-        self.driverPinDiameter = driverPinDiameter
+    def __init__(self,ToothPitch = 0.08, RollerDiameter = 0.15,RollerHeight=4, Eccentricity =
+                 0.05, ToothCount = 10, LineSegmentCount = 400,
+                 CenterDiameter = -1.00, PressureAngleLimit = 50.0,
+                 PressureAngleOffset = 0.01, baseHeight = 2.0,DriverPinDiameter = 0.25):
+        self.ToothPitch = ToothPitch
+        self.RollerDiameter = RollerDiameter
+        self.RollerHeight = RollerHeight
+        self.Eccentricity = Eccentricity
+        self.ToothCount = ToothCount
+        self.LineSegmentCount = LineSegmentCount
+        self.CenterDiameter = CenterDiameter
+        self.PressureAngleLimit = PressureAngleLimit
+        self.PressureAngleOffset = PressureAngleOffset
+        self.DriverPinDiameter = DriverPinDiameter
         self.baseHeight = baseHeight
-        if centerDiameter > 0:
-            self.toothPitch = centerDiameter / numberOfTeeth
+        if CenterDiameter > 0:
+            self.ToothPitch = CenterDiameter / ToothCount
         self.minmaxRadius();
 
 
 
     def calcyp(self,a):
-        return math.atan(math.sin(self.numberOfTeeth * a) /
-                         (math.cos(self.numberOfTeeth * a) +
-                          (self.numberOfTeeth * self.toothPitch) /
-                          (self.eccentricity * (self.numberOfTeeth + 1))))
+        return math.atan(math.sin(self.ToothCount * a) /
+                         (math.cos(self.ToothCount * a) +
+                          (self.ToothCount * self.ToothPitch) /
+                          (self.Eccentricity * (self.ToothCount + 1))))
 
     def calcX(self,a):
-        return (self.numberOfTeeth * self.toothPitch) * math.cos(a) + \
-            self.eccentricity * math.cos((self.numberOfTeeth + 1) * a) -    \
-            self.rollerDiameter / 2.0 * math.cos(self.calcyp(a) + a)
+        return (self.ToothCount * self.ToothPitch) * math.cos(a) + \
+            self.Eccentricity * math.cos((self.ToothCount + 1) * a) -    \
+            self.RollerDiameter / 2.0 * math.cos(self.calcyp(a) + a)
 
     def calcY(self,a):
-        return (self.numberOfTeeth * self.toothPitch) * math.sin(a) +   \
-            self.eccentricity * math.sin((self.numberOfTeeth + 1) * a) -    \
-                self.rollerDiameter / 2.0 * math.sin(self.calcyp(a) + a)
+        return (self.ToothCount * self.ToothPitch) * math.sin(a) +   \
+            self.Eccentricity * math.sin((self.ToothCount + 1) * a) -    \
+                self.RollerDiameter / 2.0 * math.sin(self.calcyp(a) + a)
 
     def clean1(self,a):
         """ return -1 < a < 1 """
@@ -123,28 +123,28 @@ class hypoCycloidalGear:
     def calcPressureAngle(self, angle):
         """ calculate the angle of the cycloidalDisk teeth at the angle """
         ex = 2.0 ** 0.5
-        r3 = self.toothPitch * self.numberOfTeeth 
+        r3 = self.ToothPitch * self.ToothCount 
 #        p * n
         rg = r3 / ex
-        pp = rg * (ex ** 2.0 + 1 - 2.0 * ex * math.cos(angle)) ** 0.5 - self.rollerDiameter / 2.0
-        ppd2 = pp + self.rollerDiameter / 2.0
+        pp = rg * (ex ** 2.0 + 1 - 2.0 * ex * math.cos(angle)) ** 0.5 - self.RollerDiameter / 2.0
+        ppd2 = pp + self.RollerDiameter / 2.0
         r3cos = r3 * math.cos(angle) - rg
-        return math.asin(self.clean1(((r3 * math.cos(angle) - rg) / (pp + self.rollerDiameter / 2.0)))) * 180 / math.pi
+        return math.asin(self.clean1(((r3 * math.cos(angle) - rg) / (pp + self.RollerDiameter / 2.0)))) * 180 / math.pi
 
     def calcPressureLimit(self,a):
         ex = 2.0 ** 0.5
-        r3 = self.toothPitch * self.numberOfTeeth
+        r3 = self.ToothPitch * self.ToothCount
         rg = r3 / ex
         q = (r3 ** 2.0 + rg ** 2.0 - 2.0 * r3 * rg * math.cos(a)) ** 0.5
-        x = rg - self.eccentricity + (q - self.rollerDiameter / 2.0) * (r3 * math.cos(a) - rg) / q
-        y = (q - self.rollerDiameter / 2.0) * r3 * math.sin(a) / q
+        x = rg - self.Eccentricity + (q - self.RollerDiameter / 2.0) * (r3 * math.cos(a) - rg) / q
+        y = (q - self.RollerDiameter / 2.0) * r3 * math.sin(a) / q
         return (x ** 2.0 + y ** 2.0) ** 0.5
 
     def checkLimit(self,v,maxrad,minrad):
         """ if x,y outside limit return x,y as at limit, else return x,y """
         r, a = toPolar(v.x, v.y)
         if (r > maxrad) or (r < minrad):
-            r = r - self.pressureAngleOffset
+            r = r - self.PressureAngleOffset
             v.x, v.y = toRect(r, a)
         return v
 
@@ -156,31 +156,31 @@ class hypoCycloidalGear:
         maxAngle = -1.0
         for i in range(0, 180):
             x = self.calcPressureAngle(float(i)*math.pi / 180)
-            if (x < self.pressureAngleLimit) and (minAngle < 0):
+            if (x < self.PressureAngleLimit) and (minAngle < 0):
                 minAngle = float(i)
-            if (x < -self.pressureAngleLimit) and (maxAngle < 0):
+            if (x < -self.PressureAngleLimit) and (maxAngle < 0):
                 maxAngle = float(i - 1)
         self.minRadius = self.calcPressureLimit(minAngle * math.pi / 180)
         self.maxRadius = self.calcPressureLimit(maxAngle * math.pi / 180)
 
     def generatePinBase(self):
         """ create the base that the fixedRingPins will be attached to """
-        pinBase = Part.makeCylinder(self.maxRadius+self.rollerDiameter,self.baseHeight);
+        pinBase = Part.makeCylinder(self.maxRadius+self.RollerDiameter,self.baseHeight);
         # generate the pin locations
-        for i in range(0, self.numberOfTeeth + 1):
-            x = self.toothPitch * self.numberOfTeeth * math.cos(2.0 * math.pi /
-                                                           (self.numberOfTeeth + 1) * i)
-            y = self.toothPitch * self.numberOfTeeth * math.sin(2.0 * math.pi /
-                                                           (self.numberOfTeeth + 1) * i)
-            fixedRingPin = Part.makeCylinder(self.rollerDiameter/2.0,self.pinHeight,Base.Vector(x,y,0))
+        for i in range(0, self.ToothCount + 1):
+            x = self.ToothPitch * self.ToothCount * math.cos(2.0 * math.pi /
+                                                           (self.ToothCount + 1) * i)
+            y = self.ToothPitch * self.ToothCount * math.sin(2.0 * math.pi /
+                                                           (self.ToothCount + 1) * i)
+            fixedRingPin = Part.makeCylinder(self.RollerDiameter/2.0,self.RollerHeight,Base.Vector(x,y,0))
             pinBase = pinBase.fuse(fixedRingPin)
-        accesshole = Part.makeCylinder(self.driverPinDiameter/2.0,10000);
+        accesshole = Part.makeCylinder(self.DriverPinDiameter/2.0,10000);
         pinBase.cut(accesshole);
         return pinBase
 
     def generateEccentricShaft(self):
     # add a circle in the center of the cam
-        eccentricShaft = Part.makeCylinder(self.rollerDiameter / 2.0,self.pinHeight,Base.Vector(-self.eccentricity,0,0))
+        eccentricShaft = Part.makeCylinder(self.RollerDiameter / 2.0,self.RollerHeight,Base.Vector(-self.Eccentricity,0,0))
         return eccentricShaft
 
     def points(self, num=10):
@@ -206,7 +206,7 @@ class hypoCycloidalGear:
             that is the cycloidalDisk
         """
         self.minmaxRadius()
-        q = 2.0 * math.pi / float(self.numberOfLineSegments)
+        q = 2.0 * math.pi / float(self.LineSegmentCount)
         i = 0
 
         v1 = Base.Vector(self.calcX(q*i),self.calcY(q*i),0)
@@ -214,7 +214,7 @@ class hypoCycloidalGear:
 
         cycloidalDiskArray = []
         cycloidalDiskArray.append(v1)
-        for i in range(0, self.numberOfLineSegments):
+        for i in range(0, self.LineSegmentCount):
             v2 = Base.Vector(self.calcX(q*(i+1)),self.calcY(q*(i+1)),0)
             v2 = self.checkLimit(v2,self.maxRadius,self.minRadius)
             cycloidalDiskArray.append(v2)
@@ -227,21 +227,21 @@ class hypoCycloidalGear:
         a = Part.BSplineCurve(self.generateCycloidalDiskArray()).toShape()
         w = Part.Wire([a])
         f = Part.Face(w)
-        e = f.extrude(FreeCAD.Vector(0,0,self.pinHeight/2))
-        e.translate(Base.Vector(-self.eccentricity, 0, self.baseHeight+0.1))
+        e = f.extrude(FreeCAD.Vector(0,0,self.RollerHeight/2))
+        e.translate(Base.Vector(-self.Eccentricity, 0, self.baseHeight+0.1))
         return e
         
     def _update(self):
-        self.__init__(toothPitch = self.toothPitch,
-                      rollerDiameter=self.rollerDiameter,
-                      pinHeight = self.pinHeight,
-                      eccentricity=self.eccentricity,
-                      numberOfTeeth=self.numberOfTeeth,
-                      numberOfLineSegments=self.numberOfLineSegments,
-                      centerDiameter=self.centerDiameter,
-                      pressureAngleLimit=self.pressureAngleLimit,
-                      pressureAngleOffset=self.pressureAngleOffset,
-                      driverPinDiameter=self.driverPinDiameter)
+        self.__init__(ToothPitch = self.ToothPitch,
+                      RollerDiameter=self.RollerDiameter,
+                      RollerHeight = self.RollerHeight,
+                      Eccentricity=self.Eccentricity,
+                      ToothCount=self.ToothCount,
+                      LineSegmentCount=self.LineSegmentCount,
+                      CenterDiameter=self.CenterDiameter,
+                      PressureAngleLimit=self.PressureAngleLimit,
+                      PressureAngleOffset=self.PressureAngleOffset,
+                      DriverPinDiameter=self.DriverPinDiameter)
 
 
 
@@ -261,14 +261,18 @@ class CycloidGearBoxCreateObject():
         if not FreeCAD.ActiveDocument:
             FreeCAD.newDocument()
         doc = FreeCAD.ActiveDocument
-        obj=doc.addObject("Part::FeaturePython","CycloidalGearBox")
-        FreeCAD.ActiveDocument.ActiveObject.Label = "GearBox"        
-        CycloidalGearBox(obj)
-        print("here")        
-        ViewProviderCGBox(obj.ViewObject)
-        print("now here")
+        gbobj=doc.addObject("Part::FeaturePython","CycloidalGearBox")
+        doc.ActiveObject.Label = "GearBox"        
+        CycloidalGearBox(gbobj)
+        ViewProviderCGBox(gbobj.ViewObject)
+        """
+        cyobj = doc.addObject("Part::FeaturePython","Cycloidal Disk") 
+        doc.ActiveObject.Label = "Cycloidal Disk"
+        cyobj.Show(gbobj.Proxy.gearBox.generateCycloidalDisk())
+        gbobj.cycloidalDisk = cyobj
+        """
 
-        
+         
         
     def Deactivated(self):
         " This function is executed when the workbench is deactivated"
@@ -280,26 +284,36 @@ class CycloidGearBoxCreateObject():
 
 class   CycloidalGearBox():
     def __init__(self, obj):        
-        print("CGB __init__") 
+        print("CycloidalGearBox __init__") 
 #        _DraftObject.__init__(self, obj, "CycloidGearBox")           
         obj.addProperty("App::PropertyFloat","Version","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","The version of CycloidGearBox Workbench used to create this object")).Version = version
-        obj.addProperty("App::PropertyFloat","Radius",)
         obj.addProperty("App::PropertyInteger", "ToothCount", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Number of teeth of the cycloidal disk")).ToothCount=10
         obj.addProperty("App::PropertyInteger", "LineSegmentCount", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Number of line segments to make up the cycloidal disk")).LineSegmentCount= 400
         obj.addProperty("App::PropertyLength", "RollerDiameter", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Diameter of the rollers")).RollerDiameter = 0.15
+        obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = 4.0        
         obj.addProperty("App::PropertyFloat","ToothPitch","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Tooth Pitch")).ToothPitch = 0.08
         obj.addProperty("App::PropertyFloat","Eccentricity","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Eccentricity")).Eccentricity = 0.05
         obj.addProperty("App::PropertyFloat","CenterDiameter","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Center Diameter")).CenterDiameter = -1.0
         obj.addProperty("App::PropertyFloat","PressureAngleLimit","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Pressure Angle Limit")).PressureAngleLimit= 50.0
-        obj.addProperty("App::PropertyFloat","PressureAngleOffset","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Pressure Angle Offset")).PressureAngleOffset= 0.01
-        obj.addProperty("App::PropertyLength", "BaseHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).BaseHeight = 2        
+        obj.addProperty("App::PropertyFloat","PressureAngleOffset","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Pressure Angle Offset")).PressureAngleOffset= 0.01        
+        obj.addProperty("App::PropertyLength", "BaseHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).BaseHeight = 2
+        obj.addProperty("App::PropertyFloat", "DriverPinDiameter", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Driver Pin Diameter")).DriverPinDiameter = 0.25
+        print("Properties added")
+        obj.Proxy = self                
         self.gearBox = hypoCycloidalGear()
-        Part.show(self.gearBox.generatePinBase());
+        self.pinBase = self.gearBox.generatePinBase();
+        Part.show(self.pinBase)        
+        #Part.show(self.gearBox.generatePinBase());
         FreeCAD.ActiveDocument.ActiveObject.Label = 'PinBase'
-        Part.show(self.gearBox.generateCycloidalDisk())
+        self.cycloidalDisk = self.gearBox.generateCycloidalDisk()
+        Part.show(self.cycloidalDisk)
+        #Part.show(self.gearBox.generateCycloidalDisk())
         FreeCAD.ActiveDocument.ActiveObject.Label =  'cycloidalDisk'
-        Part.show(self.gearBox.generateEccentricShaft())
+        self.eccentricShaft = self.gearBox.generateEccentricShaft()
+        Part.show(self.eccentricShaft)
+        #Part.show(self.gearBox.generateEccentricShaft())
         FreeCAD.ActiveDocument.ActiveObject.Label = 'Eccentric Shaft'
+        
         print('gearbox created')
        
     def parameterization(self, pts, a,  closed):
@@ -314,10 +328,18 @@ class   CycloidalGearBox():
         print ("Cycloidal.Activated()\n")               
             
     def onChanged(self, fp, prop):
-        print("onchanged", fp, prop)
+        print("onchanged", fp, prop)        
+        if (prop=="DriverPinDiameter"):
+            c = fp.getPropertyByName("DriverPinDiameter")
+            self.gearBox.DriverPinDiameter = c
+        if (prop=="ToothCount"):
+            c = fp.getPropertyByName("ToothCount")
+            self.gearBox.ToothCount = c
+        self.cycloidalDisk = self.gearBox.generateCycloidalDisk()
+        Part.show(self.cycloidalDisk)
         
     def execute(self, obj):
-        print('cycloidgearbox execute')
+        print('cycloidgearbox execute',obj)
 
 class ViewProviderCGBox:
    def __init__(self, obj):
@@ -325,7 +347,10 @@ class ViewProviderCGBox:
        Set this object to the proxy object of the actual view provider
        """
        print("ViewProviderCGBox init start")
+       print(self)
+       print(obj)
        obj.Proxy = self
+       self.part = obj
        print("ViewProviderCGBox init end")
        
 
@@ -339,7 +364,7 @@ class ViewProviderCGBox:
        """
        If a property of the handled feature has changed we have the chance to handle this here
        """
-
+       print("updateData",fp,prop)
        return
 
    def getDisplayModes(self,obj):
@@ -360,13 +385,14 @@ class ViewProviderCGBox:
        Since they have the same names nothing needs to be done.
        This method is optional.
        """
+       print("setDisplayMode",mode)
        return mode
 
    def onChanged(self, vobj, prop):
        """
        Print the name of the property that has changed
        """
-       FreeCAD.Console.PrintMessage("Change property: " + str(prop) + "\n")
+       print("onChanged",vobj,prop)
 
    def getIcon(self):
        """
@@ -405,6 +431,7 @@ class ViewProviderCGBox:
        return None
 
    def __setstate__(self,state):
+       print("__setstate__",state)
        return None
 
 
