@@ -261,10 +261,13 @@ class CycloidGearBoxCreateObject():
         if not FreeCAD.ActiveDocument:
             FreeCAD.newDocument()
         doc = FreeCAD.ActiveDocument
-        gbobj=doc.addObject("Part::FeaturePython","GearBox")        
-
-        CycloidalGearBox(gbobj,doc)
+        gbobj=doc.addObject("Part::FeaturePython","GearBox")   
+        cbg = CycloidalGearBox(gbobj,doc)          
         ViewProviderCGBox(gbobj.ViewObject)
+        #Part.show(cbg.Shape)
+        Part.show(cbg.pinobj.Shape)
+        Part.show(cbg.cycdiskobj.Shape)
+        Part.show(cbg.esobj.Shape)
         
         
         
@@ -296,7 +299,8 @@ class   CycloidalGearBox():
         self.esobj  = doc.addObject("Part::FeaturePython", "EccentricShaft")
         
         print("Properties added")
-        obj.Proxy = self        
+        obj.Proxy = self    
+        self.Object = obj
         self.onChanged(obj,"refresh")         
         print('gearbox created')
        
@@ -315,27 +319,29 @@ class   CycloidalGearBox():
     
     def onChanged(self, fp, prop):
         print("onchanged", fp, prop)        
-        gearBox = hypoCycloidalGear()
-        gearBox.ToothCount = fp.getPropertyByName("ToothCount")
-        gearBox.LineSegmentCount = fp.getPropertyByName("LineSegmentCount")
-        gearBox.RollerDiameter = fp.getPropertyByName("RollerDiameter")
-        gearBox.RollerHeight = fp.getPropertyByName("RollerHeight")
-        gearBox.ToothPitch = fp.getPropertyByName("ToothPitch")
-        gearBox.Eccentricity = fp.getPropertyByName("Eccentricity")
-        gearBox.CenterDiameter = fp.getPropertyByName("CenterDiameter")
-        gearBox.PressureAngleLimit = fp.getPropertyByName("PressureAngleLimit")
-        gearBox.BaseHeight = fp.getPropertyByName("BaseHeight")
-        gearBox.DriverPinDiameter = fp.getPropertyByName("DriverPinDiameter")
-        print("creating pinbase")
-        self.pinobj.Shape = gearBox.generatePinBase()
-        print("creating cycloidaldisk")
-        self.cycdiskobj.Shape = gearBox.generateCycloidalDisk()
-        print("creating eccentricshaft")
-        self.esobj.Shape = gearBox.generateEccentricShaft()
+        self.gearBox = hypoCycloidalGear()
+        self.gearBox.ToothCount = fp.getPropertyByName("ToothCount")
+        self.gearBox.LineSegmentCount = fp.getPropertyByName("LineSegmentCount")
+        self.gearBox.RollerDiameter = fp.getPropertyByName("RollerDiameter")
+        self.gearBox.RollerHeight = fp.getPropertyByName("RollerHeight")
+        self.gearBox.ToothPitch = fp.getPropertyByName("ToothPitch")
+        self.gearBox.Eccentricity = fp.getPropertyByName("Eccentricity")
+        self.gearBox.CenterDiameter = fp.getPropertyByName("CenterDiameter")
+        self.gearBox.PressureAngleLimit = fp.getPropertyByName("PressureAngleLimit")
+        self.gearBox.BaseHeight = fp.getPropertyByName("BaseHeight")
+        self.gearBox.DriverPinDiameter = fp.getPropertyByName("DriverPinDiameter")
         print("done onChanged")
         
     def execute(self, obj):
         print('cycloidgearbox execute',obj)
+        #print("creating pinbase")
+        self.pinobj.Shape = self.gearBox.generatePinBase()
+        #print("creating cycloidaldisk")
+        self.cycdiskobj.Shape = self.gearBox.generateCycloidalDisk()
+        #print("creating eccentricshaft")
+        self.esobj.Shape = self.gearBox.generateEccentricShaft()
+
+        
 
 class ViewProviderCGBox:
    def __init__(self, obj):
@@ -353,7 +359,7 @@ class ViewProviderCGBox:
    def attach(self, obj):
        """
        Setup the scene sub-graph of the view provider, this method is mandatory
-       """
+       """       
        return
 
    def updateData(self, fp, prop):
@@ -367,13 +373,16 @@ class ViewProviderCGBox:
        """
        Return a list of display modes.
        """
-       return None
+       modes=[]
+       modes.append("Shaded")
+       modes.append("Wireframe")
+       return modes
 
    def getDefaultDisplayMode(self):
        """
        Return the name of the default display mode. It must be defined in getDisplayModes.
        """
-       return "viewProviderCGBox Shaded"
+       return "Shaded"
 
    def setDisplayMode(self,mode):
        """
@@ -395,7 +404,8 @@ class ViewProviderCGBox:
        Return the icon in XMP format which will appear in the tree view. This method is optional and if not defined a default icon is shown.
        """
 
-       return """
+       return main_CGB_Icon
+       """
            /* XPM */
            static const char * ViewProviderBox_xpm[] = {
            "16 16 6 1",

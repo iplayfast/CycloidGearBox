@@ -41,10 +41,17 @@ class CycloidGearBoxWorkbench(Workbench):
             
 
     def Initialize(self):
-        import cycloidbox        
+        #import cycloidbox        
+        import box,cycloidbox
         self.__class__.Icon = main_CGB_Icon
+        self.appendToolbar("CycloidGearBox",["BoxCreateObject"])
+        self.appendMenu("CycloidGearBox",["BoxCreateObject"])
         self.appendToolbar("CycloidGearBox",["CycloidGearBoxCreateObject"])
         self.appendMenu("CycloidGearBox",["CycloidGearBoxCreateObject"])
+
+        #self.appendToolbar("CycloidGearBox",["CycloidGearBoxCreateObject"])
+        #self.appendMenu("CycloidGearBox",["CycloidGearBoxCreateObject"])
+
         Log("Loading CycloidGearBox ... done\n")
 
     def GetClassName(self):
