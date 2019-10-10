@@ -26,7 +26,7 @@ class cycloidClass:
     def __init__(self,ToothPitch = 0.08, RollerDiameter = 0.15,RollerHeight=4, Eccentricity =
                  0.05, ToothCount = 10, LineSegmentCount = 400,
                  CenterDiameter = -1.00, PressureAngleLimit = 50.0,
-                 PressureAngleOffset = 0.01, baseHeight = 2.0,DriverPinDiameter = 0.25):
+                 PressureAngleOffset = 0.01, baseHeight = 2.0,DriverPinDiameter = 0.25,CycloidalDiskHeight = 1.74):
         self.ToothPitch = ToothPitch
         self.RollerDiameter = RollerDiameter
         self.RollerHeight = RollerHeight
@@ -38,6 +38,7 @@ class cycloidClass:
         self.PressureAngleOffset = PressureAngleOffset
         self.DriverPinDiameter = DriverPinDiameter
         self.baseHeight = baseHeight
+        self.CycloidalDiskHeight = CycloidalDiskHeight
         if CenterDiameter > 0:
             self.ToothPitch = CenterDiameter / ToothCount
         self.minmaxRadius();
@@ -107,6 +108,7 @@ class cycloidClass:
 
     def generatePinBase(self):
         """ create the base that the fixedRingPins will be attached to """        
+        self.minmaxRadius()
         pinBase = Part.makeCylinder(self.maxRadius+float(self.RollerDiameter),self.baseHeight);
         # generate the pin locations
         for i in range(0, self.ToothCount + 1):
@@ -171,7 +173,7 @@ class cycloidClass:
         a = Part.BSplineCurve(self.generateCycloidalDiskArray()).toShape()
         w = Part.Wire([a])
         f = Part.Face(w)
-        e = f.extrude(FreeCAD.Vector(0,0,self.RollerHeight/2))
+        e = f.extrude(FreeCAD.Vector(0,0,self.CycloidalDiskHeight))
         e.translate(Base.Vector(-self.Eccentricity, 0, self.baseHeight+0.1))
         return e
         
@@ -185,5 +187,6 @@ class cycloidClass:
                       CenterDiameter=self.CenterDiameter,
                       PressureAngleLimit=self.PressureAngleLimit,
                       PressureAngleOffset=self.PressureAngleOffset,
-                      DriverPinDiameter=self.DriverPinDiameter)
+                      DriverPinDiameter=self.DriverPinDiameter,
+                      CycloidalDiskHeight=self.CycloidalDiskHeight)
 
