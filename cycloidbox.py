@@ -94,6 +94,11 @@ class CycloidGearBoxCreateObject():
         if not FreeCAD.ActiveDocument:
             FreeCAD.newDocument()
         doc = FreeCAD.ActiveDocument
+        """# test code
+        sketch = doc.Body.newObject('Sketcher::SketchObject','Sketch') 
+        sketch.Support = (FreeCAD.activeDocument().XY_Plane, [''])
+        sketch.MapMode = 'FlatFace'
+        """
         obj=doc.addObject("Part::FeaturePython","GearBox Parameters")   
         cbg = CycloidalGearBox(obj)          
         #ViewProviderCGBox(obj.ViewObject)
@@ -149,10 +154,16 @@ class   pindiskClass():
     def onChanged(self, fp, prop):
         print("pindisk onchanged", fp, prop)                
         #FreeCAD.ActiveDocument.getObject("GearBox_Parameters").onChanged(fp,prop)
-        FreeCAD.ActiveDocument.getObject("GearBox_Parameters").ToothCount = self.ToothCount
-        FreeCAD.ActiveDocument.getObject("GearBox_Parameters").RollerDiameter = self.RollerDiameter
-        FreeCAD.ActiveDocument.getObject("GearBox_Parameters").RollerHeight = self.RollerHeight
-        FreeCAD.ActiveDocument.getObject("GearBox_Parameters").BaseHeight = self.BaseHeight
+        if prop=='Proxy':
+            pass
+        if hasattr(self, 'ToothCount'):
+            FreeCAD.ActiveDocument.getObject("GearBox_Parameters").ToothCount = self.ToothCount
+        if hasattr(self,'RollerDiameter'):
+            FreeCAD.ActiveDocument.getObject("GearBox_Parameters").RollerDiameter = self.RollerDiameter
+        if hasattr(self,'RollerHeight'):
+            FreeCAD.ActiveDocument.getObject("GearBox_Parameters").RollerHeight = self.RollerHeight
+        if hasattr(self,'BaseHeight'):
+            FreeCAD.ActiveDocument.getObject("GearBox_Parameters").BaseHeight = self.BaseHeight
         print("done pindisk onchanged")
         
         #self.GearBox.onChanged(GearBox,fp,prop)
@@ -220,7 +231,7 @@ class   EccShaft():
         
         
 class   CycloidalGearBox():
-    def __init__(self, obj):        
+    def __init__(self, obj):
         print("CycloidalGearBox __init__")       
         self.gearBox = cycloidClass.cycloidClass()
         obj.addProperty("App::PropertyFloat","Version","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","The version of CycloidGearBox Workbench used to create this object")).Version = version
