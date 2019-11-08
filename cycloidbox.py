@@ -112,7 +112,6 @@ class CycloidGearBoxCreateObject():
 
         driverDiskobj = doc.addObject("Part::FeaturePython","DriverDisk")
         driverDisk = driverDiskClass(driverDiskobj,gearbox)
-        driverDisk.ShapeColor = (random.random(), random.random(), random.random(), 0.0)
         driverDiskobj.Proxy = driverDisk
         gearbox.recomputeList.append(driverDisk)
         ViewProviderCGBox(driverDiskobj.ViewObject,pin_Icon)
@@ -120,11 +119,12 @@ class CycloidGearBoxCreateObject():
 
         esobj = doc.addObject("Part::FeaturePython","EccentricShaft")
         escShaft = EccShaft(esobj,gearbox)
-        esobj.Proxy = esobj
+        esobj.Proxy = escShaft
         gearbox.recomputeList.append(escShaft)
         ViewProviderCGBox(esobj.ViewObject,eccentric_Icon)
         esobj.ViewObject.ShapeColor = (random.random(), random.random(), random.random(), 0.0)
 
+        gearbox.busy = False;
         gearbox.onChanged('','Refresh')
         gearbox.recompute()
         doc.recompute()
@@ -278,6 +278,7 @@ class   EccShaft():
 class   CycloidalGearBox():
     def __init__(self, obj):
         print("CycloidalGearBox __init__")
+        self.busy = True;
         obj.addProperty("App::PropertyFloat","Version","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","The version of CycloidGearBox Workbench used to create this object")).Version = version
         obj.addProperty("App::PropertyLength", "Eccentricity","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Eccentricity")).Eccentricity = 4.7 /2
         obj.addProperty("App::PropertyInteger", "ToothCount", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Number of teeth of the cycloidal disk")).ToothCount=12
@@ -317,6 +318,8 @@ class   CycloidalGearBox():
     
     
     def onChanged(self, fp, prop):
+        if self.busy:
+            return
         print("cycloid gearbox_parameters onchanged", fp, prop)
         dirty = False
 
