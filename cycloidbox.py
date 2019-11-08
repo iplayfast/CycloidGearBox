@@ -34,7 +34,7 @@ Notes:
 """
 from __future__ import division
 
-import os
+import os,random
 
 import FreeCADGui
 import FreeCAD as App
@@ -95,31 +95,36 @@ class CycloidGearBoxCreateObject():
         """
         obj=doc.addObject("Part::FeaturePython","GearBox Parameters")   
         gearbox = CycloidalGearBox(obj)
-
+        random.seed(444);
         pindiskobj = doc.addObject("Part::FeaturePython","pinDisk")
         pindisk = pindiskClass(pindiskobj,gearbox)
         pindiskobj.Proxy= pindisk
         gearbox.recomputeList.append(pindisk)
         ViewProviderCGBox(pindiskobj.ViewObject,pin_Icon)
-        
+        pindiskobj.ViewObject.ShapeColor = (random.random(), random.random(), random.random(), 0.0)
+
         cycdiskobj = doc.addObject("Part::FeaturePython","CycloidalDisk")        
         cycdisk = cycdiskClass(cycdiskobj,gearbox)
         cycdiskobj.Proxy = cycdisk
         gearbox.recomputeList.append(cycdisk)
         ViewProviderCGBox(cycdiskobj.ViewObject, main_Icon)
-        
+        cycdiskobj.ViewObject.ShapeColor = (random.random(), random.random(), random.random(), 0.0)
+
         driverDiskobj = doc.addObject("Part::FeaturePython","DriverDisk")
         driverDisk = driverDiskClass(driverDiskobj,gearbox)
+        driverDisk.ShapeColor = (random.random(), random.random(), random.random(), 0.0)
         driverDiskobj.Proxy = driverDisk
         gearbox.recomputeList.append(driverDisk)
         ViewProviderCGBox(driverDiskobj.ViewObject,pin_Icon)
+        driverDiskobj.ViewObject.ShapeColor = (random.random(), random.random(), random.random(), 0.0)
 
         esobj = doc.addObject("Part::FeaturePython","EccentricShaft")
         escShaft = EccShaft(esobj,gearbox)
         esobj.Proxy = esobj
         gearbox.recomputeList.append(escShaft)
         ViewProviderCGBox(esobj.ViewObject,eccentric_Icon)
-        
+        esobj.ViewObject.ShapeColor = (random.random(), random.random(), random.random(), 0.0)
+
         gearbox.onChanged('','Refresh')
         gearbox.recompute()
         doc.recompute()
@@ -174,9 +179,7 @@ class   pindiskClass():
         
     def recomputeGB(self,H):
         print("recomputing pin disk",H)
-        self.Object.Shape = cycloidFun.generatePinBase(H["ToothCount"], H["ToothPitch"], H["RollerDiameter"],
-            H["Eccentricity"], H["RollerHeight"], H["DriverPinDiameter"], H["BaseHeight"],
-            H["PressureAngleLimit"])
+        self.Object.Shape = cycloidFun.generatePinBase(H)
         #self.GearBox.gearBox.generatePinBase()
 
 class   driverDiskClass():
@@ -207,7 +210,7 @@ class   driverDiskClass():
 
     def recomputeGB(self,H):
         print('recomputing DriverDisk')
-        self.Object.Shape = cycloidFun.generateDriverDisk(H['DiskHoleCount'],H['DriverDiskHeight'],H['DriverPinHeight'],H['Eccentricity'])
+        self.Object.Shape = cycloidFun.generateDriverDisk(H)
 
 class   cycdiskClass():
     def __init__(self,obj,gearbox):
@@ -236,16 +239,7 @@ class   cycdiskClass():
         
     def recomputeGB(self,H):
         print("recomputing cycloidal disk")
-        self.Object.Shape = cycloidFun.generateCycloidalDisk(H["ToothCount"],
-                                                             H["ToothPitch"],
-                                                             H["RollerDiameter"],
-                                                             H["Eccentricity"],
-                                                             H["LineSegmentCount"],
-                                                             H["PressureAngleLimit"],
-                                                             H["PressureAngleOffset"],
-                                                             H["BaseHeight"],
-                                                             H["CycloidalDiskHeight"],
-                                                             H["DiskHoleCount"])
+        self.Object.Shape = cycloidFun.generateCycloidalDisk(H)
 
 class   EccShaft():
     def __init__(self,obj,gearbox):
@@ -271,26 +265,27 @@ class   EccShaft():
         if prop == 'RollerHeight':
             gbp.RollerHeight = es.RollerHeight
         if prop == 'BaseHeight':
-            gpb.BaseHeight = es.BaseHeight
+            gbp.BaseHeight = es.BaseHeight
         if prop == 'DriverPinDiameter':
             gbp.DriverPinDiameter = es.DriverPinDiameter
 
     def recomputeGB(self,H):
         print("recomputing Eccentric Shaft")
-        self.Object.Shape = cycloidFun.generateEccentricShaft(H["RollerDiameter"],H["RollerHeight"],H["Eccentricity"],H["DriverPinDiameter"],H["BaseHeight"])
+        Shape = cycloidFun.generateEccentricShaft(H)
+        self.Object.Shape = Shape
 
         
 class   CycloidalGearBox():
     def __init__(self, obj):
         print("CycloidalGearBox __init__")
         obj.addProperty("App::PropertyFloat","Version","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","The version of CycloidGearBox Workbench used to create this object")).Version = version
+        obj.addProperty("App::PropertyLength", "Eccentricity","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Eccentricity")).Eccentricity = 4.7 /2
         obj.addProperty("App::PropertyInteger", "ToothCount", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Number of teeth of the cycloidal disk")).ToothCount=12
         obj.addProperty("App::PropertyInteger","DiskHoleCount","CycloidGearBox",QT_TRANSLATE_NOOP("APP::Property","Number of driving holes of the cycloid disk")).DiskHoleCount = 6
         obj.addProperty("App::PropertyInteger", "LineSegmentCount", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Number of line segments to make up the cycloidal disk")).LineSegmentCount= 400
+        obj.addProperty("App::PropertyAngle", "ToothPitch","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Tooth Pitch")).ToothPitch = 4
         obj.addProperty("App::PropertyLength", "RollerDiameter", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Diameter of the rollers")).RollerDiameter = 4.7
         obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = 14.0
-        obj.addProperty("App::PropertyAngle", "ToothPitch","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Tooth Pitch")).ToothPitch = 4
-        obj.addProperty("App::PropertyLength", "Eccentricity","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Eccentricity")).Eccentricity = 4.7 /2
         obj.addProperty("App::PropertyLength", "CenterDiameter","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Center Diameter")).CenterDiameter = 5.0
         obj.addProperty("App::PropertyLength", "PressureAngleLimit","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Pressure Angle Limit")).PressureAngleLimit= 50.0
         obj.addProperty("App::PropertyAngle", "PressureAngleOffset","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Pressure Angle Offset")).PressureAngleOffset= 0.0
@@ -328,7 +323,7 @@ class   CycloidalGearBox():
         obj = App.ActiveDocument.getObject("GearBox_Parameters")
         pinDisk =     App.ActiveDocument.getObject('pinDisk')
         es = App.ActiveDocument.getObject('EccentricShaft')
-        if prop=='RollerDiameter':
+        if prop == 'RollerDiameter' and hasattr(es,"Eccentricity") and hasattr(obj,"Eccentricity"):
             if es.Eccentricity!=obj.Eccentricity:
                 es.Eccentricity = obj.Eccentricity
             dirty = True
@@ -339,10 +334,11 @@ class   CycloidalGearBox():
         if prop=='LineSegmentCount':
             dirty = True
         if prop=='RollerDiameter':
-            if obj.Eccentricity!=obj.RollerDiameter / 2:
-                obj.Eccentricity = obj.RollerDiameter /2
-            if es.Eccentricity!=obj.Eccentricity:
-                es.Eccentricity = obj.Eccentricity
+            if hasattr(obj,"Eccentricity"):
+                if obj.Eccentricity!=obj.RollerDiameter / 2:
+                    obj.Eccentricity = obj.RollerDiameter /2
+                if hasattr(es,"Eccentricity") and es.Eccentricity!=obj.Eccentricity:
+                    es.Eccentricity = obj.Eccentricity
             if pinDisk.RollerDiameter!= obj.RollerDiameter:
                 pinDisk.RollerDiameter = obj.RollerDiameter
             dirty = True
@@ -355,9 +351,9 @@ class   CycloidalGearBox():
                 pinDisk.ToothCount = obj.ToothCount
             dirty = True
         if prop=='Eccentricity':
-            if (obj.RollerDiamter != obj.Eccentricity*2):
+            if (obj.RollerDiameter != obj.Eccentricity*2):
                 obj.RollerDiameter = obj.Eccentricity*2
-            if es.Eccentricity!=obj.Eccentricity:
+            if hasattr(es,"Eccentricity") and es.Eccentricity!=obj.Eccentricity:
                 es.Eccentricity = obj.Eccentricity
             dirty = True
         if prop=='CenterDiameter':
