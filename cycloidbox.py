@@ -142,6 +142,8 @@ class   pindiskClass():
         obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = param.RollerHeight
         obj.addProperty("App::PropertyInteger", "ToothCount", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Number of teeth of the cycloidal disk")).ToothCount = param.ToothCount
         obj.addProperty("App::PropertyLength", "BaseHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).BaseHeight = param.BaseHeight
+        obj.addProperty("App::PropertyLength", "DriverPinDiameter", "CycloidGearBox",QT_TRANSLATE_NOOP("App::Property", "Driver Pin Diameter")).DriverPinDiameter = param.DriverPinDiameter\
+
         print("Done Adding parameters")
 
     def onChanged(self, fp, prop):
@@ -161,6 +163,9 @@ class   pindiskClass():
         if prop=='BaseHeight':
             App.ActiveDocument.getObject("GearBox_Parameters").BaseHeight = \
                 App.ActiveDocument.getObject('pinDisk').BaseHeight
+        if prop=='DriverPinDiameter':
+            App.ActiveDocument.getObject("GearBox_Parameters").DriverPinDiameter = \
+                App.ActiveDocument.getObject('pinDisk').DriverPinDiameter
         print("done pindisk onchanged")
         
     def recomputeGB(self,H):
