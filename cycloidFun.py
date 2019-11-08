@@ -103,14 +103,15 @@ def generatePinBase(ToothCount, ToothPitch, RollerDiameter, Eccentricity, Roller
         fixedRingPin = Part.makeCylinder(float(RollerDiameter) / 2.0, RollerHeight, Base.Vector(x, y, 0))
         pinBase = pinBase.fuse(fixedRingPin)
     accesshole = Part.makeCylinder(DriverPinDiameter / 2.0, 10000)
-    pinBase.cut(accesshole)
-    return pinBase
+    return pinBase.cut(accesshole)
 
 
-def generateEccentricShaft(RollerDiameter, RollerHeight, Eccentricity):
+def generateEccentricShaft(RollerDiameter, RollerHeight, Eccentricity,DrivePinDiameter,baseHeight):
     # add a circle in the center of the cam
     print("shaft",RollerDiameter,Eccentricity)
-    return Part.makeCylinder(float(RollerDiameter) / 2.0, RollerHeight, Base.Vector(-Eccentricity, 0, 0))
+    e = Part.makeCylinder(float(RollerDiameter) / 2.0, RollerHeight, Base.Vector(-Eccentricity, 0, 0))
+    d = Part.makeCylinder(float(DrivePinDiameter)/2.0,baseHeight*2,Base.Vector(0,0,-baseHeight))
+    return d.fuse(e);
 
 
 """
@@ -189,6 +190,19 @@ def generateCycloidalDisk(ToothCount, ToothPitch, RollerDiameter, Eccentricity, 
     e = fc.extrude(FreeCAD.Vector(0, 0, CycloidalDiskHeight))
     e.translate(Base.Vector(-Eccentricity, 0, baseHeight + 0.1))
     return e
+
+def generateDriverDisk(DiskHoleCount,DriverDiskHeight,DriverPinHeight,Eccentricity):
+    return Part.makeCylinder(float(20) / 2.0, DriverDiskHeight, Base.Vector(0, 0,-DriverDiskHeight))
+
+def testgenerateEccentricShaft(RollerDiameter=4.7, RollerHeight=14, Eccentricity=2.35,DrivePinDiameter=12,baseHeight=10):
+    return generateEccentricShaft(RollerDiameter, RollerHeight, Eccentricity,DrivePinDiameter,baseHeight)
+
+def testgeneratePinBase(ToothCount=12, ToothPitch=4, RollerDiameter=4.7, Eccentricity=2.35, RollerHeight=14,
+        DriverPinDiameter= 12, baseHeight = 10, PressureAngleLimit=50):
+    return generatePinBase(ToothCount, ToothPitch, RollerDiameter, Eccentricity, RollerHeight, DriverPinDiameter, baseHeight,
+                    PressureAngleLimit)
+
+
 
 def testgenerateCycloidalDisk(ToothCount=12, ToothPitch=4, RollerDiameter=4.7, Eccentricity=2.35,
                               LineSegmentCount=400, PressureAngleLimit=50,

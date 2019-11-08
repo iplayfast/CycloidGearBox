@@ -108,7 +108,12 @@ class CycloidGearBoxCreateObject():
         gearbox.recomputeList.append(cycdisk)
         ViewProviderCGBox(cycdiskobj.ViewObject, main_Icon)
         
-        
+        driverDiskobj = doc.addObject("Part::FeaturePython","DriverDisk")
+        driverDisk = driverDiskClass(driverDiskobj,gearbox)
+        driverDiskobj.Proxy = driverDisk
+        gearbox.recomputeList.append(driverDisk)
+        ViewProviderCGBox(driverDiskobj.ViewObject,pin_Icon)
+
         esobj = doc.addObject("Part::FeaturePython","EccentricShaft")
         escShaft = EccShaft(esobj,gearbox)
         esobj.Proxy = esobj
@@ -128,7 +133,6 @@ class CycloidGearBoxCreateObject():
 
     def execute(self, obj):
         print('cycloidgearboxCreateObject execute')
-
 
 class   pindiskClass():
     def __init__(self,obj,cgb):
@@ -175,7 +179,36 @@ class   pindiskClass():
             H["PressureAngleLimit"])
         #self.GearBox.gearBox.generatePinBase()
 
-        
+class   driverDiskClass():
+    def __init__(self,obj,gearbox):
+        self.Object = obj
+        obj.Proxy = self
+        param = App.ActiveDocument.getObject("GearBox_Parameters")
+        obj.addProperty("App::PropertyInteger","DiskHoleCount","CycloidGearBox",QT_TRANSLATE_NOOP("APP::Property","Number of driving holes of the cycloid disk")).DiskHoleCount = param.DiskHoleCount
+        obj.addProperty("App::PropertyLength", "DriverDiskHeight","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Cycloidal Disk Height")).DriverDiskHeight = param.CycloidalDiskHeight
+        obj.addProperty("App::PropertyLength", "DriverPinHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Driver Pin Height")).DriverPinHeight = param.DriverPinHeight
+        obj.addProperty("App::PropertyLength", "Eccentricity","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Eccentricity")).Eccentricity = param.Eccentricity
+
+    def onChanged(self, fp, prop):
+        print("Driver Disk onchanged", fp, prop)
+        p = App.ActiveDocument.getObject("GearBox_Parameters")
+        s = App.ActiveDocument.getObject('DriverDisk')
+        if prop=='DiskHoleCount':
+            p.DiskHoleCount = s.DiskHoleCount
+        if prop=='DriverDiskHeight':
+            p.DriverDiskHeight = s.DriverDiskHeight
+        if prop=='DriverPinHeight':
+            p.DriverPinHeight = s.DriverPinHeight
+        if prop=='Eccentricity':
+            p.Eccentricity = s.Eccentricity
+
+    def execute(selfself,obj):
+        print('DriverDisk execute',obj)
+
+    def recomputeGB(self,H):
+        print('recomputing DriverDisk')
+        self.Object.Shape = cycloidFun.generateDriverDisk(H['DiskHoleCount'],H['DriverDiskHeight'],H['DriverPinHeight'],H['Eccentricity'])
+
 class   cycdiskClass():
     def __init__(self,obj,gearbox):
         self.Object = obj        
@@ -222,17 +255,29 @@ class   EccShaft():
         self.ShapeColor=(0.42,0.42,0.63)
         param = App.ActiveDocument.getObject("GearBox_Parameters")
         obj.addProperty("App::PropertyLength", "Eccentricity","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Eccentricity")).Eccentricity =param.Eccentricity
+        obj.addProperty("App::PropertyLength", "RollerDiameter", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Diameter of the rollers")).RollerDiameter = 4.7
+        obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = 14.0
+        obj.addProperty("App::PropertyLength", "DriverPinDiameter", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Driver Pin Diameter")).DriverPinDiameter = 12
+        obj.addProperty("App::PropertyLength", "BaseHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).BaseHeight = 10.0
 
     def onChanged(selfself,fp,prop):
+        gbp = App.ActiveDocument.getObject("GearBox_Parameters")
+        es = App.ActiveDocument.getObject("EccentricShaft")
         if prop=="Eccentricity":
-            gbp = App.ActiveDocument.getObject("GearBox_Parameters")
-            es = App.ActiveDocument.getObject("EccentricShaft")
             gbp.Eccentricity = es.Eccentricity
-            gbp.RollerDiameter = es.Eccentricity *2
+            gbp.RollerDiameter = es.Eccentricity *2.0
+        if prop == 'RollerDiameter':
+            gbp.RollerDiameter = es.RollerDiameter
+        if prop == 'RollerHeight':
+            gbp.RollerHeight = es.RollerHeight
+        if prop == 'BaseHeight':
+            gpb.BaseHeight = es.BaseHeight
+        if prop == 'DriverPinDiameter':
+            gbp.DriverPinDiameter = es.DriverPinDiameter
 
     def recomputeGB(self,H):
         print("recomputing Eccentric Shaft")
-        self.Object.Shape = cycloidFun.generateEccentricShaft(H["RollerDiameter"],H["RollerHeight"],H["Eccentricity"])
+        self.Object.Shape = cycloidFun.generateEccentricShaft(H["RollerDiameter"],H["RollerHeight"],H["Eccentricity"],H["DriverPinDiameter"],H["BaseHeight"])
 
         
 class   CycloidalGearBox():
@@ -251,6 +296,8 @@ class   CycloidalGearBox():
         obj.addProperty("App::PropertyAngle", "PressureAngleOffset","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Pressure Angle Offset")).PressureAngleOffset= 0.0
         obj.addProperty("App::PropertyLength", "BaseHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).BaseHeight = 10.0
         obj.addProperty("App::PropertyLength", "DriverPinDiameter", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Driver Pin Diameter")).DriverPinDiameter = 12
+        obj.addProperty("App::PropertyLength", "DriverPinHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Driver Pin Height")).DriverPinHeight = 10.0
+        obj.addProperty("App::PropertyLength", "DriverDiskHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).DriverDiskHeight = 4.0
         obj.addProperty("App::PropertyLength", "CycloidalDiskHeight","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Cycloidal Disk Height")).CycloidalDiskHeight = 4
         obj.Proxy = self
         self.recomputeList = []
@@ -325,6 +372,8 @@ class   CycloidalGearBox():
             dirty = True
         if prop=='DriverPinDiameter':
             dirty = True
+        if prop=='DriverDiskHeight':
+            dirty = True
         if prop=='CycloidalDiskHeight':
             dirty = True
         if prop=='DiskHoleCount':
@@ -348,6 +397,8 @@ class   CycloidalGearBox():
                            "PressureAngleOffset" : self.Object.__getattribute__("PressureAngleOffset").Value,
                            "BaseHeight" : self.Object.__getattribute__("BaseHeight").Value,
                            "DriverPinDiameter" : self.Object.__getattribute__("DriverPinDiameter").Value,
+                           "DriverPinHeight" : self.Object.__getattribute__("DriverPinHeight").Value,
+                           "DriverDiskHeight" : self.Object.__getattribute__("DriverDiskHeight").Value,
                            "CycloidalDiskHeight" : self.Object.__getattribute__("CycloidalDiskHeight").Value,
                            "DiskHoleCount" : self.Object.__getattribute__("DiskHoleCount")
         }
