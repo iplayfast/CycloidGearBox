@@ -26,10 +26,10 @@ def toRect(r, a):
 
 def calcyp(ToothCount, Eccentricity, ToothPitch, a):
     return math.atan(math.sin(ToothCount * a) / (
-                math.cos(ToothCount * a) + (ToothCount * ToothPitch) / (Eccentricity * (ToothCount + 1))))
+            math.cos(ToothCount * a) + (ToothCount * ToothPitch) / (Eccentricity * (ToothCount + 1))))
 
 
-def calcX(ToothCount,Eccentricity,ToothPitch, RollerDiameter : float, a):
+def calcX(ToothCount, Eccentricity, ToothPitch, RollerDiameter: float, a):
     return (ToothCount * ToothPitch) * math.cos(a) + Eccentricity * \
            math.cos((ToothCount + 1) * a) - float(RollerDiameter) / 2.0 * \
            math.cos(calcyp(ToothCount, Eccentricity, ToothPitch, a) + a)
@@ -38,7 +38,7 @@ def calcX(ToothCount,Eccentricity,ToothPitch, RollerDiameter : float, a):
 def calcY(ToothCount: int, Eccentricity, ToothPitch, RollerDiameter: float, a):
     return (ToothCount * ToothPitch) * math.sin(a) + Eccentricity * \
            math.sin((ToothCount + 1) * a) - float(RollerDiameter) / 2.0 * \
-           math.sin(calcyp(ToothCount,Eccentricity,ToothPitch, a) + a)
+           math.sin(calcyp(ToothCount, Eccentricity, ToothPitch, a) + a)
 
 
 def clean1(a):
@@ -66,7 +66,7 @@ def calcPressureLimit(ToothCount, ToothPitch, Eccentricity, RollerDiameter, a):
     return (x ** 2.0 + y ** 2.0) ** 0.5
 
 
-def checkLimit(v: FreeCAD.Vector,PressureAngleOffset, minrad, maxrad):
+def checkLimit(v: FreeCAD.Vector, PressureAngleOffset, minrad, maxrad):
     """ if x,y outside limit return x,y as at limit, else return x,y
         :type v: FreeCAD.Vector """
     r, a = toPolar(v.x, v.y)
@@ -109,6 +109,7 @@ def generatePinBase(ToothCount, ToothPitch, RollerDiameter, Eccentricity, Roller
 
 def generateEccentricShaft(RollerDiameter, RollerHeight, Eccentricity):
     # add a circle in the center of the cam
+    print("shaft",RollerDiameter,Eccentricity)
     return Part.makeCylinder(float(RollerDiameter) / 2.0, RollerHeight, Base.Vector(-Eccentricity, 0, 0))
 
 
@@ -134,37 +135,86 @@ def points(self, num=10):
 
 
 def generateCycloidalDiskArray(ToothCount, ToothPitch, RollerDiameter, Eccentricity, LineSegmentCount,
-                               PressureAngleLimit,PressureAngleOffset):
+                               PressureAngleLimit, PressureAngleOffset):
     """ make the array to be used in the bspline
         that is the cycloidalDisk
     """
-    minRadius,maxRadius = minmaxRadius(ToothCount, ToothPitch, RollerDiameter, Eccentricity, PressureAngleLimit)
+    minRadius, maxRadius = minmaxRadius(ToothCount, ToothPitch, RollerDiameter, Eccentricity, PressureAngleLimit)
     q = 2.0 * math.pi / float(LineSegmentCount)
     i = 0
 
     v1 = Base.Vector(calcX(ToothCount, Eccentricity, ToothPitch, RollerDiameter, q * i),
                      calcY(ToothCount, Eccentricity, ToothPitch, RollerDiameter, q * i), 0)
-    v1 = checkLimit(v1, PressureAngleOffset,minRadius, maxRadius)
+    v1 = checkLimit(v1, PressureAngleOffset, minRadius, maxRadius)
 
     cycloidalDiskArray = []
     cycloidalDiskArray.append(v1)
     for i in range(0, LineSegmentCount):
         v2 = Base.Vector(
-            calcX(ToothCount, Eccentricity, ToothPitch, RollerDiameter, q * (i+1)),
-            calcY(ToothCount, Eccentricity, ToothPitch, RollerDiameter, q * (i+1)),
+            calcX(ToothCount, Eccentricity, ToothPitch, RollerDiameter, q * (i + 1)),
+            calcY(ToothCount, Eccentricity, ToothPitch, RollerDiameter, q * (i + 1)),
             0)
-        v2 = checkLimit(v2,PressureAngleOffset, minRadius, maxRadius)
+        v2 = checkLimit(v2, PressureAngleOffset, minRadius, maxRadius)
         cycloidalDiskArray.append(v2)
     return cycloidalDiskArray
 
 
-def generateCycloidalDisk(ToothCount,ToothPitch,RollerDiameter,Eccentricity,LineSegmentCount,PressureAngleLimit,PressureAngleOffset,baseHeight,CycloidalDiskHeight):
+def generateCycloidalDisk(ToothCount, ToothPitch, RollerDiameter, Eccentricity, LineSegmentCount, PressureAngleLimit,
+                          PressureAngleOffset, baseHeight, CycloidalDiskHeight,DiskHoleCount):
     """
     make the complete cycloidal disk
     """
-    a = Part.BSplineCurve(generateCycloidalDiskArray(ToothCount,ToothPitch,RollerDiameter,Eccentricity,LineSegmentCount,PressureAngleLimit,PressureAngleOffset)).toShape()
+    minRadius, maxRadius = minmaxRadius(ToothCount, ToothPitch, RollerDiameter, Eccentricity, PressureAngleLimit)
+    a = Part.BSplineCurve(
+        generateCycloidalDiskArray(ToothCount, ToothPitch, RollerDiameter, Eccentricity, LineSegmentCount,
+                                   PressureAngleLimit, PressureAngleOffset)).toShape()
     w = Part.Wire([a])
     f = Part.Face(w)
-    e = f.extrude(FreeCAD.Vector(0, 0, CycloidalDiskHeight))
+    # need to cut out the eccentric shaft hole
+    # Part.makeCylinder(float(RollerDiameter) / 2.0, RollerHeight, Base.Vector(-Eccentricity, 0, 0))
+    print("disk",RollerDiameter,Eccentricity)
+    es = Part.makeCircle(float(RollerDiameter) /2.0,Base.Vector(0,0,0))
+    esw = Part.Wire([es])
+    esf = Part.Face(esw)
+    fc = f.cut(esf)
+    for i in range(0, DiskHoleCount ):
+        x = minRadius/2 * math.cos(2.0 * math.pi / (DiskHoleCount) * i)
+        y = minRadius/2 * math.sin(2.0 * math.pi / (DiskHoleCount) * i)
+        drivinghole= Part.makeCircle(RollerDiameter*2,Base.Vector(x,y,0))
+        esw = Part.Wire([drivinghole])
+        esf = Part.Face(esw)
+        fc = fc.cut(esf)
+
+    #fc = f.fuse(esw)
+    e = fc.extrude(FreeCAD.Vector(0, 0, CycloidalDiskHeight))
     e.translate(Base.Vector(-Eccentricity, 0, baseHeight + 0.1))
     return e
+
+def testgenerateCycloidalDisk(ToothCount=12, ToothPitch=4, RollerDiameter=4.7, Eccentricity=2.35,
+                              LineSegmentCount=400, PressureAngleLimit=50,
+                          PressureAngleOffset=0, baseHeight=10, CycloidalDiskHeight=4,DiskHoleCount=6):
+    espoints = [];
+    espoints.append(Base.Vector(RollerDiameter / 2 - Eccentricity, 0, 0))
+    espoints.append(Base.Vector(0, -RollerDiameter / 2, 0))
+    espoints.append(Base.Vector(RollerDiameter / 2 + Eccentricity, 0, 0))
+    espoints.append(Base.Vector(0, RollerDiameter / 2, 0))
+    espoints.append(Base.Vector(RollerDiameter / 2 - Eccentricity, 0, 0))
+
+    es = Part.BSplineCurve(espoints).toShape()
+    esw = Part.Wire([es])
+    # fc = f.cut(esw)
+    espoints = [];
+    espoints.append(Base.Vector(RollerDiameter / 2 - Eccentricity, 0, 0))
+    espoints.append(Base.Vector(0, -RollerDiameter / 2, 0))
+    espoints.append(Base.Vector(RollerDiameter / 2 + Eccentricity, 0, 0))
+    espoints.append(Base.Vector(0, RollerDiameter / 2, 0))
+    espoints.append(Base.Vector(RollerDiameter / 2 - Eccentricity, 0, 0))
+
+    es = Part.BSplineCurve(espoints).toShape()
+    esw = Part.Wire([es])
+    esf = Part.Face(esw)
+    e = esf.extrude(FreeCAD.Vector(0, 0, CycloidalDiskHeight))
+    e.translate(Base.Vector(-Eccentricity, 0, baseHeight + 0.1))
+    #return e
+    return generateCycloidalDisk(ToothCount, ToothPitch, RollerDiameter, Eccentricity, LineSegmentCount, PressureAngleLimit,
+                          PressureAngleOffset, baseHeight, CycloidalDiskHeight,DiskHoleCount)

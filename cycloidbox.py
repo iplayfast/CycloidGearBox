@@ -206,7 +206,8 @@ class   cycdiskClass():
                                                              H["PressureAngleLimit"],
                                                              H["PressureAngleOffset"],
                                                              H["BaseHeight"],
-                                                             H["CycloidalDiskHeight"])
+                                                             H["CycloidalDiskHeight"],
+                                                             H["DiskHoleCount"])
 
 class   EccShaft():
     def __init__(self,obj,gearbox):
@@ -321,6 +322,8 @@ class   CycloidalGearBox():
             dirty = True
         if prop=='CycloidalDiskHeight':
             dirty = True
+        if prop=='DiskHoleCount':
+            dirty = True
         if prop=='Refresh':
             dirty = True
         if dirty:
@@ -340,7 +343,8 @@ class   CycloidalGearBox():
                            "PressureAngleOffset" : self.Object.__getattribute__("PressureAngleOffset").Value,
                            "BaseHeight" : self.Object.__getattribute__("BaseHeight").Value,
                            "DriverPinDiameter" : self.Object.__getattribute__("DriverPinDiameter").Value,
-                           "CycloidalDiskHeight" : self.Object.__getattribute__("CycloidalDiskHeight").Value
+                           "CycloidalDiskHeight" : self.Object.__getattribute__("CycloidalDiskHeight").Value,
+                           "DiskHoleCount" : self.Object.__getattribute__("DiskHoleCount")
         }
         for a in self.recomputeList:
             a.recomputeGB(hyperparameters)
