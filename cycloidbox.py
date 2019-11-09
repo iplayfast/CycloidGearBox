@@ -35,7 +35,6 @@ Notes:
 from __future__ import division
 
 import os,random
-
 import FreeCADGui
 import FreeCAD as App
 import cycloidFun
@@ -129,6 +128,8 @@ class CycloidGearBoxCreateObject():
         gearbox.recompute()
         doc.recompute()
         gearbox.recompute()
+        FreeCADGui.SendMsgToActiveView("ViewFit")
+        FreeCADGui.ActiveDocument.ActiveView.viewIsometric()
         return gearbox
         
         
