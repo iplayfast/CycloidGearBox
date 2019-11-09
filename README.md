@@ -15,7 +15,7 @@ start FreeCad
 select cycloidalGearBox workspace from the workspace dropdown menu
 
 click on cycloidalgearbox icon and it will create (the beginnings of it) with some default parameters
-![Alt text](relative/path/to/screenshot.png?raw=true "Title")
+![Screen Shot](screenshot.png?raw=true "Screen Shot")
 
 
 
