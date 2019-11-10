@@ -39,6 +39,8 @@ import FreeCADGui
 import FreeCAD as App
 import cycloidFun
 import cycloidpath_locator
+#for animation
+from PySide import QtCore
 
 smWBpath = os.path.dirname(cycloidpath_locator.__file__)
 smWB_icons_path =  os.path.join( smWBpath, 'icons')
@@ -55,7 +57,14 @@ version = 0.01
 
 def QT_TRANSLATE_NOOP(scope, text):
     return text
+"""
+todo:
+    Driver Pin Height doesn't update
+    Driver Disk Height should be Driver Disk Offset
+    Driver Disk Height should refer to depth of driver disk
 
+
+"""
 """
 def create(obj_name):
    """
@@ -94,7 +103,7 @@ class CycloidGearBoxCreateObject():
         """
         obj=doc.addObject("Part::FeaturePython","GearBox Parameters")   
         gearbox = CycloidalGearBox(obj)
-        random.seed(444);
+        random.seed(444)
         pindiskobj = doc.addObject("Part::FeaturePython","pinDisk")
         pindisk = pindiskClass(pindiskobj,gearbox)
         pindiskobj.Proxy= pindisk
@@ -123,13 +132,14 @@ class CycloidGearBoxCreateObject():
         ViewProviderCGBox(esobj.ViewObject,eccentric_Icon)
         esobj.ViewObject.ShapeColor = (random.random(), random.random(), random.random(), 0.0)
 
-        gearbox.busy = False;
+        gearbox.busy = False
         gearbox.onChanged('','Refresh')
         gearbox.recompute()
         doc.recompute()
         gearbox.recompute()
         FreeCADGui.SendMsgToActiveView("ViewFit")
         FreeCADGui.ActiveDocument.ActiveView.viewIsometric()
+        timer.start(timeout)
         return gearbox
         
         
@@ -279,7 +289,7 @@ class   EccShaft():
 class   CycloidalGearBox():
     def __init__(self, obj):
         print("CycloidalGearBox __init__")
-        self.busy = True;
+        self.busy = True
         obj.addProperty("App::PropertyFloat","Version","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","The version of CycloidGearBox Workbench used to create this object")).Version = version
         obj.addProperty("App::PropertyLength", "Eccentricity","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Eccentricity")).Eccentricity = 4.7 /2
         obj.addProperty("App::PropertyInteger", "ToothCount", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Number of teeth of the cycloidal disk")).ToothCount=12
@@ -400,7 +410,7 @@ class   CycloidalGearBox():
                            "DriverPinHeight" : self.Object.__getattribute__("DriverPinHeight").Value,
                            "DriverDiskHeight" : self.Object.__getattribute__("DriverDiskHeight").Value,
                            "CycloidalDiskHeight" : self.Object.__getattribute__("CycloidalDiskHeight").Value,
-                           "DiskHoleCount" : self.Object.__getattribute__("DiskHoleCount")
+                           "DiskHoleCount" : self.Object.__getattribute__("DiskHoleCount"),
         }
         for a in self.recomputeList:
             a.recomputeGB(hyperparameters)
@@ -436,7 +446,14 @@ class ViewProviderCGBox:
        If a property of the handled feature has changed we have the chance to handle this here
        """
        print("viewProviderCGBox updateData",fp,prop)
-       
+       """
+       if prop.name=='EccentricShaft':
+           pos = prop.Placement.Base
+           global kwAngle
+           rot = FreeCAD.Rotation(FreeCAD.Vector(0,0,1),kwAngle)
+           c = FreeCAD.Vector(0,0,0)
+           prop.Placement = FreeCAD.Placement(pos,rot,c)
+       """
        return
 
    def getDisplayModes(self,obj):
@@ -482,6 +499,46 @@ class ViewProviderCGBox:
    def __setstate__(self,state):
        print("__setstate__",state)
        return None
+
+
+
+step = 1.0
+end  = 360
+timeout = 10
+kwStartAngle = 0
+kwAngle = 0
+
+timer = QtCore.QTimer()
+
+def turnES(a):
+  constraintNr = 4
+  # save global value in case this function is called from the console
+  es = App.ActiveDocument.getObject('EccentricShaft')
+  #print("Turning ",a)
+  rot = App.Rotation(App.Vector(0,0,1),a)
+  pos = es.Placement.Base
+  NewPlace = App.Placement(pos,rot)
+  es.Placement = NewPlace
+  cd = App.ActiveDocument.getObject('CycloidDisk')
+
+#  App.ActiveDocument.Sketch.setDatum(constraintNr,App.Units.Quantity(str(-kwAngle)+'  deg'))
+#  App.ActiveDocument.recompute()
+
+def update():
+    global kwAngle
+    #print(kwAngle)
+    if kwAngle >= end:
+        kwAngle -= 360
+        if kwAngle<kwStartAngle:
+            kwAngle = kwStartAngle
+        #    timer.stop()
+    else:
+        kwAngle += step
+    turnES(kwAngle)
+#    genframe() # Bild erzeugen
+
+timer.timeout.connect(update)
+#timer.start(timeout)
 
 
 FreeCADGui.addCommand('CycloidGearBoxCreateObject',CycloidGearBoxCreateObject())

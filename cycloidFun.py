@@ -127,10 +127,11 @@ def generateEccentricShaft(H):
     DriverPinDiameter = H["DriverPinDiameter"]
     BaseHeight = H["BaseHeight"]
     # add a circle in the center of the cam
-    print("shaft",RollerDiameter,Eccentricity)
+    #print("shaft",RollerDiameter,Eccentricity)
     e = Part.makeCylinder(float(RollerDiameter) / 2.0, RollerHeight, Base.Vector(-Eccentricity, 0, 0))
     d = Part.makeCylinder(float(DriverPinDiameter)/2.0,BaseHeight*2,Base.Vector(0,0,-BaseHeight))
-    return d.fuse(e)
+    d = d.fuse(e)
+    return d
 
 
 """
@@ -200,7 +201,7 @@ def generateCycloidalDisk(H):
     f = Part.Face(w)
     # need to cut out the eccentric shaft hole
     # Part.makeCylinder(float(RollerDiameter) / 2.0, RollerHeight, Base.Vector(-Eccentricity, 0, 0))
-    print("disk",RollerDiameter,Eccentricity)
+    #print("disk",RollerDiameter,Eccentricity)
     es = Part.makeCircle(float(RollerDiameter) /2.0,Base.Vector(0,0,0))
     esw = Part.Wire([es])
     esf = Part.Face(esw)
@@ -250,7 +251,8 @@ def testgenerateDefaultHyperParam():
                        "DriverPinHeight":10.0,
                        "DriverDiskHeight":4.0,
                        "CycloidalDiskHeight":4,
-                       "DiskHoleCount":6
+                       "DiskHoleCount":6,
+                       "InAgnle":0
                        }
     return hyperparameters
 
