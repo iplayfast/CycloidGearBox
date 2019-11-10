@@ -251,8 +251,7 @@ def testgenerateDefaultHyperParam():
                        "DriverPinHeight":10.0,
                        "DriverDiskHeight":4.0,
                        "CycloidalDiskHeight":4,
-                       "DiskHoleCount":6,
-                       "InAgnle":0
+                       "DiskHoleCount":6
                        }
     return hyperparameters
 

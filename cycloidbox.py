@@ -139,7 +139,7 @@ class CycloidGearBoxCreateObject():
         gearbox.recompute()
         FreeCADGui.SendMsgToActiveView("ViewFit")
         FreeCADGui.ActiveDocument.ActiveView.viewIsometric()
-        timer.start(timeout)
+        #timer.start(timeout)
         return gearbox
         
         
@@ -306,6 +306,7 @@ class   CycloidalGearBox():
         obj.addProperty("App::PropertyLength", "DriverPinHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Driver Pin Height")).DriverPinHeight = 10.0
         obj.addProperty("App::PropertyLength", "DriverDiskHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).DriverDiskHeight = 4.0
         obj.addProperty("App::PropertyLength", "CycloidalDiskHeight","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Cycloidal Disk Height")).CycloidalDiskHeight = 4
+        obj.addProperty("App::PropertyBool","Animate","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Animate")).Animate = False
         obj.Proxy = self
         self.recomputeList = []
         print("Properties added")        
@@ -337,6 +338,13 @@ class   CycloidalGearBox():
         obj = App.ActiveDocument.getObject("GearBox_Parameters")
         pinDisk =     App.ActiveDocument.getObject('pinDisk')
         es = App.ActiveDocument.getObject('EccentricShaft')
+        if prop == 'Animate':
+            if hasattr(obj,"Animate"):
+                obj.Animate = not obj.Animate
+                if obj.Animate:
+                    timer.start(timeout)
+                else:
+                    timer.stop()
         if prop == 'RollerDiameter' and hasattr(es,"Eccentricity") and hasattr(obj,"Eccentricity"):
             if es.Eccentricity!=obj.Eccentricity:
                 es.Eccentricity = obj.Eccentricity
