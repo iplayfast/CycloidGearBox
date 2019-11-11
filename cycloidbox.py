@@ -162,9 +162,16 @@ class   pindiskClass():
         obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = param.RollerHeight
         obj.addProperty("App::PropertyInteger", "ToothCount", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Number of teeth of the cycloidal disk")).ToothCount = param.ToothCount
         obj.addProperty("App::PropertyLength", "BaseHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).BaseHeight = param.BaseHeight
-        obj.addProperty("App::PropertyLength", "DriverPinDiameter", "CycloidGearBox",QT_TRANSLATE_NOOP("App::Property", "Driver Pin Diameter")).DriverPinDiameter = param.DriverPinDiameter\
-
+        obj.addProperty("App::PropertyLength", "DriverPinDiameter", "CycloidGearBox",QT_TRANSLATE_NOOP("App::Property", "Driver Pin Diameter")).DriverPinDiameter = param.DriverPinDiameter
+        self.Type = 'pinDisk'
         print("Done Adding parameters")
+
+    def __getstate__(self):
+        return self.Type
+
+    def __setstate__(self, state):
+        if state:
+            self.Type = state
 
     def onChanged(self, fp, prop):
         print("pindisk onchanged", fp, prop)                        
@@ -202,6 +209,14 @@ class   driverDiskClass():
         obj.addProperty("App::PropertyLength", "DriverDiskHeight","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Cycloidal Disk Height")).DriverDiskHeight = param.CycloidalDiskHeight
         obj.addProperty("App::PropertyLength", "DriverPinHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Driver Pin Height")).DriverPinHeight = param.DriverPinHeight
         obj.addProperty("App::PropertyLength", "Eccentricity","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Eccentricity")).Eccentricity = param.Eccentricity
+        self.Type = 'DriverDisk'
+
+    def __getstate__(self):
+        return self.Type
+
+    def __setstate__(self, state):
+        if state:
+            self.Type = state
 
     def onChanged(self, fp, prop):
         print("Driver Disk onchanged", fp, prop)
@@ -232,7 +247,15 @@ class   cycdiskClass():
         obj.addProperty("App::PropertyInteger","DiskHoleCount","CycloidGearBox",QT_TRANSLATE_NOOP("APP::Property","Number of driving holes of the cycloid disk")).DiskHoleCount = param.DiskHoleCount
         obj.addProperty("App::PropertyLength", "CycloidalDiskHeight","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Cycloidal Disk Height")).CycloidalDiskHeight = param.CycloidalDiskHeight
         self.GearBox = gearbox
-        self.ShapeColor=(0.12,0.02,0.63)        
+        self.ShapeColor=(0.12,0.02,0.63)
+        self.Type = 'CyclockalDisk'
+
+    def __getstate__(self):
+        return self.Type
+
+    def __setstate__(self, state):
+        if state:
+            self.Type = state
 
     def onChanged(self, fp, prop):
         print("cycloiddisk onchanged", fp, prop)
@@ -256,7 +279,8 @@ class   EccShaft():
     def __init__(self,obj,gearbox):
         self.Object = obj
         self.gearbox = gearbox
-        obj.Proxy = self        
+        obj.Proxy = self
+        self.Type = 'EccShaft'
         self.ShapeColor=(0.42,0.42,0.63)
         param = App.ActiveDocument.getObject("GearBox_Parameters")
         obj.addProperty("App::PropertyLength", "Eccentricity","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Eccentricity")).Eccentricity =param.Eccentricity
@@ -264,6 +288,13 @@ class   EccShaft():
         obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = 14.0
         obj.addProperty("App::PropertyLength", "DriverPinDiameter", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Driver Pin Diameter")).DriverPinDiameter = 12
         obj.addProperty("App::PropertyLength", "BaseHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).BaseHeight = 10.0
+
+    def __getstate__(self):
+        return self.Type
+
+    def __setstate__(self, state):
+        if state:
+            self.Type = state
 
     def onChanged(selfself,fp,prop):
         gbp = App.ActiveDocument.getObject("GearBox_Parameters")
@@ -310,7 +341,8 @@ class   CycloidalGearBox():
         obj.Proxy = self
         self.recomputeList = []
         print("Properties added")        
-        self.Object = obj        
+        self.Object = obj
+        self.Type = 'CycloidalGearBox'
         attrs = vars(self)
         print( ', '.join("%s: %s" % item for item in attrs.items()))
 
@@ -325,10 +357,15 @@ class   CycloidalGearBox():
         return []
 
     def Activated(self):            
-        print ("Cycloidal.Activated()\n")               
-            
-    
-    
+        print ("Cycloidal.Activated()\n")
+
+    def __getstate__(self):
+        return self.Type
+
+    def __setstate__(self, state):
+        if state:
+            self.Type = state
+
     def onChanged(self, fp, prop):
         if self.busy:
             return
@@ -505,7 +542,6 @@ class ViewProviderCGBox:
        return None
 
    def __setstate__(self,state):
-       print("__setstate__",state)
        return None
 
 
@@ -528,7 +564,10 @@ def turnES(a):
   NewPlace = App.Placement(pos,rot)
   es.Placement = NewPlace
   cd = App.ActiveDocument.getObject('CycloidDisk')
-
+  cdpos = cd.Placement.Base
+  cdrot =  rot
+  NewPlace = App.Placement(cdpos,cdrot)
+  cd.Placement = NewPlace
 #  App.ActiveDocument.Sketch.setDatum(constraintNr,App.Units.Quantity(str(-kwAngle)+'  deg'))
 #  App.ActiveDocument.recompute()
 
