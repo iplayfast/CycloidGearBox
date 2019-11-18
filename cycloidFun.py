@@ -107,17 +107,28 @@ def generatePinBase(H):
     BaseHeight = H["BaseHeight"]
     DriverDiskHeight = H["DriverDiskHeight"]
     minRadius, maxRadius = minmaxRadius(H)
-    pinBase = Part.makeCylinder(maxRadius + float(RollerDiameter), BaseHeight)
+    pinBase = Part.makeCylinder(maxRadius + float(RollerDiameter)*2, BaseHeight)
     dd = Part.makeCylinder(float(minRadius) * 0.75+1.0, DriverDiskHeight*2, Base.Vector(0, 0,BaseHeight-DriverDiskHeight-1))
     pinBase = pinBase.cut(dd)
     # generate the pin locations
     for i in range(0, ToothCount + 1):
-        x = ToothPitch * ToothCount * math.cos(2.0 * math.pi / (ToothCount + 1) * i)
-        y = ToothPitch * ToothCount * math.sin(2.0 * math.pi / (ToothCount + 1) * i)
+        x = ToothPitch * ToothCount * ( math.cos(2.0 * math.pi / (ToothCount + 1) * i))
+        y = ToothPitch * ToothCount * ( math.sin(2.0 * math.pi / (ToothCount + 1) * i))
+        if (x>0):
+            x += RollerDiameter/2
+        else:
+            x -= RollerDiameter/2
+        if (y>0):
+            y+= RollerDiameter/2
+        else:
+            y-= RollerDiameter/2
         fixedRingPin = Part.makeCylinder(float(RollerDiameter) / 2.0, RollerHeight, Base.Vector(x, y, 0))
         pinBase = pinBase.fuse(fixedRingPin)
-    accesshole = Part.makeCylinder(DriverPinDiameter / 2.0, 10000)
-    return pinBase.cut(accesshole)
+    # need hole for eccentric shaft, add a bit so not too tight
+    # todo  allow user values for sizes
+    # todo allow bearing option
+    es = Part.makeCylinder(float(RollerDiameter) / 2.0 + .5, RollerHeight);
+    return pinBase.cut(es)
 
 
 def generateEccentricShaft(H):
@@ -196,13 +207,13 @@ def generateCycloidalDisk(H):
     DiskHoleCount = H["DiskHoleCount"]
 
     minRadius, maxRadius = minmaxRadius(H)
-    a = Part.BSplineCurve(generateCycloidalDiskArray(H)).toShape();
+    #get shape of cycloidal disk
+    a = Part.BSplineCurve(generateCycloidalDiskArray(H)).toShape()
     w = Part.Wire([a])
     f = Part.Face(w)
-    # need to cut out the eccentric shaft hole
-    # Part.makeCylinder(float(RollerDiameter) / 2.0, RollerHeight, Base.Vector(-Eccentricity, 0, 0))
-    #print("disk",RollerDiameter,Eccentricity)
-    es = Part.makeCircle(float(RollerDiameter) /2.0,Base.Vector(0,0,0))
+    # need to cut out the eccentric shaft hole, add a bit so it isn't too tight,
+    # todo add option for bearing here
+    es = Part.makeCircle(float(RollerDiameter) /2.0+0.5,Base.Vector(0,0,0))
     esw = Part.Wire([es])
     esf = Part.Face(esw)
     fc = f.cut(esf)
@@ -225,14 +236,20 @@ def generateDriverDisk(H):
     DriverDiskHeight = H["DriverDiskHeight"]
     RollerDiameter = H["RollerDiameter"]
     RollerHeight = H["RollerHeight"]
+    Eccentricity = H["Eccentricity"]
     dd = Part.makeCylinder(float(minRadius) * 0.75, DriverDiskHeight, Base.Vector(0, 0,0))
     for i in range(0, DiskHoleCount):
         x = minRadius / 2 * math.cos(2.0 * math.pi / (DiskHoleCount) * i)
         y = minRadius / 2 * math.sin(2.0 * math.pi / (DiskHoleCount) * i)
-        fixedRingPin = Part.makeCylinder(float(RollerDiameter*2) / 2.0, RollerHeight, Base.Vector(x, y, 0))
+        fixedRingPin = Part.makeCylinder(float(RollerDiameter*2 - Eccentricity) , RollerHeight, Base.Vector(x, y, 0))
         dd = dd.fuse(fixedRingPin)
+
     fp = dd.translate(Base.Vector(0,0,DriverDiskHeight))
-    es = generateEccentricShaft(H)
+    H["DriverPinDiameter"] = H["DriverPinDiameter"]+1
+    # need to make hole for eccentric shaft, add a bit so not to tight
+    #todo  allow user values for sizes
+    #todo allow bearing option
+    es = Part.makeCylinder(float(RollerDiameter) / 2.0+0.5,RollerHeight);
     fp = fp.cut(es)
     return fp
 
@@ -256,12 +273,13 @@ def testgenerateDefaultHyperParam():
     return hyperparameters
 
 def testgenerateEccentricShaft():
-    return generateEccentricShaft(testgeneateDefaultHyperParam())
+    return generateEccentricShaft(testgenerateDefaultHyperParam())
 
 def testgeneratePinBase():
-    return generatePinBase(testgeneateDefaultHyperParam())
+    return generatePinBase(testgenerateDefaultHyperParam())
 
-
+def testgenerateDriverDisk():
+    return generateDriverDisk(testgenerateDefaultHyperParam())
 
 def testgenerateCycloidalDisk():
-    return generateCycloidalDisk(testgeneateDefaultHyperParam())
+    return generateCycloidalDisk(testgenerateDefaultHyperParam())

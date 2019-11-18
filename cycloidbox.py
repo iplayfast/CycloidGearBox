@@ -62,18 +62,6 @@ todo:
     Driver Pin Height doesn't update
     Driver Disk Height should be Driver Disk Offset
     Driver Disk Height should refer to depth of driver disk
-
-
-"""
-"""
-def create(obj_name):
-   """
-#   Object creation method
-"""
-   print("cgb create")
-   obj = App.ActiveDocument.addObject('Part::FeaturePython', obj_name)
-   fpo = CycloidalGearBox(obj)
-   ViewProviderCGBox(obj.ViewObject)
 """
 
 
@@ -90,8 +78,7 @@ class CycloidGearBoxCreateObject():
     def __init__(self):
         pass
         
-        #ViewProviderBox(a.ViewObject)
-    def Activated(self):            
+    def Activated(self):
         print("cycloidbox Activated")
         if not App.ActiveDocument:
             App.newDocument()
@@ -367,8 +354,9 @@ class   CycloidalGearBox():
             self.Type = state
 
     def onChanged(self, fp, prop):
-        if self.busy:
-            return
+        if hasattr(self,"busy"):
+            if self.busy:
+                return
         print("cycloid gearbox_parameters onchanged", fp, prop)
         dirty = False
 
