@@ -167,21 +167,21 @@ class   pindiskClass():
             pass
         if prop=='ToothCount':
             App.ActiveDocument.getObject("GearBox_Parameters").ToothCount = \
-                App.ActiveDocument.getObject('pinDisk').ToothCount
+                fp.Document.getObject('pinDisk').ToothCount
         if prop=='RollerDiameter':
             App.ActiveDocument.getObject("GearBox_Parameters").RollerDiameter = \
-                App.ActiveDocument.getObject('pinDisk').RollerDiameter
+                fp.Document.getObject('pinDisk').RollerDiameter
         if prop=='RollerHeight':
             App.ActiveDocument.getObject("GearBox_Parameters").RollerHeight = \
-                App.ActiveDocument.getObject("pinDisk").RollerHeight
+                fp.Document.getObject("pinDisk").RollerHeight
         if prop=='BaseHeight':
             App.ActiveDocument.getObject("GearBox_Parameters").BaseHeight = \
-                App.ActiveDocument.getObject('pinDisk').BaseHeight
+                fp.Document.getObject('pinDisk').BaseHeight
         if prop=='DriverPinDiameter':
             App.ActiveDocument.getObject("GearBox_Parameters").DriverPinDiameter = \
-                App.ActiveDocument.getObject('pinDisk').DriverPinDiameter
+                fp.Document.getObject('pinDisk').DriverPinDiameter
         print("done pindisk onchanged")
-        
+
     def recomputeGB(self,H):
         print("recomputing pin disk",H)
         self.Object.Shape = cycloidFun.generatePinBase(H)
@@ -208,7 +208,7 @@ class   driverDiskClass():
     def onChanged(self, fp, prop):
         print("Driver Disk onchanged", fp, prop)
         p = App.ActiveDocument.getObject("GearBox_Parameters")
-        s = App.ActiveDocument.getObject('DriverDisk')
+        s = fp.Document.getObject('DriverDisk')
         if prop=='DiskHoleCount':
             p.DiskHoleCount = s.DiskHoleCount
         if prop=='DriverDiskHeight':
@@ -247,7 +247,7 @@ class   cycdiskClass():
     def onChanged(self, fp, prop):
         print("cycloiddisk onchanged", fp, prop)
         p = App.ActiveDocument.getObject("GearBox_Parameters")
-        s = App.ActiveDocument.getObject('CycloidalDisk')
+        s = fp.Document.getObject('CycloidalDisk')
         if prop=='DiskHoleCount':
             p.DiskHoleCount = s.DiskHoleCount
         if prop=='CycloidalDiskHeight':
@@ -285,7 +285,7 @@ class   EccShaft():
 
     def onChanged(selfself,fp,prop):
         gbp = App.ActiveDocument.getObject("GearBox_Parameters")
-        es = App.ActiveDocument.getObject("EccentricShaft")
+        es = fp.Document.getObject("EccentricShaft")
         if prop=="Eccentricity":
             gbp.Eccentricity = es.Eccentricity
             gbp.RollerDiameter = es.Eccentricity *2.0
