@@ -22,9 +22,9 @@
 #***************************************************************************
 #import cycloidbox
 import os
-import cycloidpath_locator
+import cycloidFun
 
-smWBpath = os.path.dirname(cycloidpath_locator.__file__)
+smWBpath = os.path.dirname(cycloidFun.__file__)
 smWB_icons_path =  os.path.join( smWBpath, 'icons')
 global main_CGB_Icon
 main_CGB_Icon = os.path.join( smWB_icons_path , 'cycloidgearbox.svg')
@@ -42,7 +42,7 @@ class CycloidGearBoxWorkbench(Workbench):
 
     def Initialize(self):
         #import cycloidbox        
-        import box,cycloidbox
+        import cycloidbox
         self.__class__.Icon = main_CGB_Icon
         self.appendToolbar("CycloidGearBox",["BoxCreateObject"])
         self.appendMenu("CycloidGearBox",["BoxCreateObject"])
