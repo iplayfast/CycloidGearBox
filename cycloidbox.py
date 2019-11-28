@@ -38,11 +38,10 @@ import os,random
 import FreeCADGui
 import FreeCAD as App
 import cycloidFun
-import cycloidpath_locator
 #for animation
 from PySide import QtCore
 
-smWBpath = os.path.dirname(cycloidpath_locator.__file__)
+smWBpath = os.path.dirname(cycloidFun.__file__)
 smWB_icons_path =  os.path.join( smWBpath, 'icons')
 global main_Icon
 main_Icon = os.path.join( smWB_icons_path , 'cycloidgearbox.svg')
