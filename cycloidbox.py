@@ -40,7 +40,7 @@ import FreeCAD as App
 import cycloidFun
 #for animation
 from PySide import QtCore
-
+import math
 smWBpath = os.path.dirname(cycloidFun.__file__)
 smWB_icons_path =  os.path.join( smWBpath, 'icons')
 global main_Icon
@@ -117,6 +117,13 @@ class CycloidGearBoxCreateObject():
         gearbox.recomputeList.append(escShaft)
         ViewProviderCGBox(esobj.ViewObject,eccentric_Icon)
         esobj.ViewObject.ShapeColor = (random.random(), random.random(), random.random(), 0.0)
+
+        ekobj = doc.addObject("Part::FeaturePython","EccentricKey")
+        escKey= EccKey(ekobj,gearbox)
+        ekobj.Proxy = escKey
+        gearbox.recomputeList.append(escKey)
+        ViewProviderCGBox(ekobj.ViewObject,eccentric_Icon)
+        ekobj.ViewObject.ShapeColor = (random.random(), random.random(), random.random(), 0.0)
 
         oShaftObj = doc.addObject("Part::FeaturePython","OutputShaft")
         oshaft = OutShaft(oShaftObj,gearbox)
@@ -211,18 +218,18 @@ class   driverDiskClass():
 
     def onChanged(self, fp, prop):
         print("Driver Disk onchanged", fp, prop)
-        p = App.ActiveDocument.getObject("GearBox_Parameters")
-        s = fp.Document.getObject('DriverDisk')
+        gbp = App.ActiveDocument.getObject("GearBox_Parameters")
+        dd = fp.Document.getObject('DriverDisk')
         if prop=='DiskHoleCount':
-            p.DiskHoleCount = s.DiskHoleCount
+            gbp.DiskHoleCount = dd.DiskHoleCount
         if prop=='DriverDiskHeight':
-            p.DriverDiskHeight = s.DriverDiskHeight
+            gbp.DriverDiskHeight = dd.DriverDiskHeight
         if prop=='DriverPinHeight':
-            p.DriverPinHeight = s.DriverPinHeight
+            gbp.DriverPinHeight = dd.DriverPinHeight
         if prop=='Eccentricity':
-            p.Eccentricity = s.Eccentricity
+            gbp.Eccentricity = dd.Eccentricity
         if prop=='ShaftDiameter':
-            p.ShaftDiameter = s.ShaftDiameter
+            gbp.ShaftDiameter = dd.ShaftDiameter
 
     def execute(selfself,obj):
         print('DriverDisk execute',obj)
@@ -307,6 +314,45 @@ class   EccShaft():
         print("recomputing Eccentric Shaft")
         self.Object.Shape = cycloidFun.generateEccentricShaft(H)
 
+class   EccKey():
+    def __init__(self,obj,gearbox):
+        self.Object = obj
+        self.gearbox = gearbox
+        obj.Proxy = self
+        self.Type = 'EccKey'
+        self.ShapeColor=(0.62,0.42,0.63)
+        param = App.ActiveDocument.getObject("GearBox_Parameters")
+        obj.addProperty("App::PropertyLength", "Eccentricity","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Eccentricity")).Eccentricity =param.Eccentricity
+        obj.addProperty("App::PropertyLength", "RollerDiameter", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Diameter of the rollers")).RollerDiameter = param.RollerDiameter
+        obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = param.RollerHeight
+        obj.addProperty("App::PropertyLength", "BaseHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).BaseHeight = param.BaseHeight
+        obj.addProperty("App::PropertyLength","ShaftDiameter","CycloidGearBox",QT_TRANSLATE_NOOP("App::Property","Shaft Diameter")).ShaftDiameter = param.ShaftDiameter
+
+    def __getstate__(self):
+        return self.Type
+
+    def __setstate__(self, state):
+        if state:
+            self.Type = state
+
+    def onChanged(self,fp,prop):
+        gbp = App.ActiveDocument.getObject("GearBox_Parameters")
+        ek = fp.Document.getObject("EccentricKey")
+        if prop=="Eccentricity":
+            gbp.Eccentricity = ek.Eccentricity
+            gbp.RollerDiameter = ek.Eccentricity *2.0
+        if prop == 'RollerDiameter':
+            gbp.RollerDiameter = ek.RollerDiameter
+        if prop == 'RollerHeight':
+            gbp.RollerHeight = ek.RollerHeight
+        if prop == 'BaseHeight':
+            gbp.BaseHeight = ek.BaseHeight
+        if prop == 'ShaftDiameter':
+            gbp.ShaftDiameter = ek.ShaftDiameter
+
+    def recomputeGB(self,H):
+        self.Object.Shape = cycloidFun.generateEccentricKey(H)
+
 class OutShaft():
     def __init__(self,obj,gearbox):
         self.Object = obj
@@ -326,7 +372,7 @@ class OutShaft():
             self.Type = state
     def onChanged(self,fp,prop):
         gbp = App.ActiveDocument.getObject("GearBox_Parameters")
-        os = fp.Document.getObject("EccentricShaft")
+        os = fp.Document.getObject("OutputShaft")
         if prop=="DiskHoleCount":
             gbp.DiskHoleCount = os.DiskHoleCount
         if prop=='ShaftDiameter':
@@ -390,9 +436,7 @@ class   CycloidalGearBox():
         if hasattr(self,"busy"):
             if self.busy:
                 return
-        print("cycloid gearbox_parameters onchanged", fp, prop)
         dirty = False
-
         obj = App.ActiveDocument.getObject("GearBox_Parameters")
         pinDisk =     App.ActiveDocument.getObject('pinDisk')
         es = App.ActiveDocument.getObject('EccentricShaft')
@@ -466,7 +510,6 @@ class   CycloidalGearBox():
         if dirty:
             print("recomputing")
             self.recompute()
-        print("done gearbox_parameters onChanged")
 
     def GetHyperParameters(self):
         hyperparameters = {"ToothCount" : int(self.Object.__getattribute__("ToothCount")),
@@ -590,18 +633,19 @@ def turnES(a):
   constraintNr = 4
   # save global value in case this function is called from the console
   es = App.ActiveDocument.getObject('EccentricShaft')
+  gbp = App.ActiveDocument.getObject("GearBox_Parameters")
   #print("Turning ",a)
   rot = App.Rotation(App.Vector(0,0,1),a)
   pos = es.Placement.Base
   NewPlace = App.Placement(pos,rot)
   es.Placement = NewPlace
-#  cd = App.ActiveDocument.getObject('CycloidDisk')
-#  cdpos = cd.Placement.Base
-#  cdrot =  rot
-#  NewPlace = App.Placement(cdpos,cdrot)
-#  cd.Placement = NewPlace
+  cd = App.ActiveDocument.getObject('CycloidalDisk')
+  cdpos = cd.Placement.Base
+  cdrot =  App.Rotation(App.Vector(0,0,1), -a)
+  cd.Placement = App.Placement(cdpos,cdrot)
+
 #  App.ActiveDocument.Sketch.setDatum(constraintNr,App.Units.Quantity(str(-kwAngle)+'  deg'))
-#  App.ActiveDocument.recompute()
+  App.ActiveDocument.recompute()
 
 def update():
     global kwAngle
