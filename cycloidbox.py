@@ -87,8 +87,16 @@ class CycloidGearBoxCreateObject():
         sketch.Support = (App.activeDocument().XY_Plane, [''])
         sketch.MapMode = 'FlatFace'
         """
-        obj=doc.addObject("Part::FeaturePython","GearBox Parameters")   
+        body=App.ActiveDocument.addObject('PartDesign::Body', 'Body')
+        body.Label = "GearBox"
+        FreeCADGui.ActiveDocument.ActiveView.setActiveObject("pdbody", body)
+        #feature = App.ActiveDocument.addObject('PartDesign::AdditiveBox', 'Box')
+        #obj.addObject(feature)
+        #App.ActiveDocument.recompute()
+
+        obj=doc.addObject("Part::FeaturePython","GearBox Parameters")
         gearbox = CycloidalGearBox(obj)
+        doc.recompute()
         random.seed(444)
         pindiskobj = doc.addObject("Part::FeaturePython","pinDisk")
         pindisk = pindiskClass(pindiskobj,gearbox)
@@ -159,7 +167,7 @@ class   pindiskClass():
         print("Adding parameters")
         param = App.ActiveDocument.getObject("GearBox_Parameters")
         obj.addProperty("App::PropertyLength", "RollerDiameter", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Diameter of the rollers")).RollerDiameter = param.RollerDiameter
-        obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = param.RollerHeight
+        #obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = param.RollerHeight
         obj.addProperty("App::PropertyInteger", "ToothCount", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Number of teeth of the cycloidal disk")).ToothCount = param.ToothCount
         obj.addProperty("App::PropertyLength", "BaseHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).BaseHeight = param.BaseHeight
         obj.addProperty("App::PropertyLength","ShaftDiameter","CycloidGearBox",QT_TRANSLATE_NOOP("App::Property","Shaft Diameter")).ShaftDiameter = param.ShaftDiameter
@@ -184,8 +192,8 @@ class   pindiskClass():
             gearbox.ToothCount = pindisk.ToothCount
         if prop=='RollerDiameter':
             gearbox.RollerDiameter = pindisk.RollerDiameter
-        if prop=='RollerHeight':
-            gearbox.RollerHeight = pindisk.RollerHeight
+        #if prop=='RollerHeight':
+        #    gearbox.RollerHeight = pindisk.RollerHeight
         if prop=='BaseHeight':
             gearbox.BaseHeight = pindisk.BaseHeight
         if prop=='ShaftDiameter':
@@ -285,7 +293,7 @@ class   EccShaft():
         param = App.ActiveDocument.getObject("GearBox_Parameters")
         obj.addProperty("App::PropertyLength", "Eccentricity","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Eccentricity")).Eccentricity =param.Eccentricity
         obj.addProperty("App::PropertyLength", "RollerDiameter", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Diameter of the rollers")).RollerDiameter = param.RollerDiameter
-        obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = param.RollerHeight
+        #obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = param.RollerHeight
         obj.addProperty("App::PropertyLength", "BaseHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).BaseHeight = param.BaseHeight
         obj.addProperty("App::PropertyLength","ShaftDiameter","CycloidGearBox",QT_TRANSLATE_NOOP("App::Property","Shaft Diameter")).ShaftDiameter = param.ShaftDiameter
 
@@ -304,8 +312,8 @@ class   EccShaft():
             gbp.RollerDiameter = es.Eccentricity *2.0
         if prop == 'RollerDiameter':
             gbp.RollerDiameter = es.RollerDiameter
-        if prop == 'RollerHeight':
-            gbp.RollerHeight = es.RollerHeight
+        #if prop == 'RollerHeight':
+        #    gbp.RollerHeight = es.RollerHeight
         if prop == 'BaseHeight':
             gbp.BaseHeight = es.BaseHeight
         if prop == 'ShaftDiameter':
@@ -324,7 +332,7 @@ class   EccKey():
         param = App.ActiveDocument.getObject("GearBox_Parameters")
         obj.addProperty("App::PropertyLength", "Eccentricity","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Eccentricity")).Eccentricity =param.Eccentricity
         obj.addProperty("App::PropertyLength", "RollerDiameter", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Diameter of the rollers")).RollerDiameter = param.RollerDiameter
-        obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = param.RollerHeight
+        #obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = param.RollerHeight
         obj.addProperty("App::PropertyLength", "BaseHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Base Height")).BaseHeight = param.BaseHeight
         obj.addProperty("App::PropertyLength","ShaftDiameter","CycloidGearBox",QT_TRANSLATE_NOOP("App::Property","Shaft Diameter")).ShaftDiameter = param.ShaftDiameter
 
@@ -343,8 +351,8 @@ class   EccKey():
             gbp.RollerDiameter = ek.Eccentricity *2.0
         if prop == 'RollerDiameter':
             gbp.RollerDiameter = ek.RollerDiameter
-        if prop == 'RollerHeight':
-            gbp.RollerHeight = ek.RollerHeight
+        #if prop == 'RollerHeight':
+        #    gbp.RollerHeight = ek.RollerHeight
         if prop == 'BaseHeight':
             gbp.BaseHeight = ek.BaseHeight
         if prop == 'ShaftDiameter':
@@ -393,7 +401,7 @@ class   CycloidalGearBox():
         obj.addProperty("App::PropertyInteger", "LineSegmentCount", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Number of line segments to make up the cycloidal disk")).LineSegmentCount= H["LineSegmentCount"]
         obj.addProperty("App::PropertyAngle", "ToothPitch","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Tooth Pitch")).ToothPitch = H["ToothPitch"]
         obj.addProperty("App::PropertyLength", "RollerDiameter", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Diameter of the rollers")).RollerDiameter = H["RollerDiameter"]
-        obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = H["RollerHeight"]
+        #obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = H["RollerHeight"]
         obj.addProperty("App::PropertyLength", "CenterDiameter","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Center Diameter")).CenterDiameter = H["CenterDiameter"]
         obj.addProperty("App::PropertyLength", "PressureAngleLimit","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Pressure Angle Limit")).PressureAngleLimit= H["PressureAngleLimit"]
         obj.addProperty("App::PropertyAngle", "PressureAngleOffset","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Pressure Angle Offset")).PressureAngleOffset= H["PressureAngleOffset"]
@@ -404,7 +412,7 @@ class   CycloidalGearBox():
         obj.addProperty("App::PropertyLength","ShaftDiameter","CycloidGearBox",QT_TRANSLATE_NOOP("App::Property","Shaft Diameter")).ShaftDiameter = H["ShaftDiameter"]
         obj.addProperty("App::PropertyLength","clearance","CycloidGearBox",QT_TRANSLATE_NOOP("App::Property","clearance between parts")).clearance= H["clearance"]
         obj.addProperty("App::PropertyBool","Animate","CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Animate")).Animate = False
-        obj.Proxy = self
+        #obj.Proxy = self
         self.recomputeList = []
         print("Properties added")        
         self.Object = obj
@@ -449,16 +457,22 @@ class   CycloidalGearBox():
                 else:
                     timer.stop()
         if prop== 'ShaftDiameter':
+            if obj.ShaftDiameter<1:
+                obj.ShaftDiameter = 1
             if es.ShaftDiameter!=obj.ShaftDiameter:
                 es.ShaftDiameter = obj.ShaftDiameter
                 pinDisk.ShaftDiameter = obj.ShaftDiameter
                 dd.ShaftDiameter = obj.ShaftDiameter
             dirty = True
-        if prop == 'RollerDiameter' and hasattr(es,"Eccentricity") and hasattr(obj,"Eccentricity"):
+        if prop == 'RollerDiameter'and hasattr(es,"Eccentricity") and hasattr(obj,"Eccentricity"):
+            if (obj.Eccentricity<1):
+                obj.Eccentricity = 1
             if es.Eccentricity!=obj.Eccentricity:
                 es.Eccentricity = obj.Eccentricity
             dirty = True
         if prop=='ToothCount':
+            if obj.ToothCount<3:
+                obj.ToothCount = 3
             if pinDisk.ToothCount != obj.ToothCount:
                 pinDisk.ToothCount = obj.ToothCount
             dirty = True
@@ -466,6 +480,8 @@ class   CycloidalGearBox():
             dirty = True
         if prop=='RollerDiameter':
             if hasattr(obj,"Eccentricity"):
+                if obj.RollerDiameter<1:
+                    obj.RollerDiameter=1
                 if obj.Eccentricity!=obj.RollerDiameter / 2:
                     obj.Eccentricity = obj.RollerDiameter /2
                 if hasattr(es,"Eccentricity") and es.Eccentricity!=obj.Eccentricity:
@@ -473,17 +489,17 @@ class   CycloidalGearBox():
             if pinDisk.RollerDiameter!= obj.RollerDiameter:
                 pinDisk.RollerDiameter = obj.RollerDiameter
             dirty = True
-        if prop=='RollerHeight':
-            if pinDisk.RollerHeight != obj.RollerHeight:
-                pinDisk.RollerHeight = obj.RollerHeight
-            dirty = True
+        #if prop=='RollerHeight':
+        #    if pinDisk.RollerHeight != obj.RollerHeight:
+        #        pinDisk.RollerHeight = obj.RollerHeight
+        #    dirty = True
         if prop=='ToothPitch':
             if pinDisk.ToothCount!= obj.ToothCount:
                 pinDisk.ToothCount = obj.ToothCount
             dirty = True
         if prop=='Eccentricity':
-            if (obj.RollerDiameter != obj.Eccentricity*2):
-                obj.RollerDiameter = obj.Eccentricity*2
+            if (obj.RollerDiameter < obj.Eccentricity * 2):
+                obj.RollerDiameter = obj.Eccentricity * 2
             if hasattr(es,"Eccentricity") and es.Eccentricity!=obj.Eccentricity:
                 es.Eccentricity = obj.Eccentricity
             dirty = True
@@ -515,7 +531,7 @@ class   CycloidalGearBox():
         hyperparameters = {"ToothCount" : int(self.Object.__getattribute__("ToothCount")),
                            "LineSegmentCount" : int(self.Object.__getattribute__("LineSegmentCount")),
                            "RollerDiameter" : float(self.Object.__getattribute__("RollerDiameter").Value),
-                           "RollerHeight" : float(self.Object.__getattribute__("RollerHeight").Value),
+                           #"RollerHeight" : float(self.Object.__getattribute__("RollerHeight").Value),
                            "ToothPitch" : float(self.Object.__getattribute__("ToothPitch").Value),
                            "Eccentricity" : float(self.Object.__getattribute__("Eccentricity").Value),
                            "CenterDiameter" : float(self.Object.__getattribute__("CenterDiameter").Value),
