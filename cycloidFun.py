@@ -184,12 +184,25 @@ def generateOutputShaft(H):
     dd = Part.makeCylinder(minRadius * 0.75, DriverDiskHeight, Base.Vector(0, 0, 0))  # the main driver disk
     #os = Part.makeCylinder(ShaftDiameter/2.0,BaseHeight*2,Base.Vector(0,0,0))
     os = Part.makeCylinder(ShaftDiameter/2.0,CycloidalDiskHeight,Base.Vector(0,0,0))
+
+    slotsizeWidth, slotsizeHeight = generateSlotSize(H,True)
+    drivehole1 = Part.makeBox(slotsizeWidth, slotsizeHeight, BaseHeight,
+                              Base.Vector(-slotsizeWidth + slotsizeWidth / 2, -slotsizeHeight + slotsizeHeight / 2,
+                                          0.0))
+
+    os = os.fuse(drivehole1)
+    drivehole2 = Part.makeBox(slotsizeHeight, slotsizeWidth, BaseHeight,
+                              Base.Vector(-slotsizeHeight + slotsizeHeight / 2, -slotsizeWidth + slotsizeWidth / 2,
+                                          0.0))
+    os = os.fuse(drivehole2)
+
+    """
     slotsize = ShaftDiameter / 2
     drivehole1 = Part.makeBox(slotsize,slotsize / 2,BaseHeight,Base.Vector(-slotsize/2,-slotsize/2+slotsize/4,0.0))
     os = os.fuse(drivehole1)
     drivehole2 = Part.makeBox(slotsize / 2,slotsize,BaseHeight,Base.Vector(-slotsize/2+slotsize/4,-slotsize/2,0.0))
     os = os.fuse(drivehole2)
-
+    """
     dd = dd.fuse(os)
     for i in range(0, DiskHoleCount):
         x = minRadius / 2 * math.cos(2.0 * math.pi / (DiskHoleCount) * i)
