@@ -3,7 +3,14 @@
 """
 Created on Sun Oct  6 16:43:09 2019
 
-@author: chris
+@author: Chris Bruner
+Hypocycloid gear boxgenerator
+Code to create a hypocycloidal gearbox
+https://en.wikipedia.org/wiki/Cycloidal_drive
+Copyright 	2019, Chris Bruner
+Version 	v0.1
+License 	GPL V3
+Homepage
 """
 
 import math
