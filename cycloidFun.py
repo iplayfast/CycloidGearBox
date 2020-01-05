@@ -31,27 +31,27 @@ def toRect(r, a):
     return r * math.cos(a), r * math.sin(a)
 
 
-def calcyp(ToothCount, Eccentricity, ToothPitch, a):
-    return math.atan(math.sin(ToothCount * a) / (
-            math.cos(ToothCount * a) + (ToothCount * ToothPitch) / (Eccentricity * (ToothCount + 1))))
+def calcyp(toothCount, eccentricity, toothPitch, a):
+    return math.atan(math.sin(toothCount * a) / (
+            math.cos(toothCount * a) + (toothCount * toothPitch) / (eccentricity * (toothCount + 1))))
 
 
-def calcX(ToothCount, Eccentricity, ToothPitch, RollerDiameter: float, a):
-    return (ToothCount * ToothPitch) * math.cos(a) + Eccentricity * \
-           math.cos((ToothCount + 1) * a) - RollerDiameter / 2.0 * \
-           math.cos(calcyp(ToothCount, Eccentricity, ToothPitch, a) + a)
+def calcX(toothCount, eccentricity, toothPitch, rollerDiameter: float, a):
+    return (toothCount * toothPitch) * math.cos(a) + eccentricity * \
+           math.cos((toothCount + 1) * a) - rollerDiameter / 2.0 * \
+           math.cos(calcyp(toothCount, eccentricity, toothPitch, a) + a)
 
 
-def calcY(ToothCount: int, Eccentricity, ToothPitch, RollerDiameter: float, a):
-    return (ToothCount * ToothPitch) * math.sin(a) + Eccentricity * \
-           math.sin((ToothCount + 1) * a) - RollerDiameter / 2.0 * \
-           math.sin(calcyp(ToothCount, Eccentricity, ToothPitch, a) + a)
+def calcY(toothCount: int, eccentricity, toothPitch, rollerDiameter: float, a):
+    return (toothCount * toothPitch) * math.sin(a) + eccentricity * \
+           math.sin((toothCount + 1) * a) - rollerDiameter / 2.0 * \
+           math.sin(calcyp(toothCount, eccentricity, toothPitch, a) + a)
 
-def CalculateRs(pinCount: int, Eccentricity, OuterDiameter, PinDiameter:float):
+def CalculateRs(pinCount: int, eccentricity, OuterDiameter, PinDiameter:float):
     """
 
     :param pinCount: Number of teeth of cycloidal gear
-    :param Eccentricity: offset of cycloidal gear
+    :param eccentricity: offset of cycloidal gear
     :param OuterDiameter: diameter of gear
     :param PinDiameter: diameter of pins
     :return: r1,r2 (formulas used for calculating points along the array)
@@ -64,8 +64,8 @@ def CalculateRs(pinCount: int, Eccentricity, OuterDiameter, PinDiameter:float):
     if pinCount>50:
         pinCount = 50
     # e cannot be larger than r (d/2)
-    if( Eccentricity > PinRadius ):
-        Eccentricity = PinRadius
+    if( eccentricity > PinRadius ):
+        eccentricity = PinRadius
 
     # Validate r based on R and N: canot be larger than R * sin(pi/N) or the circles won't fit
     if( PinRadius > OuterRadius * math.sin( math.pi)/ pinCount ):
@@ -83,9 +83,9 @@ def CalculateRs(pinCount: int, Eccentricity, OuterDiameter, PinDiameter:float):
     r2 = OuterDiameter / 2 / pinCount
     return r1,r2
 
-def calculate(step : int, Eccentricity, r1, r2: float):
-    X = (r1 + r2) * math.cos(2 * math.pi * step) + Eccentricity * math.cos((r1 + r2) * 2 * math.pi * step / r2)
-    Y = (r1 + r2) * math.sin(2 * math.pi * step) + Eccentricity * math.sin((r1 + r2) * 2 * math.pi * step / r2)
+def calculate(step : int, eccentricity, r1, r2: float):
+    X = (r1 + r2) * math.cos(2 * math.pi * step) + eccentricity * math.cos((r1 + r2) * 2 * math.pi * step / r2)
+    Y = (r1 + r2) * math.sin(2 * math.pi * step) + eccentricity * math.sin((r1 + r2) * 2 * math.pi * step / r2)
     return X,Y,0.0
 
 def clean1(a):
@@ -93,150 +93,150 @@ def clean1(a):
     return min(1, max(a, -1))
 
 
-def calcPressureAngle(ToothCount, ToothPitch, RollerDiameter, angle):
+def calcPressureAngle(toothCount, toothPitch, rollerDiameter, angle):
     """ calculate the angle of the cycloidalDisk teeth at the angle """
     ex = 2.0 ** 0.5
-    r3 = ToothPitch * ToothCount
+    r3 = toothPitch * toothCount
     #        p * n
     rg = r3 / ex
-    pp = rg * (ex ** 2.0 + 1 - 2.0 * ex * math.cos(angle)) ** 0.5 - RollerDiameter / 2.0
-    return math.asin(clean1(((r3 * math.cos(angle) - rg) / (pp + RollerDiameter / 2.0)))) * 180 / math.pi
+    pp = rg * (ex ** 2.0 + 1 - 2.0 * ex * math.cos(angle)) ** 0.5 - rollerDiameter / 2.0
+    return math.asin(clean1(((r3 * math.cos(angle) - rg) / (pp + rollerDiameter / 2.0)))) * 180 / math.pi
 
 
-def calcPressureLimit(ToothCount, ToothPitch, Eccentricity, RollerDiameter, a):
+def calcPressureLimit(toothCount, toothPitch, eccentricity, rollerDiameter, a):
     ex = 2.0 ** 0.5
-    r3 = ToothPitch * ToothCount
+    r3 = toothPitch * toothCount
     rg = r3 / ex
     q = (r3 ** 2.0 + rg ** 2.0 - 2.0 * r3 * rg * math.cos(a)) ** 0.5
-    x = rg - Eccentricity + (q - RollerDiameter / 2.0) * (r3 * math.cos(a) - rg) / q
-    y = (q - RollerDiameter / 2.0) * r3 * math.sin(a) / q
+    x = rg - eccentricity + (q - rollerDiameter / 2.0) * (r3 * math.cos(a) - rg) / q
+    y = (q - rollerDiameter / 2.0) * r3 * math.sin(a) / q
     return (x ** 2.0 + y ** 2.0) ** 0.5
 
 
-def checkLimit(v: FreeCAD.Vector, PressureAngleOffset, minrad, maxrad):
+def checkLimit(v: FreeCAD.Vector, pressureAngleOffset, minrad, maxrad):
     """ if x,y outside limit return x,y as at limit, else return x,y
         :type v: FreeCAD.Vector """
     r, a = toPolar(v.x, v.y)
     if (r > maxrad) or (r < minrad):
-        r = r - PressureAngleOffset
+        r = r - pressureAngleOffset
         v.x, v.y = toRect(r, a)
     return v
 
 
 def MinMaxRadius(H):
     """ Find the pressure angle limit circles """
-    ToothCount= H['ToothCount']
-    ToothPitch= H['ToothPitch']
-    RollerDiameter= H['RollerDiameter']
-    Eccentricity= H['Eccentricity']
-    PressureAngleLimit= H['PressureAngleLimit']
+    toothCount= H['toothCount']
+    toothPitch= H['toothPitch']
+    rollerDiameter= H['rollerDiameter']
+    eccentricity= H['eccentricity']
+    pressureAngleLimit= H['pressureAngleLimit']
 
     minAngle = -1.0
     maxAngle = -1.0
     for i in range(0, 180):
-        x = calcPressureAngle(ToothCount, ToothPitch, RollerDiameter, i * math.pi / 180)
-        if (x < PressureAngleLimit) and (minAngle < 0):
+        x = calcPressureAngle(toothCount, toothPitch, rollerDiameter, i * math.pi / 180)
+        if (x < pressureAngleLimit) and (minAngle < 0):
             minAngle = i * 1.0
-        if (x < -PressureAngleLimit) and (maxAngle < 0):
+        if (x < -pressureAngleLimit) and (maxAngle < 0):
             maxAngle = i  - 1.0
-    minRadius = calcPressureLimit(ToothCount, ToothPitch, Eccentricity, RollerDiameter, minAngle * math.pi / 180)
-    maxRadius = calcPressureLimit(ToothCount, ToothPitch, Eccentricity, RollerDiameter, maxAngle * math.pi / 180)
+    minRadius = calcPressureLimit(toothCount, toothPitch, eccentricity, rollerDiameter, minAngle * math.pi / 180)
+    maxRadius = calcPressureLimit(toothCount, toothPitch, eccentricity, rollerDiameter, maxAngle * math.pi / 180)
     return minRadius, maxRadius
 
-def xyscaleMinMaxRadius(H):
-    """ xyscales the minmax radius to pindiskDiameter proportions
+def xyScaleMinMaxRadius(H):
+    """ xyscales the minmax radius to pinDiskDiameter proportions
 
         eg I want 40, maxRadius comes out to 46 and change
         divide 40/maxRadius to get ratio of 0.86
         multiply both by 0.86...
         """
-    PinDiskDiameter = H["PinDiskDiameter"]
-    RollerDiameter = H["RollerDiameter"]
+    pinDiskDiameter = H["pinDiskDiameter"]
+    rollerDiameter = H["rollerDiameter"]
     minRadius, maxRadius = MinMaxRadius(H)
-    xyscale = PinDiskDiameter / (minRadius + RollerDiameter * 2)
-    return minRadius, maxRadius, xyscale
+    xyScale = pinDiskDiameter / (minRadius + rollerDiameter * 2)
+    return minRadius, maxRadius, xyScale
 
 
 def generatePinBase(H):
     """ create the base that the fixedRingPins will be attached to """
-    ToothCount = H["ToothCount"]
-    ToothPitch = H["ToothPitch"]
-    RollerDiameter = H["RollerDiameter"]
+    toothCount = H["toothCount"]
+    toothPitch = H["toothPitch"]
+    rollerDiameter = H["rollerDiameter"]
     #RollerHeight = H["RollerHeight"]
-    BaseHeight = H["BaseHeight"]
-    DriverDiskHeight = H["DriverDiskHeight"]
-    ShaftDiameter = H["ShaftDiameter"]
-    CycloidalDiskHeight =  H["CycloidalDiskHeight"]
+    baseHeight = H["baseHeight"]
+    driverDiskHeight = H["driverDiskHeight"]
+    shaftDiameter = H["shaftDiameter"]
+    cycloidalDiskHeight =  H["cycloidalDiskHeight"]
     clearance = H["clearance"]
-    minRadius, maxRadius,xyscale = xyscaleMinMaxRadius(H)
-    pinBase = Part.makeCylinder(minRadius + RollerDiameter*2, BaseHeight) # base of the whole system
-    dd = Part.makeCylinder(minRadius * 0.75 + clearance, DriverDiskHeight*2, Base.Vector(0, 0,BaseHeight-DriverDiskHeight)) #hole for the driver disk to fit in
+    minRadius, maxRadius,xyScale = xyScaleMinMaxRadius(H)
+    pinBase = Part.makeCylinder(minRadius + rollerDiameter*2, baseHeight) # base of the whole system
+    dd = Part.makeCylinder(minRadius * 0.75 + clearance, driverDiskHeight*2, Base.Vector(0, 0,baseHeight-driverDiskHeight)) #hole for the driver disk to fit in
     pinBase = pinBase.cut(dd)
-    RollerHeight = CycloidalDiskHeight * 2+DriverDiskHeight + clearance
+    RollerHeight = cycloidalDiskHeight * 2+driverDiskHeight + clearance
     # generate the pin locations
-    pinRadius = (minRadius+maxRadius)/2.0 + RollerDiameter/2
-    for i in range(0, ToothCount):
-        x = pinRadius * math.cos(2.0 * math.pi * i/ToothCount)
-        y = pinRadius * math.sin(2.0 * math.pi * i/ToothCount)
+    pinRadius = (minRadius+maxRadius)/2.0 + rollerDiameter/2
+    for i in range(0, toothCount):
+        x = pinRadius * math.cos(2.0 * math.pi * i/toothCount)
+        y = pinRadius * math.sin(2.0 * math.pi * i/toothCount)
 
-        negfixedRingPin = Part.makeCylinder(RollerDiameter/2.0 +clearance , RollerHeight, Base.Vector(x, y, 0))
-        fixedRingPin = Part.makeCylinder(RollerDiameter , RollerHeight, Base.Vector(x, y, BaseHeight))
-        fixedRingPinpin = Part.makeCylinder(RollerDiameter/2.0 -clearance, BaseHeight / 2.0 +RollerHeight, Base.Vector(x, y, BaseHeight))
+        negfixedRingPin = Part.makeCylinder(rollerDiameter/2.0 +clearance , RollerHeight, Base.Vector(x, y, 0))
+        fixedRingPin = Part.makeCylinder(rollerDiameter , RollerHeight, Base.Vector(x, y, baseHeight))
+        fixedRingPinpin = Part.makeCylinder(rollerDiameter/2.0 -clearance, baseHeight / 2.0 +RollerHeight, Base.Vector(x, y, baseHeight))
         pinBase = pinBase.cut(negfixedRingPin) #make a hole if multple gearboxes are in line
         pinBase = pinBase.fuse(fixedRingPinpin) # make the pins the cycloid gear uses, and the Part that goes into the above hole
         pinBase = pinBase.fuse(fixedRingPin) # make the pins the cycloid gear uses
     # need hole for eccentric shaft, add a bit so not too tight
     # todo  allow user values for sizes
     # todo allow bearing option
-    shaft = Part.makeCylinder(ShaftDiameter/ 2.0+clearance,BaseHeight*2,Base.Vector(0,0,-BaseHeight))
-    return pinBase.cut(shaft).scale(xyscale,Base.Vector(1,1,0))
+    shaft = Part.makeCylinder(shaftDiameter/ 2.0+clearance,baseHeight*2,Base.Vector(0,0,-baseHeight))
+    return pinBase.cut(shaft).scale(xyScale,Base.Vector(1,1,0))
 
 def generateOutputShaft(H):
-    minRadius,maxRadius,xyscale = xyscaleMinMaxRadius(H)
-    DiskHoleCount = H["DiskHoleCount"]
-    ShaftDiameter = H["ShaftDiameter"]
-    DriverDiskHeight = H["DriverDiskHeight"]
-    Eccentricity = H["Eccentricity"]
-    RollerDiameter = H["RollerDiameter"]
-    CycloidalDiskHeight =  H["CycloidalDiskHeight"]
+    minRadius,maxRadius,xyScale = xyScaleMinMaxRadius(H)
+    diskHoleCount = H["diskHoleCount"]
+    shaftDiameter = H["shaftDiameter"]
+    driverDiskHeight = H["driverDiskHeight"]
+    eccentricity = H["eccentricity"]
+    rollerDiameter = H["rollerDiameter"]
+    cycloidalDiskHeight =  H["cycloidalDiskHeight"]
     clearance = H["clearance"]
-    BaseHeight = H["BaseHeight"]
-    dd = Part.makeCylinder(minRadius * 0.75, DriverDiskHeight, Base.Vector(0, 0, 0))  # the main driver disk
-    #os = Part.makeCylinder(ShaftDiameter/2.0,BaseHeight*2,Base.Vector(0,0,0))
-    os = Part.makeCylinder(ShaftDiameter/2.0,CycloidalDiskHeight,Base.Vector(0,0,0))
+    baseHeight = H["baseHeight"]
+    dd = Part.makeCylinder(minRadius * 0.75, driverDiskHeight, Base.Vector(0, 0, 0))  # the main driver disk
+    #os = Part.makeCylinder(shaftDiameter/2.0,baseHeight*2,Base.Vector(0,0,0))
+    os = Part.makeCylinder(shaftDiameter/2.0,cycloidalDiskHeight,Base.Vector(0,0,0))
 
     slotsizeWidth, slotsizeHeight = generateSlotSize(H,True)
-    drivehole1 = Part.makeBox(slotsizeWidth, slotsizeHeight, BaseHeight,
+    driveHole1 = Part.makeBox(slotsizeWidth, slotsizeHeight, baseHeight,
                               Base.Vector(-slotsizeWidth + slotsizeWidth / 2, -slotsizeHeight + slotsizeHeight / 2,
                                           0.0))
 
-    os = os.fuse(drivehole1)
-    drivehole2 = Part.makeBox(slotsizeHeight, slotsizeWidth, BaseHeight,
+    os = os.fuse(driveHole1)
+    driveHole2 = Part.makeBox(slotsizeHeight, slotsizeWidth, baseHeight,
                               Base.Vector(-slotsizeHeight + slotsizeHeight / 2, -slotsizeWidth + slotsizeWidth / 2,
                                           0.0))
-    os = os.fuse(drivehole2)
+    os = os.fuse(driveHole2)
 
     """
-    slotsize = ShaftDiameter / 2
-    drivehole1 = Part.makeBox(slotsize,slotsize / 2,BaseHeight,Base.Vector(-slotsize/2,-slotsize/2+slotsize/4,0.0))
-    os = os.fuse(drivehole1)
-    drivehole2 = Part.makeBox(slotsize / 2,slotsize,BaseHeight,Base.Vector(-slotsize/2+slotsize/4,-slotsize/2,0.0))
-    os = os.fuse(drivehole2)
+    slotsize = shaftDiameter / 2
+    driveHole1 = Part.makeBox(slotsize,slotsize / 2,baseHeight,Base.Vector(-slotsize/2,-slotsize/2+slotsize/4,0.0))
+    os = os.fuse(driveHole1)
+    driveHole2 = Part.makeBox(slotsize / 2,slotsize,baseHeight,Base.Vector(-slotsize/2+slotsize/4,-slotsize/2,0.0))
+    os = os.fuse(driveHole2)
     """
     dd = dd.fuse(os)
-    for i in range(0, DiskHoleCount):
-        x = minRadius / 2 * math.cos(2.0 * math.pi / (DiskHoleCount) * i)
-        y = minRadius / 2 * math.sin(2.0 * math.pi / (DiskHoleCount) * i)
-        fixedringpin = Part.makeCylinder(RollerDiameter * 2 - Eccentricity+clearance, CycloidalDiskHeight * 3, Base.Vector(x, y, -1))  # driver pins
+    for i in range(0, diskHoleCount):
+        x = minRadius / 2 * math.cos(2.0 * math.pi / (diskHoleCount) * i)
+        y = minRadius / 2 * math.sin(2.0 * math.pi / (diskHoleCount) * i)
+        fixedringpin = Part.makeCylinder(rollerDiameter * 2 - eccentricity+clearance, cycloidalDiskHeight * 3, Base.Vector(x, y, -1))  # driver pins
         dd = dd.cut(fixedringpin)
-    fp = dd.translate(Base.Vector(0, 0, BaseHeight + CycloidalDiskHeight*2))
-    return fp.scale(xyscale,Base.Vector(1,1,0))
+    fp = dd.translate(Base.Vector(0, 0, baseHeight + cycloidalDiskHeight*2))
+    return fp.scale(xyScale,Base.Vector(1,1,0))
 
 def generateSlotSize(H,addClearence=False):
-    ShaftDiameter = H["ShaftDiameter"]
+    shaftDiameter = H["shaftDiameter"]
     clearance = H["clearance"]
-    slotsizeWidth = ShaftDiameter / 2
-    slotsizeHeight = ShaftDiameter / 4
+    slotsizeWidth = shaftDiameter / 2
+    slotsizeHeight = shaftDiameter / 4
     if addClearence:
         slotsizeWidth += clearance /2
         slotsizeHeight += clearance /2
@@ -244,82 +244,82 @@ def generateSlotSize(H,addClearence=False):
 
 
 def generateEccentricShaft(H):
-    minRadius,maxRadius,xyscale = xyscaleMinMaxRadius(H)
-    RollerDiameter = H["RollerDiameter"]
+    minRadius,maxRadius,xyScale = xyScaleMinMaxRadius(H)
+    rollerDiameter = H["rollerDiameter"]
     #RollerHeight = H["RollerHeight"]
-    Eccentricity = H["Eccentricity"]
-    BaseHeight = H["BaseHeight"]
-    ShaftDiameter = H["ShaftDiameter"]
-    DriverDiskHeight = H["DriverDiskHeight"]
-    CycloidalDiskHeight =  H["CycloidalDiskHeight"]
+    eccentricity = H["eccentricity"]
+    baseHeight = H["baseHeight"]
+    shaftDiameter = H["shaftDiameter"]
+    driverDiskHeight = H["driverDiskHeight"]
+    cycloidalDiskHeight =  H["cycloidalDiskHeight"]
     clearance = H["clearance"]
-    RollerHeight = CycloidalDiskHeight * 2+DriverDiskHeight + clearance
-    DiskHoleCount = H["DiskHoleCount"]
-    e = Part.makeCylinder(ShaftDiameter / 2.0, CycloidalDiskHeight, Base.Vector(-Eccentricity , 0,BaseHeight))
-    d = Part.makeCylinder(ShaftDiameter/ 2.0,BaseHeight,Base.Vector(0,0,0)) # one base out sticking out the bottom, one base height through the base
+    RollerHeight = cycloidalDiskHeight * 2+driverDiskHeight + clearance
+    diskHoleCount = H["diskHoleCount"]
+    e = Part.makeCylinder(shaftDiameter / 2.0, cycloidalDiskHeight, Base.Vector(-eccentricity , 0,baseHeight))
+    d = Part.makeCylinder(shaftDiameter/ 2.0,baseHeight,Base.Vector(0,0,0)) # one base out sticking out the bottom, one base height through the base
     d = d.fuse(e)
     slotsizeWidth,slotsizeHeight = generateSlotSize(H)
-    drivehole1 = Part.makeBox(slotsizeWidth,slotsizeHeight,BaseHeight,Base.Vector(-slotsizeWidth+slotsizeWidth/2,-slotsizeHeight+slotsizeHeight / 2,0.0))
+    driveHole1 = Part.makeBox(slotsizeWidth,slotsizeHeight,baseHeight,Base.Vector(-slotsizeWidth+slotsizeWidth/2,-slotsizeHeight+slotsizeHeight / 2,0.0))
 
-    d = d.cut(drivehole1)
-    drivehole2 = Part.makeBox(slotsizeHeight,slotsizeWidth,BaseHeight,Base.Vector(-slotsizeHeight+slotsizeHeight/2,-slotsizeWidth+slotsizeWidth/2,0.0))
-    d = d.cut(drivehole2)
-    drivehole3 = Part.makeBox(slotsizeHeight,slotsizeHeight,CycloidalDiskHeight,Base.Vector(-slotsizeHeight+2,-slotsizeHeight+slotsizeHeight / 2,BaseHeight+CycloidalDiskHeight))
-    #drivehole3 = Part.makeBox(slotsizeWidth,slotsizeHeight,CycloidalDiskHeight,Base.Vector(-slotsizeHeight,-slotsizeHeight+slotsizeHeight / 2,BaseHeight+CycloidalDiskHeight))
-    d = d.fuse(drivehole3)
-    return d.scale(xyscale,Base.Vector(1,1,0))
+    d = d.cut(driveHole1)
+    driveHole2 = Part.makeBox(slotsizeHeight,slotsizeWidth,baseHeight,Base.Vector(-slotsizeHeight+slotsizeHeight/2,-slotsizeWidth+slotsizeWidth/2,0.0))
+    d = d.cut(driveHole2)
+    driveHole3 = Part.makeBox(slotsizeHeight,slotsizeHeight,cycloidalDiskHeight,Base.Vector(-slotsizeHeight+2,-slotsizeHeight+slotsizeHeight / 2,baseHeight+cycloidalDiskHeight))
+    #driveHole3 = Part.makeBox(slotsizeWidth,slotsizeHeight,cycloidalDiskHeight,Base.Vector(-slotsizeHeight,-slotsizeHeight+slotsizeHeight / 2,baseHeight+cycloidalDiskHeight))
+    d = d.fuse(driveHole3)
+    return d.scale(xyScale,Base.Vector(1,1,0))
 
 def generateEccentricKey(H):
-    minRadius,maxRadius,xyscale = xyscaleMinMaxRadius(H)
-    RollerDiameter = H["RollerDiameter"]
+    minRadius,maxRadius,xyScale = xyScaleMinMaxRadius(H)
+    rollerDiameter = H["rollerDiameter"]
     #RollerHeight = H["RollerHeight"]
-    Eccentricity = H["Eccentricity"]
-    BaseHeight = H["BaseHeight"]
-    ShaftDiameter = H["ShaftDiameter"]
-    DriverDiskHeight = H["DriverDiskHeight"]
-    CycloidalDiskHeight =  H["CycloidalDiskHeight"]
-    DiskHoleCount = H["DiskHoleCount"]
+    eccentricity = H["eccentricity"]
+    baseHeight = H["baseHeight"]
+    shaftDiameter = H["shaftDiameter"]
+    driverDiskHeight = H["driverDiskHeight"]
+    cycloidalDiskHeight =  H["cycloidalDiskHeight"]
+    diskHoleCount = H["diskHoleCount"]
     clearance = H["clearance"]
-    RollerHeight = CycloidalDiskHeight * 2+DriverDiskHeight + clearance
-    key = Part.makeCylinder(ShaftDiameter / 2.0, CycloidalDiskHeight, Base.Vector(Eccentricity , 0,BaseHeight+CycloidalDiskHeight))
+    RollerHeight = cycloidalDiskHeight * 2+driverDiskHeight + clearance
+    key = Part.makeCylinder(shaftDiameter / 2.0, cycloidalDiskHeight, Base.Vector(eccentricity , 0,baseHeight+cycloidalDiskHeight))
     slotsizeWidth,slotsizeHeight = generateSlotSize(H,True)
-    drivehole1 = Part.makeBox(slotsizeHeight,slotsizeHeight,CycloidalDiskHeight,Base.Vector(-slotsizeHeight+2,-slotsizeHeight+slotsizeHeight / 2,BaseHeight + CycloidalDiskHeight))
-    #drivehole1 = Part.makeBox(slotsizeWidth,slotsizeHeight,CycloidalDiskHeight,Base.Vector(-slotsizeHeight,-slotsizeHeight+slotsizeHeight / 2,BaseHeight + CycloidalDiskHeight))
-    key = key.cut(drivehole1)
-    return key.scale(xyscale,Base.Vector(1,1,0))
+    driveHole1 = Part.makeBox(slotsizeHeight,slotsizeHeight,cycloidalDiskHeight,Base.Vector(-slotsizeHeight+2,-slotsizeHeight+slotsizeHeight / 2,baseHeight + cycloidalDiskHeight))
+    #driveHole1 = Part.makeBox(slotsizeWidth,slotsizeHeight,cycloidalDiskHeight,Base.Vector(-slotsizeHeight,-slotsizeHeight+slotsizeHeight / 2,baseHeight + cycloidalDiskHeight))
+    key = key.cut(driveHole1)
+    return key.scale(xyScale,Base.Vector(1,1,0))
 
 def generateCycloidalDiskArray(H):
-    ToothCount = H["ToothCount"]-1
-    ToothPitch = H["ToothPitch"]
-    RollerDiameter = H["RollerDiameter"]
-    Eccentricity = H["Eccentricity"]
-    LineSegmentCount = H["LineSegmentCount"]
-    PressureAngleOffset = H["PressureAngleOffset"]
+    toothCount = H["toothCount"]-1
+    toothPitch = H["toothPitch"]
+    rollerDiameter = H["rollerDiameter"]
+    eccentricity = H["eccentricity"]
+    lineSegmentCount = H["lineSegmentCount"]
+    pressureAngleOffset = H["pressureAngleOffset"]
     """ make the array to be used in the bspline
         that is the cycloidalDisk
     """
-    minRadius, maxRadius,xyscale = xyscaleMinMaxRadius(H)
-    q = 2.0 * math.pi / LineSegmentCount
+    minRadius, maxRadius,xyScale = xyScaleMinMaxRadius(H)
+    q = 2.0 * math.pi / lineSegmentCount
     i = 0
-    r1,r2 = CalculateRs(ToothCount,Eccentricity,105,10)
-    v1 = Base.Vector(calcX(ToothCount, Eccentricity, ToothPitch, RollerDiameter, q * i),
-                     calcY(ToothCount, Eccentricity, ToothPitch, RollerDiameter, q * i), 0)
-    v1 = checkLimit(v1, PressureAngleOffset, minRadius, maxRadius)
-    va1 = Base.Vector(calculate(0,Eccentricity,r1,r2))
-    va1 = checkLimit(va1, PressureAngleOffset, minRadius, maxRadius)
+    r1,r2 = CalculateRs(toothCount,eccentricity,105,10)
+    v1 = Base.Vector(calcX(toothCount, eccentricity, toothPitch, rollerDiameter, q * i),
+                     calcY(toothCount, eccentricity, toothPitch, rollerDiameter, q * i), 0)
+    v1 = checkLimit(v1, pressureAngleOffset, minRadius, maxRadius)
+    va1 = Base.Vector(calculate(0,eccentricity,r1,r2))
+    va1 = checkLimit(va1, pressureAngleOffset, minRadius, maxRadius)
     cycloidalDiskArray = []
     cycloidalDiskArrayAlternative = []
     cycloidalDiskArray.append(v1)
     cycloidalDiskArrayAlternative.append(va1)
-    for i in range(0, LineSegmentCount):
+    for i in range(0, lineSegmentCount):
         v2 = Base.Vector(
-            calcX(ToothCount, Eccentricity, ToothPitch, RollerDiameter, q * (i + 1)),
-            calcY(ToothCount, Eccentricity, ToothPitch, RollerDiameter, q * (i + 1)),
+            calcX(toothCount, eccentricity, toothPitch, rollerDiameter, q * (i + 1)),
+            calcY(toothCount, eccentricity, toothPitch, rollerDiameter, q * (i + 1)),
             0)
-        v2 = checkLimit(v2, PressureAngleOffset, minRadius, maxRadius)
+        v2 = checkLimit(v2, pressureAngleOffset, minRadius, maxRadius)
         cycloidalDiskArray.append(v2)
-        va2 = Base.Vector(calculate(q * (i + 1), Eccentricity, r1, r2))
-        va2 = checkLimit(va2, PressureAngleOffset, minRadius, maxRadius)
+        va2 = Base.Vector(calculate(q * (i + 1), eccentricity, r1, r2))
+        va2 = checkLimit(va2, pressureAngleOffset, minRadius, maxRadius)
         cycloidalDiskArrayAlternative.append(va2)
     return cycloidalDiskArray,cycloidalDiskArrayAlternative
 
@@ -328,14 +328,14 @@ def generateCycloidalDisk(H):
     """
     make the complete cycloidal disk
     """
-    RollerDiameter = H["RollerDiameter"]
-    Eccentricity = H["Eccentricity"]
-    BaseHeight = H["BaseHeight"]
-    ShaftDiameter = H["ShaftDiameter"]
-    CycloidalDiskHeight = H["CycloidalDiskHeight"]
-    DiskHoleCount = H["DiskHoleCount"]
+    rollerDiameter = H["rollerDiameter"]
+    eccentricity = H["eccentricity"]
+    baseHeight = H["baseHeight"]
+    shaftDiameter = H["shaftDiameter"]
+    cycloidalDiskHeight = H["cycloidalDiskHeight"]
+    diskHoleCount = H["diskHoleCount"]
     clearance = H["clearance"]
-    minRadius, maxRadius,xyscale = xyscaleMinMaxRadius(H)
+    minRadius, maxRadius,xyScale = xyScaleMinMaxRadius(H)
     #get shape of cycloidal disk
     array,alternativearray = generateCycloidalDiskArray(H)
     #print("array")
@@ -346,68 +346,68 @@ def generateCycloidalDisk(H):
     w = Part.Wire([a])
     f = Part.Face(w)
     # todo add option for bearing here
-    es = Part.makeCircle(ShaftDiameter /2.0+ clearance,Base.Vector(0,0,0))
+    es = Part.makeCircle(shaftDiameter /2.0+ clearance,Base.Vector(0,0,0))
     esw = Part.Wire([es])
     esf = Part.Face(esw)
     fc = f.cut(esf)
-    for i in range(0, DiskHoleCount ):
-        x = minRadius/2 * math.cos(2.0 * math.pi * (i / DiskHoleCount))
-        y = minRadius/2 * math.sin(2.0 * math.pi * (i / DiskHoleCount))
-        drivinghole= Part.makeCircle(RollerDiameter*2+clearance,Base.Vector(x,y,0))
-        esw = Part.Wire([drivinghole])
+    for i in range(0, diskHoleCount ):
+        x = minRadius/2 * math.cos(2.0 * math.pi * (i / diskHoleCount))
+        y = minRadius/2 * math.sin(2.0 * math.pi * (i / diskHoleCount))
+        drivingHole= Part.makeCircle(rollerDiameter*2+clearance,Base.Vector(x,y,0))
+        esw = Part.Wire([drivingHole])
         esf = Part.Face(esw)
         fc = fc.cut(esf)
 
     #fc = f.fuse(esw)
-    e = fc.extrude(FreeCAD.Vector(0, 0, CycloidalDiskHeight))
-    e.translate(Base.Vector(-Eccentricity, 0, BaseHeight + 0.1))
-    return e.scale(xyscale,Base.Vector(1,1,0))
+    e = fc.extrude(FreeCAD.Vector(0, 0, cycloidalDiskHeight))
+    e.translate(Base.Vector(-eccentricity, 0, baseHeight + 0.1))
+    return e.scale(xyScale,Base.Vector(1,1,0))
 
 def generateDriverDisk(H):
-    minRadius,maxRadius,xyscale = xyscaleMinMaxRadius(H)
-    DiskHoleCount = H["DiskHoleCount"]
-    DriverDiskHeight = H["DriverDiskHeight"]
-    RollerDiameter = H["RollerDiameter"]
+    minRadius,maxRadius,xyScale = xyScaleMinMaxRadius(H)
+    diskHoleCount = H["diskHoleCount"]
+    driverDiskHeight = H["driverDiskHeight"]
+    rollerDiameter = H["rollerDiameter"]
     #RollerHeight = H["RollerHeight"]
-    Eccentricity = H["Eccentricity"]
-    ShaftDiameter = H["ShaftDiameter"]
-    BaseHeight = H["BaseHeight"]
-    CycloidalDiskHeight =  H["CycloidalDiskHeight"]
+    eccentricity = H["eccentricity"]
+    shaftDiameter = H["shaftDiameter"]
+    baseHeight = H["baseHeight"]
+    cycloidalDiskHeight =  H["cycloidalDiskHeight"]
     clearance = H["clearance"]
-    RollerHeight = CycloidalDiskHeight * 2+DriverDiskHeight + clearance
-    dd = Part.makeCylinder(minRadius * 0.75, DriverDiskHeight, Base.Vector(0, 0,0)) # the main driver disk
-    shaft = Part.makeCylinder(ShaftDiameter/ 2.0+clearance,DriverDiskHeight+BaseHeight*2,Base.Vector(0,0,-BaseHeight))
-    for i in range(0, DiskHoleCount):
-        x = minRadius / 2 * math.cos(2.0 * math.pi / (DiskHoleCount) * i)
-        y = minRadius / 2 * math.sin(2.0 * math.pi / (DiskHoleCount) * i)
-        fixedringpin = Part.makeCylinder(RollerDiameter*2 - Eccentricity , CycloidalDiskHeight*3, Base.Vector(x, y, CycloidalDiskHeight)) #driver pins
+    RollerHeight = cycloidalDiskHeight * 2+driverDiskHeight + clearance
+    dd = Part.makeCylinder(minRadius * 0.75, driverDiskHeight, Base.Vector(0, 0,0)) # the main driver disk
+    shaft = Part.makeCylinder(shaftDiameter/ 2.0+clearance,driverDiskHeight+baseHeight*2,Base.Vector(0,0,-baseHeight))
+    for i in range(0, diskHoleCount):
+        x = minRadius / 2 * math.cos(2.0 * math.pi / (diskHoleCount) * i)
+        y = minRadius / 2 * math.sin(2.0 * math.pi / (diskHoleCount) * i)
+        fixedringpin = Part.makeCylinder(rollerDiameter*2 - eccentricity , cycloidalDiskHeight*3, Base.Vector(x, y, cycloidalDiskHeight)) #driver pins
         dd = dd.fuse(fixedringpin)
 
-    fp = dd.translate(Base.Vector(0,0,BaseHeight - DriverDiskHeight))
+    fp = dd.translate(Base.Vector(0,0,baseHeight - driverDiskHeight))
     # need to make hole for eccentric shaft, add a bit so not to tight
     #todo  allow user values for sizes
     #todo allow bearing option
     fp = fp.cut(shaft)
-    return fp.scale(xyscale,Base.Vector(1,1,0))
+    return fp.scale(xyScale,Base.Vector(1,1,0))
 
 def generateDefaultHyperParam():
     hyperparameters = {
-        "Eccentricity": 4.7 / 2,
-        "ToothCount": 12,
-        "DiskHoleCount":6,
-        "LineSegmentCount": 400,
-        "ToothPitch": 4,
-        "PinDiskDiameter" : 40,
-        "RollerDiameter": 4.7,
-#        "RollerHeight": 12.0, # RollerHeight = CycloidalDiskHeight * 2+DriverDiskHeight + clearence
-        "CenterDiameter": 5.0,
-        "PressureAngleLimit": 50.0,
-        "PressureAngleOffset": 0.0,
-        "BaseHeight":10.0,
-        "DriverPinHeight":10.0,
-        "DriverDiskHeight":4.0,
-        "CycloidalDiskHeight":4,
-        "ShaftDiameter":13.0,
+        "eccentricity": 4.7 / 2,
+        "toothCount": 12,
+        "diskHoleCount":6,
+        "lineSegmentCount": 400,
+        "toothPitch": 4,
+        "pinDiskDiameter" : 40,
+        "rollerDiameter": 4.7,
+#        "RollerHeight": 12.0, # RollerHeight = cycloidalDiskHeight * 2+driverDiskHeight + clearence
+        "centerDiameter": 5.0,
+        "pressureAngleLimit": 50.0,
+        "pressureAngleOffset": 0.0,
+        "baseHeight":10.0,
+        "driverPinHeight":10.0,
+        "driverDiskHeight":4.0,
+        "cycloidalDiskHeight":4,
+        "shaftDiameter":13.0,
         "clearance" : 0.5
         }
     return hyperparameters
