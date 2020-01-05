@@ -123,7 +123,7 @@ def checkLimit(v: FreeCAD.Vector, PressureAngleOffset, minrad, maxrad):
     return v
 
 
-def minmaxRadius(H):
+def MinMaxRadius(H):
     """ Find the pressure angle limit circles """
     ToothCount= H['ToothCount']
     ToothPitch= H['ToothPitch']
@@ -143,6 +143,19 @@ def minmaxRadius(H):
     maxRadius = calcPressureLimit(ToothCount, ToothPitch, Eccentricity, RollerDiameter, maxAngle * math.pi / 180)
     return minRadius, maxRadius
 
+def xyscaleMinMaxRadius(H):
+    """ xyscales the minmax radius to pindiskDiameter proportions
+
+        eg I want 40, maxRadius comes out to 46 and change
+        divide 40/maxRadius to get ratio of 0.86
+        multiply both by 0.86...
+        """
+    PinDiskDiameter = H["PinDiskDiameter"]
+    RollerDiameter = H["RollerDiameter"]
+    minRadius, maxRadius = MinMaxRadius(H)
+    xyscale = PinDiskDiameter / (minRadius + RollerDiameter * 2)
+    return minRadius, maxRadius, xyscale
+
 
 def generatePinBase(H):
     """ create the base that the fixedRingPins will be attached to """
@@ -155,7 +168,7 @@ def generatePinBase(H):
     ShaftDiameter = H["ShaftDiameter"]
     CycloidalDiskHeight =  H["CycloidalDiskHeight"]
     clearance = H["clearance"]
-    minRadius, maxRadius = minmaxRadius(H)
+    minRadius, maxRadius,xyscale = xyscaleMinMaxRadius(H)
     pinBase = Part.makeCylinder(minRadius + RollerDiameter*2, BaseHeight) # base of the whole system
     dd = Part.makeCylinder(minRadius * 0.75 + clearance, DriverDiskHeight*2, Base.Vector(0, 0,BaseHeight-DriverDiskHeight)) #hole for the driver disk to fit in
     pinBase = pinBase.cut(dd)
@@ -176,10 +189,10 @@ def generatePinBase(H):
     # todo  allow user values for sizes
     # todo allow bearing option
     shaft = Part.makeCylinder(ShaftDiameter/ 2.0+clearance,BaseHeight*2,Base.Vector(0,0,-BaseHeight))
-    return pinBase.cut(shaft)
+    return pinBase.cut(shaft).scale(xyscale,Base.Vector(1,1,0))
 
 def generateOutputShaft(H):
-    minRadius,maxRadius = minmaxRadius(H)
+    minRadius,maxRadius,xyscale = xyscaleMinMaxRadius(H)
     DiskHoleCount = H["DiskHoleCount"]
     ShaftDiameter = H["ShaftDiameter"]
     DriverDiskHeight = H["DriverDiskHeight"]
@@ -217,7 +230,8 @@ def generateOutputShaft(H):
         fixedringpin = Part.makeCylinder(RollerDiameter * 2 - Eccentricity+clearance, CycloidalDiskHeight * 3, Base.Vector(x, y, -1))  # driver pins
         dd = dd.cut(fixedringpin)
     fp = dd.translate(Base.Vector(0, 0, BaseHeight + CycloidalDiskHeight*2))
-    return fp
+    return fp.scale(xyscale,Base.Vector(1,1,0))
+
 def generateSlotSize(H,addClearence=False):
     ShaftDiameter = H["ShaftDiameter"]
     clearance = H["clearance"]
@@ -230,7 +244,7 @@ def generateSlotSize(H,addClearence=False):
 
 
 def generateEccentricShaft(H):
-    minRadius,maxRadius = minmaxRadius(H)
+    minRadius,maxRadius,xyscale = xyscaleMinMaxRadius(H)
     RollerDiameter = H["RollerDiameter"]
     #RollerHeight = H["RollerHeight"]
     Eccentricity = H["Eccentricity"]
@@ -253,10 +267,10 @@ def generateEccentricShaft(H):
     drivehole3 = Part.makeBox(slotsizeHeight,slotsizeHeight,CycloidalDiskHeight,Base.Vector(-slotsizeHeight+2,-slotsizeHeight+slotsizeHeight / 2,BaseHeight+CycloidalDiskHeight))
     #drivehole3 = Part.makeBox(slotsizeWidth,slotsizeHeight,CycloidalDiskHeight,Base.Vector(-slotsizeHeight,-slotsizeHeight+slotsizeHeight / 2,BaseHeight+CycloidalDiskHeight))
     d = d.fuse(drivehole3)
-    return d
+    return d.scale(xyscale,Base.Vector(1,1,0))
 
 def generateEccentricKey(H):
-    minRadius,maxRadius = minmaxRadius(H)
+    minRadius,maxRadius,xyscale = xyscaleMinMaxRadius(H)
     RollerDiameter = H["RollerDiameter"]
     #RollerHeight = H["RollerHeight"]
     Eccentricity = H["Eccentricity"]
@@ -272,7 +286,7 @@ def generateEccentricKey(H):
     drivehole1 = Part.makeBox(slotsizeHeight,slotsizeHeight,CycloidalDiskHeight,Base.Vector(-slotsizeHeight+2,-slotsizeHeight+slotsizeHeight / 2,BaseHeight + CycloidalDiskHeight))
     #drivehole1 = Part.makeBox(slotsizeWidth,slotsizeHeight,CycloidalDiskHeight,Base.Vector(-slotsizeHeight,-slotsizeHeight+slotsizeHeight / 2,BaseHeight + CycloidalDiskHeight))
     key = key.cut(drivehole1)
-    return key
+    return key.scale(xyscale,Base.Vector(1,1,0))
 
 def generateCycloidalDiskArray(H):
     ToothCount = H["ToothCount"]-1
@@ -284,7 +298,7 @@ def generateCycloidalDiskArray(H):
     """ make the array to be used in the bspline
         that is the cycloidalDisk
     """
-    minRadius, maxRadius = minmaxRadius(H)
+    minRadius, maxRadius,xyscale = xyscaleMinMaxRadius(H)
     q = 2.0 * math.pi / LineSegmentCount
     i = 0
     r1,r2 = CalculateRs(ToothCount,Eccentricity,105,10)
@@ -321,7 +335,7 @@ def generateCycloidalDisk(H):
     CycloidalDiskHeight = H["CycloidalDiskHeight"]
     DiskHoleCount = H["DiskHoleCount"]
     clearance = H["clearance"]
-    minRadius, maxRadius = minmaxRadius(H)
+    minRadius, maxRadius,xyscale = xyscaleMinMaxRadius(H)
     #get shape of cycloidal disk
     array,alternativearray = generateCycloidalDiskArray(H)
     #print("array")
@@ -347,10 +361,10 @@ def generateCycloidalDisk(H):
     #fc = f.fuse(esw)
     e = fc.extrude(FreeCAD.Vector(0, 0, CycloidalDiskHeight))
     e.translate(Base.Vector(-Eccentricity, 0, BaseHeight + 0.1))
-    return e
+    return e.scale(xyscale,Base.Vector(1,1,0))
 
 def generateDriverDisk(H):
-    minRadius,maxRadius = minmaxRadius(H)
+    minRadius,maxRadius,xyscale = xyscaleMinMaxRadius(H)
     DiskHoleCount = H["DiskHoleCount"]
     DriverDiskHeight = H["DriverDiskHeight"]
     RollerDiameter = H["RollerDiameter"]
@@ -374,7 +388,7 @@ def generateDriverDisk(H):
     #todo  allow user values for sizes
     #todo allow bearing option
     fp = fp.cut(shaft)
-    return fp
+    return fp.scale(xyscale,Base.Vector(1,1,0))
 
 def generateDefaultHyperParam():
     hyperparameters = {
@@ -383,6 +397,7 @@ def generateDefaultHyperParam():
         "DiskHoleCount":6,
         "LineSegmentCount": 400,
         "ToothPitch": 4,
+        "PinDiskDiameter" : 40,
         "RollerDiameter": 4.7,
 #        "RollerHeight": 12.0, # RollerHeight = CycloidalDiskHeight * 2+DriverDiskHeight + clearence
         "CenterDiameter": 5.0,

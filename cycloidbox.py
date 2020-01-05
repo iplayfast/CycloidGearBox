@@ -107,6 +107,7 @@ class CycloidGearBoxCreateObject():
         obj.Proxy = gearbox
         random.seed(444)
         pindiskobj = doc.addObject("Part::FeaturePython", "pinDisk")
+        obj.addProperty("App::PropertyString","IconFilename","","",8).IconFilename = pin_Icon;
         pindisk = pindiskClass(pindiskobj, gearbox)
         pindiskobj.Proxy = pindisk
         gearbox.recomputeList.append(pindisk)
@@ -183,6 +184,7 @@ class pindiskClass():
                         QT_TRANSLATE_NOOP("App::Property", "Base Height")).BaseHeight = param.BaseHeight
         obj.addProperty("App::PropertyLength", "ShaftDiameter", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Shaft Diameter")).ShaftDiameter = param.ShaftDiameter
+        obj.addProperty("App::PropertyLength","PinDiskDiameter","CycloidGearBox",QT_TRANSLATE_NOOP("App::Property","PinDisk Diameter")).PinDiskDiameter = param.PinDiskDiameter
         self.Type = 'pinDisk'
         print("Done Adding parameters")
 
@@ -194,7 +196,6 @@ class pindiskClass():
             self.Type = state
 
     def onChanged(self, fp, prop):
-        print("pindisk onchanged", fp, prop)
         # App.ActiveDocument.getObject("GearBox_Parameters").onChanged(fp,prop)
         pindisk = fp.Document.getObject('pinDisk')
         gearbox = App.ActiveDocument.getObject("GearBox_Parameters")
@@ -202,6 +203,8 @@ class pindiskClass():
             pass
         if prop == 'ToothCount':
             gearbox.ToothCount = pindisk.ToothCount
+        if prop == 'PinDiskDiameter':
+            gearbox.PinDiskDiameter = pindisk.PinDiskDiameter
         if prop == 'RollerDiameter':
             gearbox.RollerDiameter = pindisk.RollerDiameter
         # if prop=='RollerHeight':
@@ -210,7 +213,6 @@ class pindiskClass():
             gearbox.BaseHeight = pindisk.BaseHeight
         if prop == 'ShaftDiameter':
             gearbox.ShaftDiameter = pindisk.ShaftDiameter
-        print("done pindisk onchanged")
 
     def recomputeGB(self, H):
         print("recomputing pin disk", H)
@@ -273,6 +275,8 @@ class cycdiskClass():
         param = App.ActiveDocument.getObject("GearBox_Parameters")
         obj.addProperty("App::PropertyInteger", "DiskHoleCount", "CycloidGearBox", QT_TRANSLATE_NOOP("APP::Property",
                                                                                                      "Number of driving holes of the cycloid disk")).DiskHoleCount = param.DiskHoleCount
+        obj.addProperty("App::PropertyInteger", "ToothCount", "CycloidGearBox",
+                        QT_TRANSLATE_NOOP("App::Property", "Number of teeth of the cycloidal disk")).ToothCount = param.ToothCount
         obj.addProperty("App::PropertyLength", "CycloidalDiskHeight", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property",
                                           "Cycloidal Disk Height")).CycloidalDiskHeight = param.CycloidalDiskHeight
@@ -295,6 +299,8 @@ class cycdiskClass():
             p.DiskHoleCount = s.DiskHoleCount
         if prop == 'CycloidalDiskHeight':
             p.CycloidalDiskHeight = s.CycloidalDiskHeight
+        if prop == 'ToothCount':
+            p.ToothCount = s.ToothCount
 
     def execute(self, obj):
         # obj.Shape = self.gearBox.generatePinBase()
@@ -405,7 +411,7 @@ class OutShaft():
                                                                                                      "Number of driving holes of the cycloid disk")).DiskHoleCount = param.DiskHoleCount
         obj.addProperty("App::PropertyLength", "ShaftDiameter", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Shaft Diameter")).ShaftDiameter = param.ShaftDiameter
-        self.Type = 'DriverDisk'
+        self.Type = 'OutputShaft'
 
     def __getstate__(self):
         return self.Type
@@ -425,6 +431,7 @@ class OutShaft():
     def recomputeGB(self, H):
         print("recomputing output shaft")
         self.Object.Shape = cycloidFun.generateOutputShaft(H)
+        print("done recomputing output shaft")
 
 
 class CycloidalGearBox():
@@ -437,8 +444,9 @@ class CycloidalGearBox():
         obj.addProperty("App::PropertyLength", "Eccentricity", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Eccentricity")).Eccentricity = H["Eccentricity"]
         obj.addProperty("App::PropertyInteger", "ToothCount", "CycloidGearBox",
-                        QT_TRANSLATE_NOOP("App::Property", "Number of teeth of the cycloidal disk")).ToothCount = H[
-            "ToothCount"]
+                        QT_TRANSLATE_NOOP("App::Property", "Number of teeth of the cycloidal disk")).ToothCount = \
+                        H["ToothCount"]
+        obj.addProperty("App::PropertyLength","PinDiskDiameter",QT_TRANSLATE_NOOP("App::Property","PinDisk Diameter")).PinDiskDiameter = 40
         obj.addProperty("App::PropertyInteger", "DiskHoleCount", "CycloidGearBox", QT_TRANSLATE_NOOP("APP::Property",
                                                                                                      "Number of driving holes of the cycloid disk")).DiskHoleCount = \
         H["DiskHoleCount"]
@@ -522,6 +530,9 @@ class CycloidalGearBox():
                     timer.start(timeout)
                 else:
                     timer.stop()
+        if prop == 'PinDiskDiameter':
+            pinDisk.PinDiskDiameter = obj.PinDiskDiameter
+            dirty = True
         if prop == 'ShaftDiameter':
             if obj.ShaftDiameter < 1:
                 obj.ShaftDiameter = 1
@@ -597,6 +608,7 @@ class CycloidalGearBox():
         hyperparameters = {"ToothCount": int(self.Object.__getattribute__("ToothCount")),
                            "LineSegmentCount": int(self.Object.__getattribute__("LineSegmentCount")),
                            "RollerDiameter": float(self.Object.__getattribute__("RollerDiameter").Value),
+                           "PinDiskDiameter": float(self.Object.__getattribute__("PinDiskDiameter").Value),
                            # "RollerHeight" : float(self.Object.__getattribute__("RollerHeight").Value),
                            "ToothPitch": float(self.Object.__getattribute__("ToothPitch").Value),
                            "Eccentricity": float(self.Object.__getattribute__("Eccentricity").Value),
@@ -614,8 +626,10 @@ class CycloidalGearBox():
         return hyperparameters
 
     def recompute(self):
+        print("Recomputing all")
         hyperparameters = self.GetHyperParameters()
         for a in self.recomputeList:
+            print(".")
             a.recomputeGB(hyperparameters)
 
     def execute(self, obj):
@@ -624,17 +638,12 @@ class CycloidalGearBox():
 
 
 class ViewProviderCGBox:
-    def __init__(self, obj, icon):
+    def __init__(self, obj,iconfile):
         """
        Set this object to the proxy object of the actual view provider
        """
-        print("ViewProviderCGBox init start")
-        print(self)
-        print(obj)
         obj.Proxy = self
         self.part = obj
-        self.icon = icon
-        print("ViewProviderCGBox init end")
 
     def attach(self, obj):
         """
@@ -678,20 +687,19 @@ class ViewProviderCGBox:
        Since they have the same names nothing needs to be done.
        This method is optional.
        """
-        print("viewProviderCGBox setDisplayMode", mode)
+        #print("viewProviderCGBox setDisplayMode", mode)
         return mode
 
     def onChanged(self, vobj, prop):
         """
        Print the name of the property that has changed
        """
-        print("viewProviderCGBox onChanged", vobj, prop)
 
-    def getIcon(self):
+    #def getIcon(self):
         """
-       Return the icon in XMP format which will appear in the tree view. This method is optional and if not defined a default icon is shown.
-       """
-        return self.icon
+        Return the icon in XMP format which will appear in the tree view. This method is optional and if not defined a default icon is shown.
+        """
+        #return self.icon
         # return main_CGB_Icon
 
     def __getstate__(self):
