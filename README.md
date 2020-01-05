@@ -34,4 +34,4 @@ git clone git@github.com:iplayfast/CycloidGearBox.git
 Please open a ticket in this repository's issue queue.
 
 ### License
-GPLv3 (see [LICENSE](LICENSE))
+LGPLv2.1 (see [LICENSE](LICENSE))
