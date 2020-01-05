@@ -6,7 +6,7 @@ https://en.wikipedia.org/wiki/Cycloidal_drive
 
 Copyright 	2019, Chris Bruner
 Version 	v0.1
-License 	GPL V3
+License 	LGPL V2.1
 Homepage
 
 Credit to:
