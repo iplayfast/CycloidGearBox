@@ -186,6 +186,8 @@ class pindiskClass():
                         QT_TRANSLATE_NOOP("App::Property", "Base Height")).baseHeight = param.baseHeight
         obj.addProperty("App::PropertyLength", "shaftDiameter", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Shaft Diameter")).shaftDiameter = param.shaftDiameter
+        obj.addProperty("App::PropertyBool", "pinDiskScale", "CycloidGearBox",
+                        QT_TRANSLATE_NOOP("App::Property", "pinDiskScale")).pinDiskScale = param.pinDiskScale
         obj.addProperty("App::PropertyLength","pinDiskDiameter","CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property","pinDisk Diameter")).pinDiskDiameter = param.pinDiskDiameter
         self.Type = 'pinDisk'
@@ -448,18 +450,20 @@ class CycloidalGearBox():
                         QT_TRANSLATE_NOOP("App::Property", "eccentricity")).eccentricity = H["eccentricity"]
         obj.addProperty("App::PropertyInteger", "toothCount", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Number of teeth of the cycloidal disk")).toothCount = H["toothCount"]
+        obj.addProperty("App::PropertyBool", "pinDiskScale", "CycloidGearBox",
+                        QT_TRANSLATE_NOOP("App::Property", "pinDiskScale")).pinDiskScale = H["pinDiskScale"]
         obj.addProperty("App::PropertyLength","pinDiskDiameter",
-                        QT_TRANSLATE_NOOP("App::Property","pinDisk Diameter")).pinDiskDiameter = 40
+                        QT_TRANSLATE_NOOP("App::Property","pinDisk Diameter")).pinDiskDiameter = H["pinDiskDiameter"]
         obj.addProperty("App::PropertyInteger", "diskHoleCount", "CycloidGearBox",
-                        QT_TRANSLATE_NOOP("APP::Property", "Number of driving holes of the cycloid disk")).diskHoleCount = \
-        H["diskHoleCount"]
+                        QT_TRANSLATE_NOOP("APP::Property", "Number of driving holes of the cycloid disk")).diskHoleCount = H["diskHoleCount"]
         obj.addProperty("App::PropertyInteger", "lineSegmentCount", "CycloidGearBox",
-                        QT_TRANSLATE_NOOP("App::Property", "Number of line segments to make up the cycloidal disk")).lineSegmentCount = \
-        H["lineSegmentCount"]
+                        QT_TRANSLATE_NOOP("App::Property", "Number of line segments to make up the cycloidal disk")).lineSegmentCount = H["lineSegmentCount"]
         obj.addProperty("App::PropertyAngle", "toothPitch", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Tooth Pitch")).toothPitch = H["toothPitch"]
+
         obj.addProperty("App::PropertyLength", "rollerDiameter", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Diameter of the rollers")).rollerDiameter = H["rollerDiameter"]
+
         # obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = H["RollerHeight"]
         obj.addProperty("App::PropertyLength", "centerDiameter", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Center Diameter")).centerDiameter = H["centerDiameter"]
@@ -529,6 +533,10 @@ class CycloidalGearBox():
                     timer.start(timeout)
                 else:
                     timer.stop()
+        if prop == 'scale':
+            if (pinDisk.scale != obj.scale):
+                pinDisk.scale = obj.scale
+                dirty = True
         if prop == 'pinDiskDiameter':
             if (pinDisk.pinDiskDiameter!=obj.pinDiskDiameter):
                 pinDisk.pinDiskDiameter = obj.pinDiskDiameter
@@ -609,6 +617,7 @@ class CycloidalGearBox():
                            "lineSegmentCount": int(self.Object.__getattribute__("lineSegmentCount")),
                            "rollerDiameter": float(self.Object.__getattribute__("rollerDiameter").Value),
                            "pinDiskDiameter": float(self.Object.__getattribute__("pinDiskDiameter").Value),
+                           "pinDiskScale": bool(self.Object.__getattribute__("pinDiskScale")),
                            # "RollerHeight" : float(self.Object.__getattribute__("RollerHeight").Value),
                            "toothPitch": float(self.Object.__getattribute__("toothPitch").Value),
                            "eccentricity": float(self.Object.__getattribute__("eccentricity").Value),

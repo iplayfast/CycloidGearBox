@@ -153,7 +153,10 @@ def xyScaleMinMaxRadius(H):
     pinDiskDiameter = H["pinDiskDiameter"]
     rollerDiameter = H["rollerDiameter"]
     minRadius, maxRadius = MinMaxRadius(H)
-    xyScale = pinDiskDiameter / (minRadius + rollerDiameter * 2)
+    if (H["pinDiskScale"]):
+        xyScale = pinDiskDiameter / (minRadius + rollerDiameter * 2)
+    else:
+        xyScale = 1.0
     return minRadius, maxRadius, xyScale
 
 
@@ -397,6 +400,7 @@ def generateDefaultHyperParam():
         "diskHoleCount":6,
         "lineSegmentCount": 400,
         "toothPitch": 4,
+        "pinDiskScale" : False,
         "pinDiskDiameter" : 40,
         "rollerDiameter": 4.7,
 #        "RollerHeight": 12.0, # RollerHeight = cycloidalDiskHeight * 2+driverDiskHeight + clearence
