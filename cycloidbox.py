@@ -333,6 +333,8 @@ class EccShaft():
                         QT_TRANSLATE_NOOP("App::Property", "Base Height")).baseHeight = param.baseHeight
         obj.addProperty("App::PropertyLength", "shaftDiameter", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Shaft Diameter")).shaftDiameter = param.shaftDiameter
+        obj.addProperty("App::PropertyLength", "slotHeight", "CycloidGearBox",
+                        QT_TRANSLATE_NOOP("App::Property", "Slot Height")).slotHeight = param.slotHeight
 
     def __getstate__(self):
         return self.Type
@@ -355,6 +357,8 @@ class EccShaft():
             gbp.baseHeight = eccentricShaftObj.baseHeight
         if prop == 'shaftDiameter':
             gbp.shaftDiameter = eccentricShaftObj.shaftDiameter
+        if prop == 'slotHeight':
+            gbp.slotHeight = eccentricShaftObj.slotHeight
 
     def recomputeGB(self, H):
         print("recomputing Eccentric Shaft")
@@ -416,6 +420,8 @@ class OutShaft():
                         QT_TRANSLATE_NOOP("APP::Property", "Number of driving holes of the cycloid disk")).diskHoleCount = param.diskHoleCount
         obj.addProperty("App::PropertyLength", "shaftDiameter", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Shaft Diameter")).shaftDiameter = param.shaftDiameter
+        obj.addProperty("App::PropertyLength", "slotHeight", "CycloidGearBox",
+                        QT_TRANSLATE_NOOP("App::Property", "Slot Height")).slotHeight = param.slotHeight
         self.Type = 'outputShaft'
 
     def __getstate__(self):
@@ -432,6 +438,8 @@ class OutShaft():
             gbp.diskHoleCount = os.diskHoleCount
         if prop == 'shaftDiameter':
             gbp.shaftDiameter = os.shaftDiameter
+        if prop == 'slotHeight':
+            gbp.slotHeight = os.slotHeight
 
     def recomputeGB(self, H):
         print("recomputing output shaft")
@@ -481,6 +489,8 @@ class CycloidalGearBox():
                         QT_TRANSLATE_NOOP("App::Property", "Cycloidal Disk Height")).cycloidalDiskHeight = H["cycloidalDiskHeight"]
         obj.addProperty("App::PropertyLength", "shaftDiameter", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Shaft Diameter")).shaftDiameter = H["shaftDiameter"]
+        obj.addProperty("App::PropertyLength", "slotHeight", "CycloidGearBox",
+                        QT_TRANSLATE_NOOP("App::Property", "Slot Height")).slotHeight = H["slotHeight"]
         obj.addProperty("App::PropertyLength", "clearance", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "clearance between parts")).clearance = H["clearance"]
         obj.addProperty("App::PropertyBool", "animate", "CycloidGearBox",
@@ -526,6 +536,7 @@ class CycloidalGearBox():
         pinDisk = App.ActiveDocument.getObject('pinDisk')
         eccentricShaftObj = App.ActiveDocument.getObject('eccentricShaft')
         dd = App.ActiveDocument.getObject('driverDisk')
+        outputShaft = App.ActiveDocument.getObject('outputShaft')
         if prop == 'animate':
             if hasattr(obj, "animate"):
                 obj.animate = not obj.animate
@@ -536,6 +547,13 @@ class CycloidalGearBox():
         if prop == 'scale':
             if (pinDisk.scale != obj.scale):
                 pinDisk.scale = obj.scale
+                dirty = True
+        if prop == 'slotHeight':
+            if (eccentricShaftObj.slotHeight != obj.slotHeight):
+                eccentricShaftObj.slotHeight = obj.slotHeight
+                dirty = True
+            if (outputShaft.slotHeight != obj.slotHeight):
+                outputShaft.slotHeight = obj.slotHeight
                 dirty = True
         if prop == 'pinDiskDiameter':
             if (pinDisk.pinDiskDiameter!=obj.pinDiskDiameter):
@@ -618,7 +636,6 @@ class CycloidalGearBox():
                            "rollerDiameter": float(self.Object.__getattribute__("rollerDiameter").Value),
                            "pinDiskDiameter": float(self.Object.__getattribute__("pinDiskDiameter").Value),
                            "pinDiskScale": bool(self.Object.__getattribute__("pinDiskScale")),
-                           # "RollerHeight" : float(self.Object.__getattribute__("RollerHeight").Value),
                            "toothPitch": float(self.Object.__getattribute__("toothPitch").Value),
                            "eccentricity": float(self.Object.__getattribute__("eccentricity").Value),
                            "centerDiameter": float(self.Object.__getattribute__("centerDiameter").Value),
@@ -629,6 +646,7 @@ class CycloidalGearBox():
                            "driverDiskHeight": float(self.Object.__getattribute__("driverDiskHeight").Value),
                            "cycloidalDiskHeight": float(self.Object.__getattribute__("cycloidalDiskHeight").Value),
                            "diskHoleCount": int(self.Object.__getattribute__("diskHoleCount")),
+                           "slotHeight": int(self.Object.__getattribute__("slotHeight")),
                            "shaftDiameter": float(self.Object.__getattribute__("shaftDiameter")),
                            "clearance": float(self.Object.__getattribute__("clearance"))
                            }

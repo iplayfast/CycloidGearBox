@@ -170,12 +170,13 @@ def generatePinBase(H):
     driverDiskHeight = H["driverDiskHeight"]
     shaftDiameter = H["shaftDiameter"]
     cycloidalDiskHeight =  H["cycloidalDiskHeight"]
+    slotHeight = H["slotHeight"]
     clearance = H["clearance"]
     minRadius, maxRadius,xyScale = xyScaleMinMaxRadius(H)
     pinBase = Part.makeCylinder(minRadius + rollerDiameter*2, baseHeight) # base of the whole system
     dd = Part.makeCylinder(minRadius * 0.75 + clearance, driverDiskHeight*2, Base.Vector(0, 0,baseHeight-driverDiskHeight)) #hole for the driver disk to fit in
     pinBase = pinBase.cut(dd)
-    RollerHeight = cycloidalDiskHeight * 2+driverDiskHeight + clearance
+    RollerHeight = slotHeight #was ... cycloidalDiskHeight * 2+driverDiskHeight + clearance
     # generate the pin locations
     pinRadius = (minRadius+maxRadius)/2.0 + rollerDiameter/2
     for i in range(0, toothCount):
@@ -204,17 +205,18 @@ def generateOutputShaft(H):
     cycloidalDiskHeight =  H["cycloidalDiskHeight"]
     clearance = H["clearance"]
     baseHeight = H["baseHeight"]
+    slotHeight = H["slotHeight"]
     dd = Part.makeCylinder(minRadius * 0.75, driverDiskHeight, Base.Vector(0, 0, 0))  # the main driver disk
     #os = Part.makeCylinder(shaftDiameter/2.0,baseHeight*2,Base.Vector(0,0,0))
     os = Part.makeCylinder(shaftDiameter/2.0,cycloidalDiskHeight,Base.Vector(0,0,0))
 
     slotsizeWidth, slotsizeHeight = generateSlotSize(H,True)
-    driveHole1 = Part.makeBox(slotsizeWidth, slotsizeHeight, baseHeight,
+    driveHole1 = Part.makeBox(slotsizeWidth, slotsizeHeight-clearance, slotHeight,
                               Base.Vector(-slotsizeWidth + slotsizeWidth / 2, -slotsizeHeight + slotsizeHeight / 2,
                                           0.0))
 
     os = os.fuse(driveHole1)
-    driveHole2 = Part.makeBox(slotsizeHeight, slotsizeWidth, baseHeight,
+    driveHole2 = Part.makeBox(slotsizeHeight, slotsizeWidth, slotHeight-clearance,
                               Base.Vector(-slotsizeHeight + slotsizeHeight / 2, -slotsizeWidth + slotsizeWidth / 2,
                                           0.0))
     os = os.fuse(driveHole2)
@@ -255,6 +257,7 @@ def generateEccentricShaft(H):
     shaftDiameter = H["shaftDiameter"]
     driverDiskHeight = H["driverDiskHeight"]
     cycloidalDiskHeight =  H["cycloidalDiskHeight"]
+    slotHeight = H["slotHeight"]
     clearance = H["clearance"]
     RollerHeight = cycloidalDiskHeight * 2+driverDiskHeight + clearance
     diskHoleCount = H["diskHoleCount"]
@@ -262,10 +265,10 @@ def generateEccentricShaft(H):
     d = Part.makeCylinder(shaftDiameter/ 2.0,baseHeight,Base.Vector(0,0,0)) # one base out sticking out the bottom, one base height through the base
     d = d.fuse(e)
     slotsizeWidth,slotsizeHeight = generateSlotSize(H)
-    driveHole1 = Part.makeBox(slotsizeWidth,slotsizeHeight,baseHeight,Base.Vector(-slotsizeWidth+slotsizeWidth/2,-slotsizeHeight+slotsizeHeight / 2,0.0))
+    driveHole1 = Part.makeBox(slotsizeWidth,slotsizeHeight,slotHeight,Base.Vector(-slotsizeWidth+slotsizeWidth/2,-slotsizeHeight+slotsizeHeight / 2,0.0))
 
     d = d.cut(driveHole1)
-    driveHole2 = Part.makeBox(slotsizeHeight,slotsizeWidth,baseHeight,Base.Vector(-slotsizeHeight+slotsizeHeight/2,-slotsizeWidth+slotsizeWidth/2,0.0))
+    driveHole2 = Part.makeBox(slotsizeHeight,slotsizeWidth,slotHeight,Base.Vector(-slotsizeHeight+slotsizeHeight/2,-slotsizeWidth+slotsizeWidth/2,0.0))
     d = d.cut(driveHole2)
     driveHole3 = Part.makeBox(slotsizeHeight,slotsizeHeight,cycloidalDiskHeight,Base.Vector(-slotsizeHeight+2,-slotsizeHeight+slotsizeHeight / 2,baseHeight+cycloidalDiskHeight))
     #driveHole3 = Part.makeBox(slotsizeWidth,slotsizeHeight,cycloidalDiskHeight,Base.Vector(-slotsizeHeight,-slotsizeHeight+slotsizeHeight / 2,baseHeight+cycloidalDiskHeight))
@@ -412,6 +415,7 @@ def generateDefaultHyperParam():
         "driverDiskHeight":4.0,
         "cycloidalDiskHeight":4,
         "shaftDiameter":13.0,
+        "slotHeight" : 10.0,
         "clearance" : 0.5
         }
     return hyperparameters
