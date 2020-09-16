@@ -179,7 +179,8 @@ def generate_pin_base(H):
     slot_height = H["slot_height"]
     clearance = H["clearance"]
     min_radius, max_radius,xy_scale = xy_scale_calculate_min_max_radii(H)
-    pin_base = Part.makeCylinder(min_radius + roller_diameter*2, base_height) # base of the whole system
+    #pin_base = Part.makeCylinder(min_radius + roller_diameter*2, base_height) # base of the whole system
+    pin_base = Part.makeCylinder(H["pin_disk_diameter"]/2, base_height) # base of the whole system
     dd = Part.makeCylinder(min_radius * 0.75 + clearance, driver_disk_height*2, Base.Vector(0, 0,base_height-driver_disk_height)) #hole for the driver disk to fit in
     pin_base = pin_base.cut(dd)
     roller_height = slot_height #was ... cycloidal_disk_height * 2+driver_disk_height + clearance
@@ -270,7 +271,7 @@ def generate_eccentric_shaft(H):
     #make shaft and eccentric cylinders
     e = Part.makeCylinder(shaft_diameter / 2.0, cycloidal_disk_height, Base.Vector(-eccentricity , 0,base_height)) #eccentric part
     d = Part.makeCylinder(shaft_diameter/ 2.0,base_height,Base.Vector(0,0,0)) # one base out sticking out the bottom, one base height through the base
-    d = d.fuse(e)
+    d = d.fuse(e) #base with the excentric disk on top
     #make hole in bottom
     slot_size_width,slot_size_height = generate_slot_size(H)
     drive_hole1 = Part.makeBox(slot_size_width,slot_size_height,slot_height,Base.Vector(-slot_size_width+slot_size_width/2,-slot_size_height+slot_size_height / 2,0.0))
@@ -381,7 +382,9 @@ def generate_driver_disk(H):
     min_radius,max_radius,xy_scale = xy_scale_calculate_min_max_radii(H)
     disk_hole_count = H["disk_hole_count"]
     driver_disk_height = H["driver_disk_height"]
+    driver_pin_height = H["driver_pin_height"]
     roller_diameter = H["roller_diameter"]
+    driver_disk_diameter = H["driver_disk_diameter"]
     #roller_height = H["roller_height"]
     eccentricity = H["eccentricity"]
     shaft_diameter = H["shaft_diameter"]
@@ -389,12 +392,14 @@ def generate_driver_disk(H):
     cycloidal_disk_height =  H["cycloidal_disk_height"]
     clearance = H["clearance"]
     #roller_height = cycloidal_disk_height * 2+driver_disk_height + clearance
-    dd = Part.makeCylinder(min_radius * 0.75, driver_disk_height, Base.Vector(0, 0,0)) # the main driver disk
+    #dd = Part.makeCylinder(min_radius * 0.75, driver_disk_height, Base.Vector(0, 0,0)) # the main driver disk
+    dd = Part.makeCylinder(driver_disk_diameter/2.0, driver_disk_height, Base.Vector(0, 0,0)) # the main driver disk
     shaft = Part.makeCylinder(shaft_diameter/ 2.0+clearance,driver_disk_height+base_height*2,Base.Vector(0,0,-base_height))
     for i in range(0, disk_hole_count):
         x = min_radius / 2 * math.cos(2.0 * math.pi / (disk_hole_count) * i)
         y = min_radius / 2 * math.sin(2.0 * math.pi / (disk_hole_count) * i)
-        fixed_ring_pin = Part.makeCylinder(roller_diameter*2 - eccentricity , cycloidal_disk_height*3, Base.Vector(x, y, cycloidal_disk_height)) #driver pins
+#        fixed_ring_pin = Part.makeCylinder(roller_diameter*2 - eccentricity , cycloidal_disk_height*3, Base.Vector(x, y, cycloidal_disk_height)) #driver pins
+        fixed_ring_pin = Part.makeCylinder(roller_diameter*2 - eccentricity , driver_pin_height, Base.Vector(x, y, cycloidal_disk_height)) #driver pins
         dd = dd.fuse(fixed_ring_pin)
 
     fp = dd.translate(Base.Vector(0,0,base_height - driver_disk_height))
@@ -412,7 +417,8 @@ def generate_default_hyperparam():
         "line_segment_count": 400,
         "tooth_pitch": 4,
         "pin_disk_scale" : False,
-        "pin_disk_diameter" : 40,
+        "pin_disk_diameter" : 110,
+        "driver_disk_diameter" : 80,
         "roller_diameter": 4.7,
 #        "roller_height": 12.0, # roller_height = cycloidal_disk_height * 2+driver_disk_height + clearence
         "center_diameter": 5.0,
