@@ -19,10 +19,8 @@ class pindiskClass():
                         QT_TRANSLATE_NOOP("App::Property", "Base Height")).base_height = param.base_height
         obj.addProperty("App::PropertyLength", "shaft_diameter", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Shaft Diameter")).shaft_diameter = param.shaft_diameter
-        obj.addProperty("App::PropertyBool", "pin_disk_scale", "CycloidGearBox",
-                        QT_TRANSLATE_NOOP("App::Property", "pin_disk_scale")).pin_disk_scale = param.pin_disk_scale
         obj.addProperty("App::PropertyLength","pin_disk_diameter","CycloidGearBox",
-                        QT_TRANSLATE_NOOP("App::Property","pin_disk Diameter")).pin_disk_diameter = param.pin_disk_diameter
+                        QT_TRANSLATE_NOOP("App::Property","pin_disk")).pin_disk_diameter= param.pin_disk_diameter
         self.Type = 'pin_disk'
         self.Object = obj
         self.gear_box = gear_box
