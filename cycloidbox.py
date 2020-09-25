@@ -169,7 +169,6 @@ class CycloidalGearBox():
         self.busy = True
         H = cycloidFun.generate_default_hyperparam()
         # pin_disk
-        obj.addProperty("App::PropertyLength",  "pin_disk_diameter","pin_disk", QT_TRANSLATE_NOOP("App::Property", "pin_disk_diameter")).pin_disk_diameter = H[ "pin_disk_diameter"]
         obj.addProperty("App::PropertyLength",  "pin_disk_pin_diameter",  "pin_disk,eccentric_shaft,eccentric_key", QT_TRANSLATE_NOOP("App::Property", "pin_disk_pin_diameter")).pin_disk_pin_diameter = H[ "pin_disk_pin_diameter"]
         obj.addProperty("App::PropertyLength",  "base_height",      "pin_disk,eccentric_shaft,eccentric_key", QT_TRANSLATE_NOOP("App::Property", "base_height")).base_height = H["base_height"]
         obj.addProperty("App::PropertyLength",  "shaft_diameter",   "pin_disk,driver_disk,eccentric_shaft,eccentric_key", QT_TRANSLATE_NOOP("App::Property", "shaft_diameter")).shaft_diameter = H["shaft_diameter"]
@@ -181,10 +180,10 @@ class CycloidalGearBox():
         # eccentric_shaft all properties in other classes
 
         # output shaft properties
-        obj.addProperty("App::PropertyLength", "pin_disk_pin_height",           "output_shaft", QT_TRANSLATE_NOOP("App::Property", "Output Shaft")).pin_disk_pin_height = H["pin_disk_pin_height"]
+        obj.addProperty("App::PropertyLength", "gearbox_height",           "gearbox", QT_TRANSLATE_NOOP("App::Property", "gearbox")).gearbox_height = H["gearbox_height"]
+        obj.addProperty("App::PropertyLength",  "pin_disk_diameter",       "gearbox", QT_TRANSLATE_NOOP("App::Property", "pin_disk_diameter")).pin_disk_diameter = H[ "pin_disk_diameter"]
 
         obj.addProperty("App::PropertyInteger", "line_segment_count", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property", "Number of line segments to make up the cycloidal disk")).line_segment_count = H["line_segment_count"]
-
 
         # obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = H["RollerHeight"]
         obj.addProperty("App::PropertyLength", "pressure_angle_limit", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property", "Pressure Angle Limit")).pressure_angle_limit = H[ "pressure_angle_limit"]
@@ -243,7 +242,7 @@ class CycloidalGearBox():
         eccentric_shaft_obj = App.ActiveDocument.getObject('eccentricShaft')
         dd = App.ActiveDocument.getObject('driver_disk')
         output_shaft = App.ActiveDocument.getObject('output_shaft')
-        if prop == 'pin_disk_pin_height':
+        if prop == 'gearbox_height':
               dirty = True
         if prop == 'pin_disk_diameter':
            if (pin_disk.pin_disk_diameter != obj.pin_disk_diameter):
@@ -335,7 +334,7 @@ class CycloidalGearBox():
                         "base_height": float(self.Object.__getattribute__("base_height").Value),
                         "driver_pin_height": float(self.Object.__getattribute__("driver_pin_height").Value),
                         "driver_disk_hole_count": int(self.Object.__getattribute__("driver_disk_hole_count")),
-                        "pin_disk_pin_height": int(self.Object.__getattribute__("pin_disk_pin_height")),
+                        "gearbox_height": int(self.Object.__getattribute__("gearbox_height")),
                         "shaft_diameter": float(self.Object.__getattribute__("shaft_diameter")),
                         "clearance": float(self.Object.__getattribute__("clearance"))
                         }
