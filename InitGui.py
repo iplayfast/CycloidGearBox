@@ -46,7 +46,7 @@ class CycloidGearBoxWorkbench(Workbench):
         self.__class__.Icon = main_CGB_Icon
         self.appendToolbar("CycloidGearBox",["CycloidGearBoxCreateObject"])
         self.appendMenu("CycloidGearBox",["CycloidGearBoxCreateObject"])
-
+        self.appendMenu("CycloidGearBox",["PinDiskCreateObject"])
         #self.appendToolbar("CycloidGearBox",["CycloidGearBoxCreateObject"])
         #self.appendMenu("CycloidGearBox",["CycloidGearBoxCreateObject"])
 

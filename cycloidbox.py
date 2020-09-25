@@ -180,7 +180,6 @@ class CycloidalGearBox():
         obj.addProperty("App::PropertyAngle", "tooth_pitch",        "pin_disk,cycloidal_disk", QT_TRANSLATE_NOOP("App::Property", "Cycloidal Disk")).tooth_pitch = H["tooth_pitch"]
         # driver_disk
         obj.addProperty("App::PropertyInteger","driver_disk_hole_count",       "driver_disk,output_shaft,cycloidal_disk", QT_TRANSLATE_NOOP("APP::Property", "Output Shaft")).driver_disk_hole_count = H["driver_disk_hole_count"]
-        obj.addProperty("App::PropertyLength", "driver_pin_height",     "driver_disk",              QT_TRANSLATE_NOOP("App::Property", "driver_pin_height")).driver_pin_height = H[ "driver_pin_height"]
         obj.addProperty("App::PropertyLength", "eccentricity",          "driver_disk,eccentric_shaft,eccentric_key", QT_TRANSLATE_NOOP("App::Property", "eccentricity")).eccentricity = H["eccentricity"]
         # eccentric_shaft all properties in other classes
 
@@ -305,10 +304,6 @@ class CycloidalGearBox():
            if pin_disk.base_height != obj.base_height:
               pin_disk.base_height = obj.base_height
            dirty = True
-        if prop == 'driver_pin_height':
-           if (driver_disk.driver_pin_height != obj.driver_pin_height):
-              driver_disk.driver_pin_height = obj.driver_pin_height
-              dirty = True
         if prop == 'driver_disk_hole_count':
            if (driver_disk.driver_disk_hole_count != obj.driver_disk_hole_count):
               driver_disk.driver_disk_hole_count = obj.driver_disk_hole_count
@@ -331,7 +326,6 @@ class CycloidalGearBox():
                         "pressure_angle_limit": float(self.Object.__getattribute__("pressure_angle_limit").Value),
                         "pressure_angle_offset": float(self.Object.__getattribute__("pressure_angle_offset").Value),
                         "base_height": float(self.Object.__getattribute__("base_height").Value),
-                        "driver_pin_height": float(self.Object.__getattribute__("driver_pin_height").Value),
                         "driver_disk_hole_count": int(self.Object.__getattribute__("driver_disk_hole_count")),
                         "Height": int(self.Object.__getattribute__("Height")),
                         "shaft_diameter": float(self.Object.__getattribute__("shaft_diameter")),
