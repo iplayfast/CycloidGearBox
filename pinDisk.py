@@ -5,7 +5,7 @@ def QT_TRANSLATE_NOOP(scope, text):
     return text
 
 class pindiskClass():
-    def __init__(self, obj, gear_box):
+    def __init__(self, obj,gear_box):
         self.ShapeColor = (0.67, 0.68, 0.88)
         print("Adding parameters")
         param = App.ActiveDocument.getObject("GearBoxParameters")
@@ -19,8 +19,8 @@ class pindiskClass():
                         QT_TRANSLATE_NOOP("App::Property", "Base Height")).base_height = param.base_height
         obj.addProperty("App::PropertyLength", "shaft_diameter", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Shaft Diameter")).shaft_diameter = param.shaft_diameter
-        obj.addProperty("App::PropertyLength","pin_disk_diameter","CycloidGearBox",
-                        QT_TRANSLATE_NOOP("App::Property","pin_disk")).pin_disk_diameter= param.pin_disk_diameter
+        obj.addProperty("App::PropertyLength","Diameter","CycloidGearBox",
+                        QT_TRANSLATE_NOOP("App::Property","pin_disk")).Diameter= param.Diameter
         self.Type = 'pin_disk'
         self.Object = obj
         self.gear_box = gear_box
@@ -42,10 +42,10 @@ class pindiskClass():
             pass
         if prop == 'tooth_count':
             gear_box_parameters.tooth_count = pin_disk.tooth_count
-        if prop == 'pin_disk_diameter':
-            gear_box_parameters.pin_disk_diameter = pin_disk.pin_disk_diameter
-            print(pin_disk.pin_disk_diameter)
-            print(gear_box_parameters.pin_disk_diameter)
+        if prop == 'Diameter':
+            gear_box_parameters.Diameter = pin_disk.Diameter
+            print(pin_disk.Diameter)
+            print(gear_box_parameters.Diameter)
 
         if prop == 'pin_disk_pin_diameter':
             gear_box_parameters.pin_disk_pin_diameter = pin_disk.pin_disk_pin_diameter
@@ -66,7 +66,7 @@ class pindiskClass():
         gear_box_parameters.Max_Diameter = max_radius*2
         calc_dia = 2*((gear_box_parameters.Min_Diameter+ gear_box_parameters.Max_Diameter) / 4 + gear_box_parameters.pin_disk_pin_diameter + gear_box_parameters.eccentricity)
 
-        if calc_dia > gear_box_parameters.pin_disk_diameter:
-            gear_box_parameters.pin_disk_diameter = calc_dia
+        if calc_dia > gear_box_parameters.Diameter:
+            gear_box_parameters.Diameter = calc_dia
             gear_box_parameters.recompute()
         # self.gear_box_parameters.gear_box_parameters.generate_pin_base()

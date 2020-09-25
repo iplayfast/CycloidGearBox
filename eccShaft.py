@@ -21,8 +21,8 @@ class EccShaft():
                         QT_TRANSLATE_NOOP("App::Property", "Base Height")).base_height = param.base_height
         obj.addProperty("App::PropertyLength", "shaft_diameter", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Shaft Diameter")).shaft_diameter = param.shaft_diameter
-        obj.addProperty("App::PropertyLength", "gearbox_height", "CycloidGearBox",
-                        QT_TRANSLATE_NOOP("App::Property", "Slot Height")).gearbox_height = param.gearbox_height
+        obj.addProperty("App::PropertyLength", "Height", "CycloidGearBox",
+                        QT_TRANSLATE_NOOP("App::Property", "Slot Height")).Height = param.Height
 
     def __getstate__(self):
         return self.Type
@@ -45,8 +45,8 @@ class EccShaft():
             gear_box_parameters.base_height = eccentric_shaft_obj.base_height
         if prop == 'shaft_diameter':
             gear_box_parameters.shaft_diameter = eccentric_shaft_obj.shaft_diameter
-        if prop == 'gearbox_height':
-            gear_box_parameters.gearbox_height = eccentric_shaft_obj.gearbox_height
+        if prop == 'Height':
+            gear_box_parameters.Height = eccentric_shaft_obj.Height
 
     def recompute_gearbox(self, H):
         print("recomputing Eccentric Shaft")

@@ -16,7 +16,7 @@ class cycdiskClass():
                         QT_TRANSLATE_NOOP("App::Property", "Number of teeth of the cycloidal disk")).tooth_count = param.tooth_count
         self.gear_box = gear_box
         self.ShapeColor = (0.12, 0.02, 0.63)
-        self.Type = 'CyclockalDisk'
+        self.Type = 'CycloidalDisk'
 
     def __getstate__(self):
         return self.Type
@@ -27,12 +27,12 @@ class cycdiskClass():
 
     def onChanged(self, fp, prop):
         print("cycloiddisk onchanged", fp, prop)
-        p = App.ActiveDocument.getObject("GearBoxParameters")
-        s = fp.Document.getObject('cycloidal_disk')
+        gearbox = App.ActiveDocument.getObject("GearBoxParameters")
+        cycloidal = fp.Document.getObject('cycloidal_disk')
         if prop == 'driver_disk_hole_count':
-            p.driver_disk_hole_count = s.driver_disk_hole_count
+            gearbox.driver_disk_hole_count = cycloidal.driver_disk_hole_count
         if prop == 'tooth_count':
-            p.tooth_count = s.tooth_count
+            gearbox.tooth_count = cycloidal.tooth_count
 
     def execute(self, obj):
         # obj.Shape = self.gear_box.generate_pin_base()

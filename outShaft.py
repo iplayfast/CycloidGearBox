@@ -15,8 +15,8 @@ class OutShaft():
                         QT_TRANSLATE_NOOP("APP::Property", "Number of driving holes of the cycloid disk")).driver_disk_hole_count = param.driver_disk_hole_count
         obj.addProperty("App::PropertyLength", "shaft_diameter", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Shaft Diameter")).shaft_diameter = param.shaft_diameter
-        obj.addProperty("App::PropertyLength", "gearbox_height", "CycloidGearBox",
-                        QT_TRANSLATE_NOOP("App::Property", "Slot Height")).gearbox_height = param.gearbox_height
+        obj.addProperty("App::PropertyLength", "Height", "CycloidGearBox",
+                        QT_TRANSLATE_NOOP("App::Property", "Slot Height")).Height = param.Height
         self.Type = 'output_shaft'
 
     def __getstate__(self):
@@ -33,8 +33,8 @@ class OutShaft():
             gear_box_parameters.driver_disk_hole_count = output_shaft.driver_disk_hole_count
         if prop == 'shaft_diameter':
             gear_box_parameters.shaft_diameter = output_shaft.shaft_diameter
-        if prop == 'gearbox_height':
-            gear_box_parameters.gearbox_height = output_shaft.gearbox_height
+        if prop == 'Height':
+            gear_box_parameters.Height = output_shaft.Height
 
     def recompute_gearbox(self, H):
         print("recomputing output shaft")

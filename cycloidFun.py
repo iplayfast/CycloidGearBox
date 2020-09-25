@@ -85,7 +85,6 @@ def calculate_radii(pin_count: int, eccentricity, outer_diameter, pin_diameter:f
     # Validate r based on R and N: canot be larger than R * sin(pi/N) or the circles won't fit
     if pin_radius > outer_radius * math.sin( math.pi)/ pin_count :
         pin_radius = outer_radius * math.sin(math.pi)/ pin_count
-        pin_diameter = pin_radius * 2.0
     inset = pin_radius
     angle = 360 / pin_count
 
@@ -98,14 +97,20 @@ def calculate_radii(pin_count: int, eccentricity, outer_diameter, pin_diameter:f
     r2 = outer_diameter / 2 / pin_count
     return r1,r2
 
+def calc_DriverRad(count,min_radius):
+    """ calculate the optimal sized disk for a radius when doing count disks
+    """
+    return (math.pi * 2 * min_radius) / (count*6)
+
+
 def generate_DiskHeight(H,add_clearence=False):
-    if (H["gearbox_height"]<=H["base_height"]):
+    if (H["Height"]<=H["base_height"]):
         print("gearbox might be larger than base")
         return 1
     if add_clearence:
-        return (H["gearbox_height"] - H["base_height"]) / 3 + H["clearance"]
+        return (H["Height"] - H["base_height"]) / 3 + H["clearance"]
     else:
-        return (H["gearbox_height"] - H["base_height"]) / 3
+        return (H["Height"] - H["base_height"]) / 3
 
 def calculate(step : int, eccentricity, r1, r2: float):
     X = (r1 + r2) * math.cos(2 * math.pi * step) + eccentricity * math.cos((r1 + r2) * 2 * math.pi * step / r2)
@@ -174,12 +179,12 @@ def generate_pin_base(H):
     pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
     base_height = H["base_height"]
     shaft_diameter = H["shaft_diameter"]
-    gearbox_height = H["gearbox_height"]
+    Height = H["Height"]
     clearance = H["clearance"]
     min_radius, max_radius= calculate_min_max_radii(H)
     driver_disk_height = generate_DiskHeight(H,False)
     pin_height = driver_disk_height*3
-    pin_base = Part.makeCylinder( H["pin_disk_diameter"]/2, base_height) # base of the whole system
+    pin_base = Part.makeCylinder( H["Diameter"]/2, base_height) # base of the whole system
     dd = Part.makeCylinder(min_radius * 0.75 + clearance, driver_disk_height*2, Base.Vector(0, 0,base_height-driver_disk_height)) #hole for the driver disk to fit in
     pin_base = pin_base.cut(dd)
     # generate the pin locations
@@ -209,11 +214,13 @@ def generate_output_shaft(H):
     diskHeight = generate_DiskHeight(H)
     mainDriverDisk = Part.makeCylinder(min_radius * 0.75, diskHeight, Base.Vector(0, 0, 0))
     mainDriverDisk = mainDriverDisk.fuse(generate_key(H,False))
+    r = calc_DriverRad(driver_disk_hole_count,min_radius)
     for i in range(0, driver_disk_hole_count):
         x = min_radius / 2 * math.cos(2.0 * math.pi / (driver_disk_hole_count) * i)
         y = min_radius / 2 * math.sin(2.0 * math.pi / (driver_disk_hole_count) * i)
         # offset the eccentricity to line up with cycloidal disk
-        fixed_ring_pin = Part.makeCylinder(pin_disk_pin_diameter * 2 - eccentricity+clearance, diskHeight * 3, Base.Vector(x, y, -1))  # driver pins
+        #fixed_ring_pin = Part.makeCylinder(pin_disk_pin_diameter * 2 - eccentricity+clearance, diskHeight * 3, Base.Vector(x, y, -1))  # driver pins
+        fixed_ring_pin = Part.makeCylinder(r - eccentricity+clearance, diskHeight * 3, Base.Vector(x, y, -1))  # driver pins
         mainDriverDisk = mainDriverDisk.cut(fixed_ring_pin)
     return mainDriverDisk.translate(Base.Vector(0, 0, base_height + diskHeight *2))
 
@@ -284,9 +291,12 @@ def generate_cycloidal_disk_array(H):
     min_radius, max_radius= calculate_min_max_radii(H)
     q = 2.0 * math.pi / line_segment_count
     i = 0
-    r1,r2 = calculate_radii(tooth_count,eccentricity,105,10)
+    #r1,r2 = calculate_radii(tooth_count,eccentricity,105,10)
+    r1,r2 = calculate_radii(tooth_count,eccentricity,(min_radius+max_radius)/2,pin_disk_pin_diameter)
+    # v1 is starting point
     v1 = Base.Vector(calc_x(tooth_count, eccentricity, tooth_pitch, pin_disk_pin_diameter, q * i),
-                     calc_y(tooth_count, eccentricity, tooth_pitch, pin_disk_pin_diameter, q * i), 0)
+                     calc_y(tooth_count, eccentricity, tooth_pitch, pin_disk_pin_diameter, q * i),
+                     0)
     v1 = check_limit(v1, pressure_angle_offset, min_radius, max_radius)
     va1 = Base.Vector(calculate(0,eccentricity,r1,r2))
     va1 = check_limit(va1, pressure_angle_offset, min_radius, max_radius)
@@ -328,10 +338,12 @@ def generate_cycloidal_disk(H):
     esw = Part.Wire([es])
     esf = Part.Face(esw)
     fc = f.cut(esf)
+    r = calc_DriverRad(driver_disk_hole_count,min_radius)
     for i in range(0, driver_disk_hole_count ):
         x = min_radius/2 * math.cos(2.0 * math.pi * (i / driver_disk_hole_count))
         y = min_radius/2 * math.sin(2.0 * math.pi * (i / driver_disk_hole_count))
-        drivingHole= Part.makeCircle(pin_disk_pin_diameter*2+clearance,Base.Vector(x,y,0))
+        #drivingHole= Part.makeCircle(pin_disk_pin_diameter*2+clearance,Base.Vector(x,y,0))
+        drivingHole= Part.makeCircle(r+clearance,Base.Vector(x,y,0))
         esw = Part.Wire([drivingHole])
         esf = Part.Face(esw)
         fc = fc.cut(esf)
@@ -350,11 +362,13 @@ def generate_driver_disk(H):
     DiskHeight = generate_DiskHeight(H,False)
     driverDisk = Part.makeCylinder(min_radius * 0.75, DiskHeight, Base.Vector(0, 0,0)) # the main driver disk
     shaft = Part.makeCylinder(shaft_diameter/ 2.0+clearance,DiskHeight+base_height*2,Base.Vector(0,0,-base_height))
+    r = calc_DriverRad(driver_disk_hole_count,min_radius)
     for i in range(0, driver_disk_hole_count):
         x = min_radius / 2 * math.cos(2.0 * math.pi / (driver_disk_hole_count) * i)
         y = min_radius / 2 * math.sin(2.0 * math.pi / (driver_disk_hole_count) * i)
         # offset the eccentricity to line up with cycloidal disk
-        driver_disk_pin = Part.makeCylinder(pin_disk_pin_diameter*2 - eccentricity , DiskHeight * 3, Base.Vector(x, y, DiskHeight)) #driver pins
+        #driver_disk_pin = Part.makeCylinder(pin_disk_pin_diameter*2 - eccentricity , DiskHeight * 3, Base.Vector(x, y, DiskHeight)) #driver pins
+        driver_disk_pin = Part.makeCylinder(r - eccentricity , DiskHeight * 3, Base.Vector(x, y, DiskHeight)) #driver pins
         driverDisk = driverDisk.fuse(driver_disk_pin)
 
     fp = driverDisk.translate(Base.Vector(0,0,base_height - DiskHeight))
@@ -371,14 +385,14 @@ def generate_default_hyperparam():
         "line_segment_count": 400,
         "tooth_pitch": 4,
         "pin_disk_scale" : False,
-        "pin_disk_diameter" : 110,
+        "Diameter" : 110,
         "pin_disk_pin_diameter": 4.7,
         "pressure_angle_limit": 50.0,
         "pressure_angle_offset": 0.0,
         "base_height":10.0,
         "driver_pin_height":10.0,
         "shaft_diameter":13.0,
-        "gearbox_height" : 10.0,
+        "Height" : 20.0,
         "clearance" : 0.5
         }
     return hyperparameters
