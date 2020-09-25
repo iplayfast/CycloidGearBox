@@ -96,7 +96,7 @@ class CycloidGearBoxCreateObject():
         doc = App.ActiveDocument
         body = doc.addObject('PartDesign::Body', 'Body')
         body.Label = "gear_box"
-
+        #doc.RecomputesFrozen = True
         obj = doc.addObject("Part::FeaturePython", "GearBoxParameters")
         gear_box = CycloidalGearBox(obj)
         doc.recompute()
@@ -170,35 +170,29 @@ class CycloidalGearBox():
         H = cycloidFun.generate_default_hyperparam()
         # pin_disk
         obj.addProperty("App::PropertyLength",  "pin_disk_diameter","pin_disk", QT_TRANSLATE_NOOP("App::Property", "pin_disk_diameter")).pin_disk_diameter = H[ "pin_disk_diameter"]
-        obj.addProperty("App::PropertyLength",  "roller_diameter",  "pin_disk,eccentric_shaft,eccentric_key", QT_TRANSLATE_NOOP("App::Property", "roller_diameter")).roller_diameter = H[ "roller_diameter"]
+        obj.addProperty("App::PropertyLength",  "pin_disk_pin_diameter",  "pin_disk,eccentric_shaft,eccentric_key", QT_TRANSLATE_NOOP("App::Property", "pin_disk_pin_diameter")).pin_disk_pin_diameter = H[ "pin_disk_pin_diameter"]
         obj.addProperty("App::PropertyLength",  "base_height",      "pin_disk,eccentric_shaft,eccentric_key", QT_TRANSLATE_NOOP("App::Property", "base_height")).base_height = H["base_height"]
         obj.addProperty("App::PropertyLength",  "shaft_diameter",   "pin_disk,driver_disk,eccentric_shaft,eccentric_key", QT_TRANSLATE_NOOP("App::Property", "shaft_diameter")).shaft_diameter = H["shaft_diameter"]
         obj.addProperty("App::PropertyInteger", "tooth_count",      "pin_disk,cycloidal_disk", QT_TRANSLATE_NOOP("App::Property", "number of cycloidal teeth, ratio = 1/(tooth_count - 1)")).tooth_count = H[ "tooth_count"]
-        # cycloidal Disk properties
-        obj.addProperty("App::PropertyLength",  "cycloidal_disk_height", "cycloidal_disk", QT_TRANSLATE_NOOP("App::Property", "Cycloidal Disk")).cycloidal_disk_height = H[ "cycloidal_disk_height"]
-
         # driver_disk
-        obj.addProperty("App::PropertyInteger","disk_hole_count",       "driver_disk,output_shaft",QT_TRANSLATE_NOOP("APP::Property", "Output Shaft")).disk_hole_count = H["disk_hole_count"]
-        obj.addProperty("App::PropertyLength", "driver_disk_diameter",  "driver_disk",QT_TRANSLATE_NOOP("App::Property", "driver_disk Diameter")).driver_disk_diameter = H[ "driver_disk_diameter"]
-        obj.addProperty("App::PropertyLength", "driver_disk_height",    "driver_disk", QT_TRANSLATE_NOOP("App::Property", "Base Height")).driver_disk_height = H["driver_disk_height"]
-        obj.addProperty("App::PropertyLength", "driver_pin_height",     "driver_disk", QT_TRANSLATE_NOOP("App::Property", "Driver Pin Height")).driver_pin_height = H[ "driver_pin_height"]
+        obj.addProperty("App::PropertyInteger","driver_disk_hole_count",       "driver_disk,output_shaft", QT_TRANSLATE_NOOP("APP::Property", "Output Shaft")).driver_disk_hole_count = H["driver_disk_hole_count"]
+        obj.addProperty("App::PropertyLength", "driver_pin_height",     "driver_disk",              QT_TRANSLATE_NOOP("App::Property", "driver_pin_height")).driver_pin_height = H[ "driver_pin_height"]
         obj.addProperty("App::PropertyLength", "eccentricity",          "driver_disk,eccentric_shaft,eccentric_key", QT_TRANSLATE_NOOP("App::Property", "eccentricity")).eccentricity = H["eccentricity"]
         # eccentric_shaft all properties in other classes
 
         # output shaft properties
-        obj.addProperty("App::PropertyLength", "slot_height",           "output_shaft", QT_TRANSLATE_NOOP("App::Property", "Output Shaft")).slot_height = H["slot_height"]
+        obj.addProperty("App::PropertyLength", "pin_disk_pin_height",           "output_shaft", QT_TRANSLATE_NOOP("App::Property", "Output Shaft")).pin_disk_pin_height = H["pin_disk_pin_height"]
 
         obj.addProperty("App::PropertyInteger", "line_segment_count", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property", "Number of line segments to make up the cycloidal disk")).line_segment_count = H["line_segment_count"]
 
 
         # obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = H["RollerHeight"]
-        obj.addProperty("App::PropertyLength", "center_diameter", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property", "Center Diameter")).center_diameter = H["center_diameter"]
         obj.addProperty("App::PropertyLength", "pressure_angle_limit", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property", "Pressure Angle Limit")).pressure_angle_limit = H[ "pressure_angle_limit"]
         obj.addProperty("App::PropertyAngle", "pressure_angle_offset", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property", "Pressure Angle Offset")).pressure_angle_offset = H[ "pressure_angle_offset"]
         obj.addProperty("App::PropertyLength", "clearance", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property", "clearance between parts")).clearance = H["clearance"]
         # eccentric Shaft
         # shaft diameter also in output shaft
-        # disk_hole_count (also in output shaft)
+        # driver_disk_hole_count (also in output shaft)
         obj.addProperty("App::PropertyAngle", "tooth_pitch", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property", "Cycloidal Disk")).tooth_pitch = H["tooth_pitch"]
 
         #read only properites
@@ -249,20 +243,11 @@ class CycloidalGearBox():
         eccentric_shaft_obj = App.ActiveDocument.getObject('eccentricShaft')
         dd = App.ActiveDocument.getObject('driver_disk')
         output_shaft = App.ActiveDocument.getObject('output_shaft')
-        if prop == 'slot_height':
-           if (eccentric_shaft_obj.slot_height != obj.slot_height):
-              eccentric_shaft_obj.slot_height = obj.slot_height
-              dirty = True
-           if (output_shaft.slot_height != obj.slot_height):
-              output_shaft.slot_height = obj.slot_height
+        if prop == 'pin_disk_pin_height':
               dirty = True
         if prop == 'pin_disk_diameter':
            if (pin_disk.pin_disk_diameter != obj.pin_disk_diameter):
               pin_disk.pin_disk_diameter = obj.pin_disk_diameter
-              dirty = True
-        if prop == 'driver_disk_diameter':
-           if (driver_disk.driver_disk_diameter != obj.driver_disk_diameter):
-              driver_disk.driver_disk_diameter = obj.driver_disk_diameter
               dirty = True
         if prop == 'shaft_diameter':
            if obj.shaft_diameter < 1:
@@ -272,7 +257,7 @@ class CycloidalGearBox():
               pin_disk.shaft_diameter = obj.shaft_diameter
               dd.shaft_diameter = obj.shaft_diameter
            dirty = True
-        if prop == 'roller_diameter' and hasattr(eccentric_shaft_obj, "eccentricity") and hasattr(obj, "eccentricity"):
+        if prop == 'pin_disk_pin_diameter' and hasattr(eccentric_shaft_obj, "eccentricity") and hasattr(obj, "eccentricity"):
            if (obj.eccentricity < 1):
               obj.eccentricity = 1
            if eccentric_shaft_obj.eccentricity != obj.eccentricity:
@@ -283,20 +268,22 @@ class CycloidalGearBox():
               obj.tooth_count = 3
            if pin_disk.tooth_count != obj.tooth_count:
               pin_disk.tooth_count = obj.tooth_count
+           if cycloidalDisk.tooth_count != obj.tooth_count:
+               cycloidalDisk.tooth_count = obj.tooth_count
            dirty = True
         if prop == 'line_segment_count':
            dirty = True
-        if prop == 'roller_diameter':
+        if prop == 'pin_disk_pin_diameter':
            if hasattr(obj, "eccentricity"):
-              if obj.roller_diameter < 1:
-                  obj.roller_diameter = 1
-              if obj.eccentricity != obj.roller_diameter / 2:
-                  obj.eccentricity = obj.roller_diameter / 2
+              if obj.pin_disk_pin_diameter < 1:
+                  obj.pin_disk_pin_diameter = 1
+              if obj.eccentricity != obj.pin_disk_pin_diameter / 2:
+                  obj.eccentricity = obj.pin_disk_pin_diameter / 2
               if hasattr(eccentric_shaft_obj,
                         "eccentricity") and eccentric_shaft_obj.eccentricity != obj.eccentricity:
                   eccentric_shaft_obj.eccentricity = obj.eccentricity
-           if pin_disk.roller_diameter != obj.roller_diameter:
-              pin_disk.roller_diameter = obj.roller_diameter
+           if pin_disk.pin_disk_pin_diameter != obj.pin_disk_pin_diameter:
+              pin_disk.pin_disk_pin_diameter = obj.pin_disk_pin_diameter
            dirty = True
         # if prop=='RollerHeight':
         #    if pin_disk.RollerHeight != obj.RollerHeight:
@@ -307,12 +294,10 @@ class CycloidalGearBox():
               pin_disk.tooth_count = obj.tooth_count
            dirty = True
         if prop == 'eccentricity':
-           if (obj.roller_diameter < obj.eccentricity * 2):
-              obj.roller_diameter = obj.eccentricity * 2
+           if (obj.pin_disk_pin_diameter < obj.eccentricity * 2):
+              obj.pin_disk_pin_diameter = obj.eccentricity * 2
            if hasattr(eccentric_shaft_obj, "eccentricity") and eccentric_shaft_obj.eccentricity != obj.eccentricity:
               eccentric_shaft_obj.eccentricity = obj.eccentricity
-           dirty = True
-        if prop == 'center_diameter':
            dirty = True
         if prop == 'pressure_angle_limit':
            dirty = True
@@ -326,17 +311,9 @@ class CycloidalGearBox():
            if (driver_disk.driver_pin_height != obj.driver_pin_height):
               driver_disk.driver_pin_height = obj.driver_pin_height
               dirty = True
-        if prop == 'driver_disk_height':
-           if (driver_disk.driver_disk_height != obj.driver_disk_height):
-              driver_disk.driver_disk_height = obj.driver_disk_height
-              dirty = True
-        if prop == 'cycloidal_disk_height':
-           if (cycdisk.cycloidal_disk_height != obj.cycloidal_disk_height):
-              cycdisk.cycloidal_disk_height = obj.cycloidal_disk_height
-              dirty = True
-        if prop == 'disk_hole_count':
-           if (driver_disk.disk_hole_count != obj.disk_hole_count):
-              driver_disk.disk_hole_count = obj.disk_hole_count
+        if prop == 'driver_disk_hole_count':
+           if (driver_disk.driver_disk_hole_count != obj.driver_disk_hole_count):
+              driver_disk.driver_disk_hole_count = obj.driver_disk_hole_count
               dirty = True
         if prop == 'Refresh':
            dirty = True
@@ -349,20 +326,16 @@ class CycloidalGearBox():
     def GetHyperParameters(self):
         hyperparameters = {"tooth_count": int(self.Object.__getattribute__("tooth_count")),
                         "line_segment_count": int(self.Object.__getattribute__("line_segment_count")),
-                        "roller_diameter": float(self.Object.__getattribute__("roller_diameter").Value),
+                        "pin_disk_pin_diameter": float(self.Object.__getattribute__("pin_disk_pin_diameter").Value),
                         "pin_disk_diameter": float(self.Object.__getattribute__("pin_disk_diameter").Value),
-                        "driver_disk_diameter": float(self.Object.__getattribute__("driver_disk_diameter").Value),
                         "tooth_pitch": float(self.Object.__getattribute__("tooth_pitch").Value),
                         "eccentricity": float(self.Object.__getattribute__("eccentricity").Value),
-                        "center_diameter": float(self.Object.__getattribute__("center_diameter").Value),
                         "pressure_angle_limit": float(self.Object.__getattribute__("pressure_angle_limit").Value),
                         "pressure_angle_offset": float(self.Object.__getattribute__("pressure_angle_offset").Value),
                         "base_height": float(self.Object.__getattribute__("base_height").Value),
                         "driver_pin_height": float(self.Object.__getattribute__("driver_pin_height").Value),
-                        "driver_disk_height": float(self.Object.__getattribute__("driver_disk_height").Value),
-                        "cycloidal_disk_height": float(self.Object.__getattribute__("cycloidal_disk_height").Value),
-                        "disk_hole_count": int(self.Object.__getattribute__("disk_hole_count")),
-                        "slot_height": int(self.Object.__getattribute__("slot_height")),
+                        "driver_disk_hole_count": int(self.Object.__getattribute__("driver_disk_hole_count")),
+                        "pin_disk_pin_height": int(self.Object.__getattribute__("pin_disk_pin_height")),
                         "shaft_diameter": float(self.Object.__getattribute__("shaft_diameter")),
                         "clearance": float(self.Object.__getattribute__("clearance"))
                         }

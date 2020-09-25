@@ -10,13 +10,10 @@ class cycdiskClass():
         obj.Proxy = self
         # obj.addProperty("App::PropertyString", "Parent","Parameter","Parent").Parent = App.ActiveDocument.GearBoxParameters
         param = App.ActiveDocument.getObject("GearBoxParameters")
-        obj.addProperty("App::PropertyInteger", "disk_hole_count", "CycloidGearBox",
-                        QT_TRANSLATE_NOOP("APP::Property", "Number of driving holes of the cycloid disk")).disk_hole_count = param.disk_hole_count
+        obj.addProperty("App::PropertyInteger", "driver_disk_hole_count", "CycloidGearBox",
+                        QT_TRANSLATE_NOOP("APP::Property", "Number of driving holes of the cycloid disk")).driver_disk_hole_count = param.driver_disk_hole_count
         obj.addProperty("App::PropertyInteger", "tooth_count", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Number of teeth of the cycloidal disk")).tooth_count = param.tooth_count
-        obj.addProperty("App::PropertyLength", "cycloidal_disk_height", "CycloidGearBox",
-                        QT_TRANSLATE_NOOP("App::Property",
-                                          "Cycloidal Disk Height")).cycloidal_disk_height = param.cycloidal_disk_height
         self.gear_box = gear_box
         self.ShapeColor = (0.12, 0.02, 0.63)
         self.Type = 'CyclockalDisk'
@@ -32,10 +29,8 @@ class cycdiskClass():
         print("cycloiddisk onchanged", fp, prop)
         p = App.ActiveDocument.getObject("GearBoxParameters")
         s = fp.Document.getObject('cycloidal_disk')
-        if prop == 'disk_hole_count':
-            p.disk_hole_count = s.disk_hole_count
-        if prop == 'cycloidal_disk_height':
-            p.cycloidal_disk_height = s.cycloidal_disk_height
+        if prop == 'driver_disk_hole_count':
+            p.driver_disk_hole_count = s.driver_disk_hole_count
         if prop == 'tooth_count':
             p.tooth_count = s.tooth_count
 

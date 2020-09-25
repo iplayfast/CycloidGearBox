@@ -14,8 +14,8 @@ class EccKey():
         param = App.ActiveDocument.getObject("GearBoxParameters")
         obj.addProperty("App::PropertyLength", "eccentricity", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "eccentricity")).eccentricity = param.eccentricity
-        obj.addProperty("App::PropertyLength", "roller_diameter", "CycloidGearBox",
-                        QT_TRANSLATE_NOOP("App::Property", "Diameter of the rollers")).roller_diameter = param.roller_diameter
+        obj.addProperty("App::PropertyLength", "pin_disk_pin_diameter", "CycloidGearBox",
+                        QT_TRANSLATE_NOOP("App::Property", "Diameter of the rollers")).pin_disk_pin_diameter = param.pin_disk_pin_diameter
         # obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = param.RollerHeight
         obj.addProperty("App::PropertyLength", "base_height", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Base Height")).base_height = param.base_height
@@ -34,9 +34,9 @@ class EccKey():
         eccentric_key = fp.Document.getObject("eccentricKey")
         if prop == "eccentricity":
             gear_box_parameters.eccentricity = eccentric_key.eccentricity
-            gear_box_parameters.roller_diameter = eccentric_key.eccentricity * 2.0
-        if prop == 'roller_diameter':
-            gear_box_parameters.roller_diameter = eccentric_key.roller_diameter
+            gear_box_parameters.pin_disk_pin_diameter = eccentric_key.eccentricity * 2.0
+        if prop == 'pin_disk_pin_diameter':
+            gear_box_parameters.pin_disk_pin_diameter = eccentric_key.pin_disk_pin_diameter
         # if prop == 'RollerHeight':
         #    gear_box_parameters.RollerHeight = eccentric_key.RollerHeight
         if prop == 'base_height':

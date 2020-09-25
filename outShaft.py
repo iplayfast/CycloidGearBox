@@ -11,12 +11,12 @@ class OutShaft():
         obj.Proxy = self
         self.Type = 'Output Shaft'
         param = App.ActiveDocument.getObject("GearBoxParameters")
-        obj.addProperty("App::PropertyInteger", "disk_hole_count", "CycloidGearBox",
-                        QT_TRANSLATE_NOOP("APP::Property", "Number of driving holes of the cycloid disk")).disk_hole_count = param.disk_hole_count
+        obj.addProperty("App::PropertyInteger", "driver_disk_hole_count", "CycloidGearBox",
+                        QT_TRANSLATE_NOOP("APP::Property", "Number of driving holes of the cycloid disk")).driver_disk_hole_count = param.driver_disk_hole_count
         obj.addProperty("App::PropertyLength", "shaft_diameter", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "Shaft Diameter")).shaft_diameter = param.shaft_diameter
-        obj.addProperty("App::PropertyLength", "slot_height", "CycloidGearBox",
-                        QT_TRANSLATE_NOOP("App::Property", "Slot Height")).slot_height = param.slot_height
+        obj.addProperty("App::PropertyLength", "pin_disk_pin_height", "CycloidGearBox",
+                        QT_TRANSLATE_NOOP("App::Property", "Slot Height")).pin_disk_pin_height = param.pin_disk_pin_height
         self.Type = 'output_shaft'
 
     def __getstate__(self):
@@ -29,12 +29,12 @@ class OutShaft():
     def onChanged(self, fp, prop):
         gear_box_parameters = App.ActiveDocument.getObject("GearBoxParameters")
         output_shaft = fp.Document.getObject("output_shaft")
-        if prop == "disk_hole_count":
-            gear_box_parameters.disk_hole_count = output_shaft.disk_hole_count
+        if prop == "driver_disk_hole_count":
+            gear_box_parameters.driver_disk_hole_count = output_shaft.driver_disk_hole_count
         if prop == 'shaft_diameter':
             gear_box_parameters.shaft_diameter = output_shaft.shaft_diameter
-        if prop == 'slot_height':
-            gear_box_parameters.slot_height = output_shaft.slot_height
+        if prop == 'pin_disk_pin_height':
+            gear_box_parameters.pin_disk_pin_height = output_shaft.pin_disk_pin_height
 
     def recompute_gearbox(self, H):
         print("recomputing output shaft")
