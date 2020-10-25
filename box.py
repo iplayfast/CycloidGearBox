@@ -30,7 +30,7 @@ class BoxCreateObject():
     def GetResources(self):
         print(os.path.join( 'icons','cycloidgearbox.svg'))
         return {'Pixmap' : main_box_Icon,
-            'MenuText': "&Create A hypoCycloidalGear", 
+            'MenuText': "&Create hypoCycloidalGear", 
             'ToolTip' : "Create samplecode box" }
     
     def __init__(self):
