@@ -31,22 +31,20 @@ class EccShaft():
         if state:
             self.Type = state
 
-    def onChanged(self, fp, prop):
-        gear_box_parameters = App.ActiveDocument.getObject("GearBoxParameters")
-        eccentric_shaft_obj = fp.Document.getObject("eccentric_shaft")
-        if prop == "eccentricity":
-            gear_box_parameters.eccentricity = eccentric_shaft_obj.eccentricity
-            gear_box_parameters.pin_disk_pin_diameter = eccentric_shaft_obj.eccentricity * 2.0
-        if prop == 'pin_disk_pin_diameter':
-            gear_box_parameters.pin_disk_pin_diameter = eccentric_shaft_obj.pin_disk_pin_diameter
-        # if prop == 'RollerHeight':
-        #    gear_box_parameters.RollerHeight = eccentric_shaft_obj.RollerHeight
-        if prop == 'base_height':
-            gear_box_parameters.base_height = eccentric_shaft_obj.base_height
-        if prop == 'shaft_diameter':
-            gear_box_parameters.shaft_diameter = eccentric_shaft_obj.shaft_diameter
-        if prop == 'Height':
-            gear_box_parameters.Height = eccentric_shaft_obj.Height
+    def execute(self,obj):
+        self.checkset('eccentricity')
+        self.checkset('pin_disk_pin_diameter')
+        self.checkset('base_height')
+        self.checkset('shaft_diameter')
+        self.checkset('Height')
+        #    self.gear_box.Proxy.force_Recompute()
+
+    def checkset(self, prop):
+        if (hasattr(self.gear_box, 'Proxy') and hasattr(self.gear_box, prop)):
+            if (getattr(self.gear_box, prop) != getattr(self.Object, prop)):
+                setattr(self.gear_box, prop, getattr(self.Object, prop))
+                return True
+        return False
 
     def recompute_gearbox(self, H):
         print("recomputing Eccentric Shaft")
