@@ -29,20 +29,19 @@ class EccKey():
         if state:
             self.Type = state
 
-    def onChanged(self, fp, prop):
-        gear_box_parameters = App.ActiveDocument.getObject("GearBoxParameters")
-        eccentric_key = fp.Document.getObject("eccentricKey")
-        if prop == "eccentricity":
-            gear_box_parameters.eccentricity = eccentric_key.eccentricity
-            gear_box_parameters.pin_disk_pin_diameter = eccentric_key.eccentricity * 2.0
-        if prop == 'pin_disk_pin_diameter':
-            gear_box_parameters.pin_disk_pin_diameter = eccentric_key.pin_disk_pin_diameter
-        # if prop == 'RollerHeight':
-        #    gear_box_parameters.RollerHeight = eccentric_key.RollerHeight
-        if prop == 'base_height':
-            gear_box_parameters.base_height = eccentric_key.base_height
-        if prop == 'shaft_diameter':
-            gear_box_parameters.shaft_diameter = eccentric_key.shaft_diameter
+    def execute(self, obj):
+        self.checkset('base_height')
+        self.checkset('eccentricity')
+        self.checkset('pin_disk_pin_diameter')
+        self.checkset('shaft_diameter')
+        #self.gear_box.Proxy.force_Recompute()
+
+    def checkset(self, prop):
+        if (hasattr(self.gear_box, 'Proxy') and hasattr(self.gear_box, prop)):
+            if (getattr(self.gear_box, prop) != getattr(self.Object, prop)):
+                setattr(self.gear_box, prop, getattr(self.Object, prop))
+                return True
+        return False
 
     def recompute_gearbox(self, H):
         self.Object.Shape = cycloidFun.generate_eccentric_key(H)

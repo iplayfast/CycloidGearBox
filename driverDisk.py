@@ -11,6 +11,8 @@ class driver_diskClass():
         param = App.ActiveDocument.getObject("GearBoxParameters")
         obj.addProperty("App::PropertyInteger", "driver_disk_hole_count", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("APP::Property", "Number of driving holes of the cycloid disk")).driver_disk_hole_count = param.driver_disk_hole_count
+        obj.addProperty("App::PropertyLength", "driver_pin_height", "CycloidGearBox",
+                        QT_TRANSLATE_NOOP("App::Property", "Driver Pin Height")).driver_pin_height = param.driver_pin_height
         obj.addProperty("App::PropertyLength", "eccentricity", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "eccentricity")).eccentricity = param.eccentricity
         obj.addProperty("App::PropertyLength", "shaft_diameter", "CycloidGearBox",
@@ -31,6 +33,8 @@ class driver_diskClass():
         dd = fp.Document.getObject('driver_disk')
         if prop == 'driver_disk_hole_count':
             gear_box_parameters.driver_disk_hole_count = dd.driver_disk_hole_count
+        if prop == 'driver_pin_height':
+            gear_box_parameters.driver_pin_height = dd.driver_pin_height
         if prop == 'eccentricity':
             gear_box_parameters.eccentricity = dd.eccentricity
         if prop == 'shaft_diameter':

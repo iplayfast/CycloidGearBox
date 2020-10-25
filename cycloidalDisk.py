@@ -25,19 +25,17 @@ class cycdiskClass():
         if state:
             self.Type = state
 
-    def onChanged(self, fp, prop):
-        print("cycloiddisk onchanged", fp, prop)
-        gearbox = App.ActiveDocument.getObject("GearBoxParameters")
-        cycloidal = fp.Document.getObject('cycloidal_disk')
-        if prop == 'driver_disk_hole_count':
-            gearbox.driver_disk_hole_count = cycloidal.driver_disk_hole_count
-        if prop == 'tooth_count':
-            gearbox.tooth_count = cycloidal.tooth_count
+    def execute(self,obj):
+        self.checkset('driver_disk_hole_count')
+        self.checkset('tooth_count')
+        #    self.gear_box.Proxy.force_Recompute()
 
-    def execute(self, obj):
-        # obj.Shape = self.gear_box.generate_pin_base()
-        print('cycloidgearbox execute', obj)
+    def checkset(self, prop):
+        if (hasattr(self.gear_box,'Proxy') and hasattr(self.gear_box, prop)):
+            if (getattr(self.gear_box, prop) != getattr(self.Object, prop)):
+                setattr(self.gear_box, prop, getattr(self.Object, prop))
+                return True
+        return False
 
     def recompute_gearbox(self, H):
-        print("recomputing cycloidal disk")
         self.Object.Shape = cycloidFun.generate_cycloidal_disk(H)

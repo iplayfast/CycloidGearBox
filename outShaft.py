@@ -26,17 +26,18 @@ class OutShaft():
         if state:
             self.Type = state
 
-    def onChanged(self, fp, prop):
-        gear_box_parameters = App.ActiveDocument.getObject("GearBoxParameters")
-        output_shaft = fp.Document.getObject("output_shaft")
-        if prop == "driver_disk_hole_count":
-            gear_box_parameters.driver_disk_hole_count = output_shaft.driver_disk_hole_count
-        if prop == 'shaft_diameter':
-            gear_box_parameters.shaft_diameter = output_shaft.shaft_diameter
-        if prop == 'Height':
-            gear_box_parameters.Height = output_shaft.Height
+    def execute(self, obj):
+        self.checkset('driver_disk_hole_count')
+        self.checkset('Height')
+        self.checkset('shaft_diameter')
+        #    self.gear_box.Proxy.force_Recompute()
+
+    def checkset(self, prop):
+        if (self.gear_box and hasattr(self.gear_box, 'Proxy') and hasattr(self.gear_box, prop)):
+            if (getattr(self.gear_box, prop) != getattr(self.Object, prop)):
+                setattr(self.gear_box, prop, getattr(self.Object, prop))
+                return True
+        return False
 
     def recompute_gearbox(self, H):
-        print("recomputing output shaft")
         self.Object.Shape = cycloidFun.generate_output_shaft(H)
-        print("done recomputing output shaft")

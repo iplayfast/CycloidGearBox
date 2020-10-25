@@ -172,6 +172,10 @@ def calculate_min_max_radii(H):
     max_radius = calculate_pressure_limit(tooth_count, tooth_pitch, eccentricity, pin_disk_pin_diameter, max_angle * math.pi / 180)
     return min_radius, max_radius
 
+def calc_min_dia(H):
+    min_radius, _ = calculate_min_max_radii(H)
+    return min_radius
+
 
 def generate_pin_base(H):
     """ create the base that the fixed_ring_pins will be attached to """
