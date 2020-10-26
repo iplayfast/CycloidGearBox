@@ -269,15 +269,16 @@ class CycloidalGearBox():
             return        
         #if self.Dirty:
         #   return
-        if (self.checksetProp(self.pin_disk,prop) or
-            self.checksetProp(self.cycloidal_disk,prop) or 
-            self.checksetProp(self.driver_disk,prop) or 
-            self.checksetProp(self.eccentric_shaft,prop) or           
-            self.checksetProp(self.eccentric_key,prop) or          
-            self.checksetProp(self.output_shaft,prop) or
-            prop == 'Refresh' or 
-            prop == 'clearance'):            
-            self.Dirty = True
+        print("cb onChag enter ",float(self.Object.__getattribute__("pin_disk_pin_diameter").Value))
+        self.Dirty |= self.checksetProp(self.pin_disk,prop)
+        self.Dirty |= self.checksetProp(self.cycloidal_disk,prop)
+        self.Dirty |= self.checksetProp(self.driver_disk,prop)
+        self.Dirty |= self.checksetProp(self.eccentric_shaft,prop)
+        self.Dirty |= self.checksetProp(self.eccentric_key,prop)
+        self.Dirty |= self.checksetProp(self.output_shaft,prop)
+        self.Dirty |= prop == 'Refresh'
+        self.Dirty |= prop == 'clearance'
+        print("cb onChag exit",float(self.Object.__getattribute__("pin_disk_pin_diameter").Value))
         return
 
 
@@ -285,7 +286,8 @@ class CycloidalGearBox():
       """
          will check if part has the property, and if so, and if different then self's equilent,
          will set it to self's equilent and return True
-      """       
+      """
+      print("checksetprop",prop, float(self.Object.__getattribute__("pin_disk_pin_diameter").Value))
       if (hasattr(part.Object, prop)):
            #print('has prop', prop, getattr(part.Object, prop))
            #print('self.Object', getattr(self.Object, prop))
@@ -295,7 +297,9 @@ class CycloidalGearBox():
                #print('setting ', prop, ' to ',getattr(self.Object,prop))
                setattr(part.Object, prop, getattr(self.Object, prop))
                self.busy = OldBusy
+               print("checksetprop", prop, float(self.Object.__getattribute__("pin_disk_pin_diameter").Value))
                return True
+      print("checksetprop",prop, float(self.Object.__getattribute__("pin_disk_pin_diameter").Value))
       return False
 
     def GetHyperParameters(self):
@@ -320,17 +324,19 @@ class CycloidalGearBox():
         self.recompute()
 
     def recompute(self):
+        print("recompute", float(self.Object.__getattribute__("pin_disk_pin_diameter").Value))
         H = self.GetHyperParameters()
         minDia = cycloidFun.calc_min_dia(H)
-        print("HEYY!!! ",minDia)
         if minDia > getattr(self.Object,'Diameter'):
             print('updating Diameter attribute')
             setattr(self.Object, 'Diameter', minDia)
             self.Diameter = minDia
 #            self.Dirty = True
 #        if (self.Dirty):
+        print("recompute", float(self.Object.__getattribute__("pin_disk_pin_diameter").Value))
         hyperparameters = self.GetHyperParameters()
         for a in self.recomputeList:
+            print("recompute", float(self.Object.__getattribute__("pin_disk_pin_diameter").Value))
             a.recompute_gearbox(hyperparameters)
         self.Dirty = False
 

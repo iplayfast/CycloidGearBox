@@ -49,8 +49,8 @@ class pindiskClass():
                 setattr(self.gear_box, prop, getattr(self.Object, prop))
                 return True
         return False
-
     def execute(self,obj):
+        print("pindiskex",getattr(self.Object,'pin_disk_pin_diameter'))
         dirty = self.checkset('Diameter')
         dirty |= self.checkset('pin_disk_pin_diameter')
         dirty |= self.checkset('tooth_count')
@@ -58,6 +58,7 @@ class pindiskClass():
         dirty |= self.checkset('base_height')
         dirty |= self.checkset('shaft_diameter')
         dirty |= self.checkset('Height')
+        print("pindiskex",getattr(self.Object,'pin_disk_pin_diameter'))
         return
         H = self.gear_box.Proxy.GetHyperParameters()
         minDia= cycloidFun.calc_min_dia(H)

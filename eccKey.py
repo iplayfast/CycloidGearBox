@@ -30,10 +30,12 @@ class EccKey():
             self.Type = state
 
     def execute(self, obj):
+        print("ecckey start", float(self.Object.__getattribute__("pin_disk_pin_diameter").Value))
         self.checkset('base_height')
         self.checkset('eccentricity')
         self.checkset('pin_disk_pin_diameter')
         self.checkset('shaft_diameter')
+        print("ecckey end", float(self.Object.__getattribute__("pin_disk_pin_diameter").Value))
         #self.gear_box.Proxy.force_Recompute()
 
     def checkset(self, prop):

@@ -32,16 +32,19 @@ class EccShaft():
             self.Type = state
 
     def execute(self,obj):
+        print("eccshart start", float(self.Object.__getattribute__("pin_disk_pin_diameter").Value))
         self.checkset('eccentricity')
         self.checkset('pin_disk_pin_diameter')
         self.checkset('base_height')
         self.checkset('shaft_diameter')
         self.checkset('Height')
+        print("eccshart ex ", float(self.Object.__getattribute__("pin_disk_pin_diameter").Value))
         #    self.gear_box.Proxy.force_Recompute()
 
     def checkset(self, prop):
         if (hasattr(self.gear_box, 'Proxy') and hasattr(self.gear_box, prop)):
             if (getattr(self.gear_box, prop) != getattr(self.Object, prop)):
+                print("eccshar chset ",prop, float(self.Object.__getattribute__("pin_disk_pin_diameter").Value))
                 setattr(self.gear_box, prop, getattr(self.Object, prop))
                 return True
         return False
