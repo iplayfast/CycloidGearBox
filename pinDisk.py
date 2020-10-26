@@ -58,12 +58,14 @@ class pindiskClass():
         dirty |= self.checkset('base_height')
         dirty |= self.checkset('shaft_diameter')
         dirty |= self.checkset('Height')
+        return
         H = self.gear_box.Proxy.GetHyperParameters()
         minDia= cycloidFun.calc_min_dia(H)
         if minDia > H['Diameter']:
             print('mindia reseting')
             setattr(self, 'Diameter', minDia)
             self.checkset('Diameter')
+            return
             dirty = True
         if (dirty):
             print('forcing recompute')

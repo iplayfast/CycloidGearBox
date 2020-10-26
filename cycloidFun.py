@@ -173,8 +173,8 @@ def calculate_min_max_radii(H):
     return min_radius, max_radius
 
 def calc_min_dia(H):
-    min_radius, _ = calculate_min_max_radii(H)
-    return min_radius
+    min_radius, max_radius = calculate_min_max_radii(H)
+    return 2 * ((min_radius + max_radius) / 2 + H["pin_disk_pin_diameter"]+ H["eccentricity"])
 
 
 def generate_pin_base(H):
@@ -388,13 +388,11 @@ def generate_default_hyperparam():
         "driver_disk_hole_count":6,
         "line_segment_count": 400,
         "tooth_pitch": 4,
-        "pin_disk_scale" : False,
         "Diameter" : 110,
         "pin_disk_pin_diameter": 4.7,
         "pressure_angle_limit": 50.0,
         "pressure_angle_offset": 0.0,
         "base_height":10.0,
-        "driver_pin_height":10.0,
         "shaft_diameter":13.0,
         "Height" : 20.0,
         "clearance" : 0.5
