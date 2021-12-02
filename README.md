@@ -17,7 +17,7 @@ In development
 #### Linux and MacOSX
 
 ```bash
-cd ~/.FreeCAD/Mod
+cd ~/.local/share/FreeCAD/Mod
 git clone git@github.com:iplayfast/CycloidGearBox.git 
 ```
 
