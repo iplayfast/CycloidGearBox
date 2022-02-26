@@ -174,41 +174,46 @@ class CycloidGearBoxCreateObject():
         oShaftObj.ViewObject.ShapeColor = (
             random.random(), random.random(), random.random(), 0.0)
 
-        MasterBody = doc.addObject('PartDesign::Body','MasterBody')
-        sketch = doc.addObject('Sketcher::SketchObject','PinDiskMasterSketch')
+        Body = doc.addObject('PartDesign::Body','MasterPinDisk')
+        sketch = doc.addObject('Sketcher::SketchObject','MasterSketch')
         sketch.Support = (doc.getObject('XY_Plane'), ['']);
         sketch.MapMode = 'FlatFace';
-        MasterBody.addObject(sketch)
+        Body.addObject(sketch)
         gear_box.pin_disk.assign_sketch(sketch)
                
-        sketch = doc.addObject('Sketcher::SketchObject','cycloidalMasterSketch')
+        Body = doc.addObject('PartDesign::Body','MasterCycloidalDisk')
+        sketch = doc.addObject('Sketcher::SketchObject','MasterSketch')
         sketch.MapMode = 'FlatFace';
         sketch.Support = (doc.getObject('XY_Plane'), ['']);
-        MasterBody.addObject(sketch)
+        Body.addObject(sketch)
         gear_box.cycloidal_disk.assign_sketch(sketch)
         
-        sketch = doc.addObject('Sketcher::SketchObject','DriverDiskMasterSketch')
+        Body = doc.addObject('PartDesign::Body','MasterDriverDisk')
+        sketch = doc.addObject('Sketcher::SketchObject','MasterSketch')
         sketch.MapMode = 'FlatFace';
         sketch.Support = (doc.getObject('XY_Plane'), ['']);
-        MasterBody.addObject(sketch)
+        Body.addObject(sketch)
         gear_box.driver_disk.assign_sketch(sketch)
 
-        sketch = doc.addObject('Sketcher::SketchObject','EccentricShaftMasterSketch')
+        Body = doc.addObject('PartDesign::Body','MasterEccentricShaft')
+        sketch = doc.addObject('Sketcher::SketchObject','MasterSketch')
         sketch.MapMode = 'FlatFace';
         sketch.Support = (doc.getObject('XY_Plane'), ['']);
-        MasterBody.addObject(sketch)
+        Body.addObject(sketch)
         gear_box.eccentric_shaft.assign_sketch(sketch)
         
-        sketch = doc.addObject('Sketcher::SketchObject','EccentricKeyMasterSketch')
+        Body = doc.addObject('PartDesign::Body','MasterEccentricKey')
+        sketch = doc.addObject('Sketcher::SketchObject','MasterSketch')
         sketch.MapMode = 'FlatFace';
         sketch.Support = (doc.getObject('XY_Plane'), ['']);
-        MasterBody.addObject(sketch)
+        Body.addObject(sketch)
         gear_box.eccentric_key.assign_sketch(sketch)
         
-        sketch = doc.addObject('Sketcher::SketchObject','OutputShaftMasterSketch')
+        Body = doc.addObject('PartDesign::Body','MasterOutputShaft')
+        sketch = doc.addObject('Sketcher::SketchObject','MasterSketch')
         sketch.MapMode = 'FlatFace';
         sketch.Support = (doc.getObject('XY_Plane'), ['']);
-        MasterBody.addObject(sketch)
+        Body.addObject(sketch)
         gear_box.output_shaft.assign_sketch(sketch)
         
         gear_box.busy = False
