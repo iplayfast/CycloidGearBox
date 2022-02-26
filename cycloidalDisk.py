@@ -16,6 +16,7 @@ class cycdiskClass():
                         QT_TRANSLATE_NOOP("App::Property", "Number of teeth of the cycloidal disk")).tooth_count = param.tooth_count
         self.gear_box = gear_box
         self.ShapeColor = (0.12, 0.02, 0.63)
+        self.sketch = 0
         self.Type = 'CycloidalDisk'
 
     def __getstate__(self):
@@ -24,6 +25,9 @@ class cycdiskClass():
     def __setstate__(self, state):
         if state:
             self.Type = state
+            
+    def assign_sketch(self, sobj):
+        self.sketch = sobj
 
     def execute(self,obj):
         self.checkset('driver_disk_hole_count')
@@ -39,3 +43,5 @@ class cycdiskClass():
 
     def recompute_gearbox(self, H):
         self.Object.Shape = cycloidFun.generate_cycloidal_disk(H)
+        if (self.sketch!=0):
+            cycloidFun.generate_cycloidal_disk_sketch(H,self.sketch)

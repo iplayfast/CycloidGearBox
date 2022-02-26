@@ -10,6 +10,7 @@ class OutShaft():
         self.gear_box = gear_box
         obj.Proxy = self
         self.Type = 'Output Shaft'
+        self.sketch = 0
         param = App.ActiveDocument.getObject("GearBoxParameters")
         obj.addProperty("App::PropertyInteger", "driver_disk_hole_count", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("APP::Property", "Number of driving holes of the cycloid disk")).driver_disk_hole_count = param.driver_disk_hole_count
@@ -25,6 +26,9 @@ class OutShaft():
     def __setstate__(self, state):
         if state:
             self.Type = state
+            
+    def assign_sketch(self, sobj):
+        self.sketch = sobj
 
     def execute(self, obj):
         self.checkset('driver_disk_hole_count')
@@ -41,3 +45,6 @@ class OutShaft():
 
     def recompute_gearbox(self, H):
         self.Object.Shape = cycloidFun.generate_output_shaft(H)
+        if (self.sketch!=0):
+            cycloidFun.generate_output_shaft_sketch(H,self.sketch)
+

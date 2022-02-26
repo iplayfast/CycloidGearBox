@@ -10,6 +10,7 @@ class EccKey():
         self.gear_box = gear_box
         obj.Proxy = self
         self.Type = 'EccKey'
+        self.sketch = 0
         self.ShapeColor = (0.62, 0.42, 0.63)
         param = App.ActiveDocument.getObject("GearBoxParameters")
         obj.addProperty("App::PropertyLength", "eccentricity", "CycloidGearBox",
@@ -28,7 +29,8 @@ class EccKey():
     def __setstate__(self, state):
         if state:
             self.Type = state
-
+    def assign_sketch(self,sobj):
+        self.sketch = sobj
     def execute(self, obj):
         print("ecckey start", float(self.Object.__getattribute__("pin_disk_pin_diameter").Value))
         self.checkset('base_height')
@@ -47,3 +49,5 @@ class EccKey():
 
     def recompute_gearbox(self, H):
         self.Object.Shape = cycloidFun.generate_eccentric_key(H)
+        if (self.sketch!=0):
+            cycloidFun.generate_eccentric_key_sketch(H,self.sketch)

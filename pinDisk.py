@@ -29,6 +29,7 @@ class pindiskClass():
         self.Type = 'pin_disk'
         self.Object = obj
         self.gear_box = gear_box
+        self.sketch = 0
         obj.Proxy = self
 
     def __getstate__(self):
@@ -37,11 +38,15 @@ class pindiskClass():
     def __setstate__(self, state):
         if state:
             self.Type = state
-
+            
+    def assign_sketch(self, sobj):
+        self.sketch = sobj
 
     def recompute_gearbox(self, H):
         print("recomputing pin disk")
-        self.Object.Shape = cycloidFun.generate_pin_base(H)
+        self.Object.Shape = cycloidFun.generate_pin_disk(H)
+        if (self.sketch!=0):
+            cycloidFun.generate_pin_disk_sketch(H,self.sketch)
 
     def checkset(self, prop):
         if (hasattr(self.gear_box, 'Proxy') and hasattr(self.gear_box, prop)):
@@ -60,6 +65,9 @@ class pindiskClass():
         dirty |= self.checkset('Height')
         print("pindiskex",getattr(self.Object,'pin_disk_pin_diameter'))
         return
+    
+    
+        
         H = self.gear_box.Proxy.GetHyperParameters()
         minDia= cycloidFun.calc_min_dia(H)
         if minDia > H['Diameter']:

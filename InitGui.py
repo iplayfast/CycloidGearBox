@@ -28,7 +28,39 @@ smWBpath = os.path.dirname(cycloidFun.__file__)
 smWB_icons_path =  os.path.join( smWBpath, 'icons')
 global main_CGB_Icon
 main_CGB_Icon = os.path.join( smWB_icons_path , 'cycloidgearbox.svg')
+global sketch_Icon
+sketch_Icon = os.path.join(smWB_icons_path,'SketcherWorkbench.svg')
 #print(main_CGB_Icon)
+#print(sketch_Icon)
+#print("here")
+
+"""
+class CycloidSketch(Workbench):
+    Icon = sketch_Icon
+    MenuText = "CyclidalSketch"
+    ToolTip = "make a sketch from gear_box"
+    def __init__(self):
+        pass
+
+    def Initialize(self):
+        Log("Initialize")
+        import cycloidDiskSketch
+        Log("Import")
+        self.__class__.Icon = sketch_Icon
+        Log("icon")
+        self.appendToolBar("CycloidGearBox")
+        Log("tb")
+
+    def GetClassName(self):
+        return "Gui::PythonWorkbench"
+
+    def Activated(self):
+        Msg("CycloidSketch.Activated()\n")
+
+    def Deactivated(self):
+        " This function is executed when the workbench is deactivated"
+        Msg("CycloidSketch.Deactivated()\n")
+"""
 class CycloidGearBoxWorkbench(Workbench):
     "Cycloid Gear Box object"
     
@@ -43,12 +75,12 @@ class CycloidGearBoxWorkbench(Workbench):
     def Initialize(self):
         #import cycloidbox        
         import cycloidbox
+        import cycloidDiskSketch
         self.__class__.Icon = main_CGB_Icon
-        self.appendToolbar("CycloidGearBox",["CycloidGearBoxCreateObject"])
-        self.appendMenu("CycloidGearBox",["CycloidGearBoxCreateObject"])
-
-        #self.appendToolbar("CycloidGearBox",["CycloidGearBoxCreateObject"])
-        #self.appendMenu("CycloidGearBox",["CycloidGearBoxCreateObject"])
+        profileitems = ["CycloidGearBoxCreateObject"]
+        self.appendToolbar("CycloidGearBox",profileitems)
+        self.appendMenu("CycloidGearBox",profileitems)
+#        Gui.addCommand("CreateCycloidSketch",cycloidDiskSketch.CycloidCreateSketch(self,self))
 
         Log("Loading CycloidGearBox ... done\n")
 

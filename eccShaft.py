@@ -10,6 +10,7 @@ class EccShaft():
         self.gear_box = gear_box
         obj.Proxy = self
         self.Type = 'EccShaft'
+        self.sketch = 0
         self.ShapeColor = (0.42, 0.42, 0.63)
         param = App.ActiveDocument.getObject("GearBoxParameters")
         obj.addProperty("App::PropertyLength", "eccentricity", "CycloidGearBox",
@@ -30,7 +31,10 @@ class EccShaft():
     def __setstate__(self, state):
         if state:
             self.Type = state
-
+            
+    def assign_sketch(self,sobj):
+        self.sketch = sobj
+        
     def execute(self,obj):
         print("eccshart start", float(self.Object.__getattribute__("pin_disk_pin_diameter").Value))
         self.checkset('eccentricity')
@@ -50,5 +54,6 @@ class EccShaft():
         return False
 
     def recompute_gearbox(self, H):
-        print("recomputing Eccentric Shaft")
         self.Object.Shape = cycloidFun.generate_eccentric_shaft(H)
+        if (self.sketch!=0):
+            cycloidFun.generate_eccentric_shaft_sketch(H,self.sketch)

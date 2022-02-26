@@ -18,6 +18,7 @@ class driver_diskClass():
         self.Type = 'pin_disk'
         self.Type = 'driver_disk'
         self.gear_box = gear_box
+        self.sketch = 0
 
     def __getstate__(self):
         return self.Type
@@ -25,6 +26,9 @@ class driver_diskClass():
     def __setstate__(self, state):
         if state:
             self.Type = state
+    
+    def assign_sketch(self, sobj):
+        self.sketch = sobj
 
     def execute(self, obj):
         self.checkset('driver_disk_hole_count')
@@ -41,6 +45,6 @@ class driver_diskClass():
         return False
 
     def recompute_gearbox(self, H):
-        print('recomputing driver_disk')
         self.Object.Shape = cycloidFun.generate_driver_disk(H)
-
+        if (self.sketch!=0):
+            cycloidFun.generate_driver_disk_sketch(H,self.sketch)
