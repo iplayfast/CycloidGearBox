@@ -75,7 +75,6 @@ class CycloidGearBoxWorkbench(Workbench):
     def Initialize(self):
         #import cycloidbox        
         import cycloidbox
-        import cycloidDiskSketch
         self.__class__.Icon = main_CGB_Icon
         profileitems = ["CycloidGearBoxCreateObject"]
         self.appendToolbar("CycloidGearBox",profileitems)

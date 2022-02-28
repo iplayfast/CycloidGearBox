@@ -353,12 +353,11 @@ class CycloidalGearBox():
         self.Dirty = True
         self.recompute()
 
-    def recompute(self):
-        print("recompute", float(self.Object.__getattribute__("pin_disk_pin_diameter").Value))
+    def recompute(self):        
         H = self.GetHyperParameters()
         minDia = cycloidFun.calc_min_dia(H)
         if minDia > getattr(self.Object,'Diameter'):
-            print('updating Diameter attribute')
+            print('updating Diameter attribute, was too small')
             setattr(self.Object, 'Diameter', minDia)
             self.Diameter = minDia
         hyperparameters = self.GetHyperParameters()

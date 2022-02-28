@@ -94,8 +94,8 @@ def calculate_radii(pin_count: int, eccentricity, outer_diameter, pin_diameter:f
     # r1 + r2 = R = D/2
     # r1/r2 = (N-1)
     # From the above equations: r1 = (N - 1) * R/N, r2 = R/N
-    r1 = (pin_count - 1)* outer_diameter / 2 / pin_count
-    r2 = outer_diameter / 2 / pin_count
+    r1 = (pin_count - 1)* outer_radius / pin_count
+    r2 = outer_radius / pin_count
     return r1,r2
 
 def calc_DriverRad(count,min_radius):
@@ -174,7 +174,7 @@ def calculate_min_max_radii(H):
     return min_radius, max_radius
 
 def calc_min_dia(H):
-    min_radius, max_radius = calculate_min_max_radii(H)
+    min_radius, max_radius = calculate_min_max_radii(H)    
     return 2 * ((min_radius + max_radius) / 2 + H["pin_disk_pin_diameter"]+ H["eccentricity"])
 
 
@@ -266,7 +266,7 @@ def generate_pin_disk_sketch(H,sketch):
         x = pin_circle_radius * math.cos(2.0 * math.pi * i/tooth_count)
         y = pin_circle_radius * math.sin(2.0 * math.pi * i/tooth_count)
         last = SketchCircle(sketch,x,y,pin_disk_pin_diameter/2.0 +clearance,last,"JoiningPin",True) #joining pins
-        last1 = SketchCircle(sketch,x,y,pin_disk_pin_diameter,last1,"RollerPin",True)
+        last1 = SketchCircle(sketch,x,y,pin_disk_pin_diameter,last1,"RollerPin")
     SketchCircle(sketch,0,0,shaft_diameter/ 2.0+clearance,-1)
 
     
@@ -397,7 +397,7 @@ def generate_eccentric_key_sketch(H,sketch):
     generate_key_sketch(H,False,sketch)
 
 
-def generate_cycloidal_disk_array(H):
+def generate_cycloidal_disk_array(H,min_radius,max_radius):
     tooth_count = H["tooth_count"]-1
     tooth_pitch = H["tooth_pitch"]
     pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
@@ -407,7 +407,7 @@ def generate_cycloidal_disk_array(H):
     """ make the array to be used in the bspline
         that is the cycloidalDisk
     """
-    min_radius, max_radius= calculate_min_max_radii(H)
+    #min_radius, max_radius= calculate_min_max_radii(H)
     q = 2.0 * math.pi / line_segment_count
     i = 0
     #r1,r2 = calculate_radii(tooth_count,eccentricity,105,10)
@@ -448,7 +448,7 @@ def generate_cycloidal_disk(H):
     clearance = H["clearance"]
     min_radius, max_radius = calculate_min_max_radii(H)
     #get shape of cycloidal disk
-    array,alternative_array = generate_cycloidal_disk_array(H)
+    array,alternative_array = generate_cycloidal_disk_array(H,min_radius,max_radius)
     a = Part.BSplineCurve(array).toShape()
     w = Part.Wire([a])
     f = Part.Face(w)
@@ -481,7 +481,7 @@ def generate_cycloidal_disk_sketch(H,sketch):
     clearance = H["clearance"]
     min_radius, max_radius = calculate_min_max_radii(H)
     #get shape of cycloidal disk
-    array,alternative_array = generate_cycloidal_disk_array(H)
+    array,alternative_array = generate_cycloidal_disk_array(H,min_radius,max_radius)
     sketch.addGeometry(Part.BSplineCurve(array))
     a = Part.BSplineCurve(array).toShape()
     w = Part.Wire([a])
