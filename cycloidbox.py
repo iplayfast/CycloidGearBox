@@ -50,7 +50,6 @@ import eccShaft
 import eccKey
 import outShaft
 import cycloidalDisk
-import cycloidDiskSketch
 
 smWBpath = os.path.dirname(cycloidFun.__file__)
 smWB_icons_path = os.path.join(smWBpath, 'icons')
