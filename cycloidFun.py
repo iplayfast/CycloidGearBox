@@ -430,12 +430,12 @@ def generate_cycloidal_disk_array(H,min_radius,max_radius):
                      calc_y(tooth_count, eccentricity, tooth_pitch, pin_disk_pin_diameter, q * i),
                      0)
     v1 = check_limit(v1, pressure_angle_offset, min_radius, max_radius)
-    va1 = Base.Vector(calculate(0,eccentricity,r1,r2))
-    va1 = check_limit(va1, pressure_angle_offset, min_radius, max_radius)
+    #va1 = Base.Vector(calculate(0,eccentricity,r1,r2))
+    #va1 = check_limit(va1, pressure_angle_offset, min_radius, max_radius)
     cycloidal_disk_array = []
-    cycloidal_disk_array_alternative = []
+    #cycloidal_disk_array_alternative = []
     cycloidal_disk_array.append(v1)
-    cycloidal_disk_array_alternative.append(va1)
+    #cycloidal_disk_array_alternative.append(va1)
     for i in range(0, line_segment_count):
         v2 = Base.Vector(
             calc_x(tooth_count, eccentricity, tooth_pitch, pin_disk_pin_diameter, q * (i + 1)),
@@ -443,10 +443,10 @@ def generate_cycloidal_disk_array(H,min_radius,max_radius):
             0)
         v2 = check_limit(v2, pressure_angle_offset, min_radius, max_radius)
         cycloidal_disk_array.append(v2)
-        va2 = Base.Vector(calculate(q * (i + 1), eccentricity, r1, r2))
-        va2 = check_limit(va2, pressure_angle_offset, min_radius, max_radius)
-        cycloidal_disk_array_alternative.append(va2)
-    return cycloidal_disk_array,cycloidal_disk_array_alternative
+        #va2 = Base.Vector(calculate(q * (i + 1), eccentricity, r1, r2))
+        #va2 = check_limit(va2, pressure_angle_offset, min_radius, max_radius)
+        #cycloidal_disk_array_alternative.append(va2)
+    return cycloidal_disk_array#,cycloidal_disk_array_alternative
 
 
 def generate_cycloidal_disk(H):
@@ -461,8 +461,14 @@ def generate_cycloidal_disk(H):
     clearance = H["clearance"]
     min_radius, max_radius = calculate_min_max_radii(H)
     #get shape of cycloidal disk
-    array,alternative_array = generate_cycloidal_disk_array(H,min_radius,max_radius)
-    a = Part.BSplineCurve(array).toShape()
+    array = generate_cycloidal_disk_array(H,min_radius,max_radius)
+    """testcode"""
+    curve = Part.BSplineCurve()
+    curve.interpolate(array)
+    a = curve.toShape()
+    
+    
+    #a = Part.BSplineCurve(array).toShape()
     w = Part.Wire([a])
     f = Part.Face(w)
     # todo add option for bearing here
@@ -499,12 +505,16 @@ def generate_cycloidal_disk_sketch(H,sketch):
     clearance = H["clearance"]
     min_radius, max_radius = calculate_min_max_radii(H)
     #get shape of cycloidal disk
-    array,alternative_array = generate_cycloidal_disk_array(H,min_radius,max_radius)
-    sketch.addGeometry(Part.BSplineCurve(array))
-    a = Part.BSplineCurve(array).toShape()
+    array = generate_cycloidal_disk_array(H,min_radius,max_radius)
+    """testcode"""
+    curve = Part.BSplineCurve()
+    curve.interpolate(array)
+    sketch.addGeometry(curve);
+    
+    #sketch.addGeometry(Part.BSplineCurve(array))
+    """a = Part.BSplineCurve(array).toShape()
     w = Part.Wire([a])
-    f = Part.Face(w)
-    # todo add option for bearing here
+    f = Part.Face(w)"""    
     SketchCircle(sketch,0,0,shaft_diameter / 2.0+clearance,-1)    
     r = calc_DriverRad(H,min_radius)
     last = -1
@@ -579,7 +589,7 @@ def generate_default_hyperparam():
         "tooth_count": 11,#12,
         "driver_disk_hole_count": 3,#6,
         "driver_hole_diameter": 22,#5,
-        "line_segment_count": 400,
+        "line_segment_count": 121, #tooth_count squared
         "tooth_pitch": 4,
         "Diameter" : 97,#110,
         "pin_disk_pin_diameter": 4.7,
