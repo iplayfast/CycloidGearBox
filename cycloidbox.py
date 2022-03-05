@@ -265,6 +265,8 @@ class CycloidalGearBox():
         # driver_disk
         obj.addProperty("App::PropertyInteger", "driver_disk_hole_count",       "driver_disk,output_shaft,cycloidal_disk",
                         QT_TRANSLATE_NOOP("APP::Property", "Output Shaft")).driver_disk_hole_count = H["driver_disk_hole_count"]
+        obj.addProperty("App::PropertyLength", "driver_hole_diameter",       "driver_disk,output_shaft,cycloidal_disk",
+                        QT_TRANSLATE_NOOP("APP::Property", "Output Shaft")).driver_hole_diameter = H["driver_hole_diameter"]
         obj.addProperty("App::PropertyLength", "eccentricity",          "driver_disk,eccentric_shaft,eccentric_key",
                         QT_TRANSLATE_NOOP("App::Property", "eccentricity")).eccentricity = H["eccentricity"]
         # eccentric_shaft all properties in other classes
@@ -342,6 +344,7 @@ class CycloidalGearBox():
                            "pressure_angle_offset": float(self.Object.__getattribute__("pressure_angle_offset").Value),
                            "base_height": float(self.Object.__getattribute__("base_height").Value),
                            "driver_disk_hole_count": int(self.Object.__getattribute__("driver_disk_hole_count")),
+                           "driver_hole_diameter" : float(self.Object.__getattribute__("driver_hole_diameter").Value),
                            "Height": int(self.Object.__getattribute__("Height")),
                            "shaft_diameter": float(self.Object.__getattribute__("shaft_diameter")),
                            "clearance": float(self.Object.__getattribute__("clearance"))

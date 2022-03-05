@@ -11,6 +11,8 @@ class driver_diskClass():
         param = App.ActiveDocument.getObject("GearBoxParameters")
         obj.addProperty("App::PropertyInteger", "driver_disk_hole_count", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("APP::Property", "Number of driving holes of the cycloid disk")).driver_disk_hole_count = param.driver_disk_hole_count
+        obj.addProperty("App::PropertyLength", "driver_hole_diameter", "CycloidGearBox",
+                        QT_TRANSLATE_NOOP("APP::Property", "Diameter of driving holes")).driver_hole_diameter = param.driver_hole_diameter
         obj.addProperty("App::PropertyLength", "eccentricity", "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "eccentricity")).eccentricity = param.eccentricity
         obj.addProperty("App::PropertyLength", "shaft_diameter", "CycloidGearBox",
@@ -32,6 +34,7 @@ class driver_diskClass():
 
     def execute(self, obj):
         self.checkset('driver_disk_hole_count')
+        self.checkset('driver_hole_diameter')
         self.checkset('eccentricity')
         self.checkset('shaft_diameter')
         #self.gear_box.Object.force_Recompute()
