@@ -105,17 +105,13 @@ class CycloidGearBoxCreateObject():
         if not App.ActiveDocument:
             App.newDocument()
         doc = App.ActiveDocument
-        body = doc.addObject('PartDesign::Body', 'gear_box')
-        
-        
-        # doc.RecomputesFrozen = True
-        gear_box_obj = doc.addObject(
-            "Part::FeaturePython", "GearBoxParameters")
+        body = doc.addObject('PartDesign::Body', 'gear_box')        
+        gear_box_obj = doc.addObject("Part::FeaturePython", "GearBoxParameters")
         gear_box = CycloidalGearBox(gear_box_obj)        
+        print("gearbox created")
+        gear_box.recompute()
+        print("doc.recompute started")
         doc.recompute()
-        
-        #gear_box.onChanged('', 'Refresh')
-        #gear_box.recompute()        
         FreeCADGui.SendMsgToActiveView("ViewFit")
         FreeCADGui.ActiveDocument.ActiveView.viewIsometric()
         return gear_box
@@ -133,15 +129,6 @@ class CycloidGearBoxCreateObject():
 
 class CycloidalGearBox():
     def __init__(self, obj):        
-        self.busy = True
-        self.pin_disk = None
-        self.cycloidal_disk = None
-        self.driver_disk = None
-        self.eccentric_shaft = None
-        self.eccentric_key = None
-        self.output_shaft = None
-        self.Dirty = False
-
         H = cycloidFun.generate_default_hyperparam()
         # read only properites
         obj.addProperty("App::PropertyString", "Version", "read only", QT_TRANSLATE_NOOP(
@@ -247,17 +234,15 @@ class CycloidalGearBox():
         self.recompute()
 
     def recompute(self):        
-        print("recompute started")
+        print("gearbox recompute started")
         H = self.GetHyperParameters()        
         minDia = cycloidFun.calc_min_dia(H)
         if minDia > getattr(self.Object,'Diameter'):
             print('updating Diameter attribute, was too small')
             setattr(self.Object, 'Diameter', minDia)
             self.Diameter = minDia
-        hyperparameters = self.GetHyperParameters()
-        print("making models")
-        cycloidFun.model(App.ActiveDocument, hyperparameters)        
-
+        hyperparameters = self.GetHyperParameters()        
+        cycloidFun.parts(App.ActiveDocument, hyperparameters)
         return
         
 
@@ -266,7 +251,7 @@ class CycloidalGearBox():
 
     def execute(self, obj):               
         print("Execute started")
-        self.recompute()
+        #self.recompute()
         """
         H = self.GetHyperParameters()        
         minDia = cycloidFun.calc_min_dia(H)

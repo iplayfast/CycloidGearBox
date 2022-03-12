@@ -318,7 +318,7 @@ def generate_cycloidal_disk_array(H,min_radius,max_radius):
     return cycloidal_disk_array#,cycloidal_disk_array_alternative
 
 
-def generate_pin_disk_model(body,H):
+def generate_pin_disk_part(body,H):
     """ create the base that the fixed_ring_pins will be attached to """
     sketch = newSketch(body,'DriverDiskBase')
     #sketch.deleteAllConstraints()
@@ -351,7 +351,7 @@ def generate_pin_disk_model(body,H):
     SketchCircleOfHoles(pinsketch2,pin_circle_radius,pin_disk_pin_diameter/4.0+clearance,tooth_count,"pinFemale")    
     newPocket(body,pinsketch,pin_height,'pinJoiner')    
 
-def generate_driver_disk_model(body,H):
+def generate_driver_disk_part(body,H):
     sketch = newSketch(body,'DriverDiskBase')            
     min_radius,max_radius= calculate_min_max_radii(H)
     driver_disk_hole_count = H["driver_disk_hole_count"]
@@ -381,7 +381,7 @@ def generate_driver_disk_model(body,H):
     #body.translate(Base.Vector(0,0,base_height - DiskHeight))
     body.Placement = Base.Placement(Base.Vector(0,0,base_height - disk_height),Base.Rotation(Base.Vector(0,0,1),0))
 
-def generate_eccentric_shaft_model(body,H):
+def generate_eccentric_shaft_part(body,H):
     eccentricity = H["eccentricity"]
     base_height = H["base_height"]
     shaft_diameter = H["shaft_diameter"]
@@ -403,7 +403,7 @@ def generate_eccentric_shaft_model(body,H):
     newPocket(body,keysketch,base_height+driver_disk_height,'SecondDiskKey')
     body.Placement = Base.Placement(Base.Vector(0,0,1),Base.Rotation(Base.Vector(0,0,1),-90))
 
-def generate_cycloidal_disk_model(body,H,DiskOne):
+def generate_cycloidal_disk_part(body,H,DiskOne):
     pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
     eccentricity = H["eccentricity"]
     base_height = H["base_height"]
@@ -444,7 +444,7 @@ def generate_cycloidal_disk_model(body,H,DiskOne):
     pad = newPad(body,sketch,generate_DiskHeight(H,False),name+'Pad')    
     body.Placement = Base.Placement(Base.Vector(xeccentricy,yeccentricy,base_height+offset),Base.Rotation(Base.Vector(0,0,1),rot))
 
-def generate_eccentric_key_model(body,H):    
+def generate_eccentric_key_part(body,H):    
     eccentricity = H["eccentricity"]
     base_height = H["base_height"]
     clearance = H["clearance"]
@@ -459,7 +459,7 @@ def generate_eccentric_key_model(body,H):
     pad.Reversed = True
     body.Placement = Base.Placement(Base.Vector(0,0,base_height+DiskHeight),Base.Rotation(Base.Vector(0,0,1),-90))
 
-def generate_output_shaft_model(body,H):    
+def generate_output_shaft_part(body,H):    
     sketch = newSketch(body,'OutputShaftBase') 
     min_radius,max_radius= calculate_min_max_radii(H)
     driver_disk_hole_count = H["driver_disk_hole_count"]
@@ -679,6 +679,8 @@ def generate_driver_disk(H):
 """
 
 def ready_part(doc,name):
+    """ will create a body of "name" if not already present.
+    if Is present, will delete anything in it """
     body = doc.getObject(name)
     if (body):        
         body.removeObjectsFromDocument()
@@ -686,41 +688,42 @@ def ready_part(doc,name):
         body = doc.addObject('PartDesign::Body', name)        
     return body
 
-def model(doc,h):
-    
+def parts(doc,h):
+    """ will (re)create all bodys of all parts needed """
+    print("cyloidFun creating parts")
     random.seed(444)
     body = ready_part(doc,'pinDisk')    
-    
+    print("made pindisk body")
     #body = doc.addObject('PartDesign::Body', 'pinDisk')    
-    generate_pin_disk_model(body,h)    
-    
+    generate_pin_disk_part(body,h)        
+    print("made pindisk bodyparts")
     body.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
     body = ready_part(doc,'driverDisk')    
-    
-    generate_driver_disk_model(body,h) 
+    print("Made driverDisk body")
+    generate_driver_disk_part(body,h) 
     body.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)     
     body = ready_part(doc,'eccentricShaft')       
     
-    generate_eccentric_shaft_model(body,h)    
+    generate_eccentric_shaft_part(body,h)    
     body.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
     body = ready_part(doc,'cycloidalDisk1')    
     
-    generate_cycloidal_disk_model(body,h,True)
+    generate_cycloidal_disk_part(body,h,True)
     body.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
     body = ready_part(doc,'cycloidalDisk2')    
     
-    generate_cycloidal_disk_model(body,h,False)
+    generate_cycloidal_disk_part(body,h,False)
     body.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)
     
     body = ready_part(doc,'eccentricKey')    
-    generate_eccentric_key_model(body,h)
-    
+    generate_eccentric_key_part(body,h)   
     body.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
+    
     body = ready_part(doc,'outputShaft')    
     
-    generate_output_shaft_model(body,h)   
+    generate_output_shaft_part(body,h)   
     body.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
-    
+    print("done creating parts")
     #doc.recompute()
     
     
@@ -766,21 +769,21 @@ def test_generate_eccentric_shaft_sketch(sketch):
     generate_eccentric_shaft_sketch(generate_default_hyperparam(),sketch)
 
 def test_generate_eccentric_key_sketch(sketch):
-    generate_eccentric_key_model(generate_default_hyperparam(),sketch)
+    generate_eccentric_key_part(generate_default_hyperparam(),sketch)
 
 
 def test_generate_cycloidal_disk_sketch(sketch):
-    generate_cycloidal_disk_model(generate_default_hyperparam(),sketch)
+    generate_cycloidal_disk_part(generate_default_hyperparam(),sketch)
 
     
 def test_generate_output_shaft_sketch(sketch):
     generate_output_shaft_sketch(generate_default_hyperparam(),sketch)
 """
-def test_model():
+def test_part():
     if not App.ActiveDocument:
         App.newDocument()
     doc = App.ActiveDocument
     h = generate_default_hyperparam()    
-    model(doc,h)
+    part(doc,h)
 
     
