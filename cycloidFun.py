@@ -25,9 +25,12 @@ while True:
 import math
 import FreeCAD
 from FreeCAD import Base
+import FreeCAD as App
 import Part
 import Sketcher
+import random # for colors
 
+from inspect import currentframe    #for debugging
 """ style guide
 def functions_are_lowercase(variables_as_well):
 
@@ -35,6 +38,11 @@ class ClassesArePascalCase:
 
 SomeClass.some_variable
 """
+
+def get_linenumber():
+    cf = currentframe()
+    return cf.f_back.f_lineno
+
 def QT_TRANSLATE_NOOP(scope, text):
     return text
 
@@ -124,6 +132,72 @@ def clean1(a):
     """ return -1 < a < 1 """
     return min(1, max(a, -1))
 
+def driver_shaft_hole(radius,hole_count,hole_number):        
+    x = radius * math.cos((2.0 * math.pi / hole_count) * hole_number)
+    y = radius * math.sin((2.0 * math.pi / hole_count) * hole_number)
+    return x,y
+
+def newSketch(body,name=''):
+    """ all sketches are centered around xyplane"""
+    name = name + 'Sketch'
+    sketch = body.Document.addObject('Sketcher::SketchObject',name)
+    sketch.Support = (body.Document.getObject('XY_Plane'),[''])
+    sketch.MapMode = 'FlatFace'
+    body.addObject(sketch)
+    sketch.Visibility = False
+    return sketch
+
+def newPad(body,sketch,height,name='Pad'):
+    pad = body.Document.addObject("PartDesign::Pad",name)
+    body.addObject(pad)
+    pad.Length = height
+    pad.Profile = sketch
+    return pad
+
+def newPocket(body,sketch,height,name='Pocket'):
+    pocket = body.Document.addObject("PartDesign::Pocket",name)
+    body.addObject(pocket)
+    pocket.Length = height
+    pocket.Profile = sketch
+    pocket.Reversed = True 
+    return pocket
+
+    
+def SketchCircle(sketch,x,y,r,last,Name="",ref=False):
+    #print("SketchCircle",x,y,r,last,ref)
+    c = sketch.addGeometry(Part.Circle())
+    if x==0 and y==0:
+        cst = sketch.addConstraint(Sketcher.Constraint('Coincident',c,3,-1,1))#3 (edge selector) means center point of circle,
+    else:
+        if x==0:            
+            #print('point x')
+            cst = sketch.addConstraint(Sketcher.Constraint('PointOnObject',c,3,-2))
+        else:
+            #print('Distance X')
+            cst = sketch.addConstraint(Sketcher.Constraint('DistanceX',c,3,-1,1,x))                    
+        if y==0:
+            #print('Point Y',c)
+            cst = sketch.addConstraint(Sketcher.Constraint('PointOnObject',c,3,-1))
+        else:
+            #print('Distance Y')
+            cst = sketch.addConstraint(Sketcher.Constraint('DistanceY',c,3,-1,1,y))    
+        #sketch.setDatum(yc,y)    
+    if last!=-1:
+        rad = sketch.addConstraint(Sketcher.Constraint('Equal',last,c))
+    else:
+        rad = sketch.addConstraint(Sketcher.Constraint('Radius',c,r))
+        if Name!="":
+            sketch.renameConstraint(rad,Name)
+    
+    if (ref):
+        sketch.toggleConstruction(c);    
+    return c
+    
+def SketchCircleOfHoles(sketch,circle_radius,hole_radius,hole_count,name):
+    last = -1
+    for i in range(hole_count):
+        x,y = driver_shaft_hole(circle_radius,hole_count,i)
+        last = SketchCircle(sketch,x,y,hole_radius,last,name)
 
 def calculate_pressure_angle(tooth_count, tooth_pitch, pin_disk_pin_diameter, angle):
     """ calculate the angle of the cycloidalDisk teeth at the angle """
@@ -182,156 +256,16 @@ def calc_min_dia(H):
     min_radius, max_radius = calculate_min_max_radii(H)    
     return 2 * ((min_radius + max_radius) / 2 + H["pin_disk_pin_diameter"]+ H["eccentricity"])
 
-
-def generate_pin_disk(H):
-    """ create the base that the fixed_ring_pins will be attached to """
-    tooth_count = H["tooth_count"]
-    pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
-    base_height = H["base_height"]
+def generate_slot_size(H,add_clearence=False):
     shaft_diameter = H["shaft_diameter"]
-    Height = H["Height"]
     clearance = H["clearance"]
-    min_radius, max_radius= calculate_min_max_radii(H)
-    driver_disk_height = generate_DiskHeight(H,False)
-    pin_height = driver_disk_height*3
-    pin_disk = Part.makeCylinder( H["Diameter"]/2, base_height) # base of the whole system
-    dd = Part.makeCylinder(min_radius * 0.75 + clearance, driver_disk_height*2, Base.Vector(0, 0,base_height-driver_disk_height)) #hole for the driver disk to fit in
-    pin_disk = pin_disk.cut(dd)
-    # generate the pin locations
-    pin_circle_radius =  ((min_radius+max_radius)/2.0 + pin_disk_pin_diameter/2)
-    for i in range(0, tooth_count):
-        x = pin_circle_radius * math.cos(2.0 * math.pi * i/tooth_count)
-        y = pin_circle_radius * math.sin(2.0 * math.pi * i/tooth_count)
-
-        neg_fixed_ring_pin = Part.makeCylinder(pin_disk_pin_diameter/2.0 +clearance , pin_height, Base.Vector(x, y, 0))
-        fixed_ring_pin = Part.makeCylinder(pin_disk_pin_diameter , pin_height, Base.Vector(x, y, base_height))
-        fixed_ring_pin_pin = Part.makeCylinder(pin_disk_pin_diameter/2.0 -clearance, pin_height +driver_disk_height, Base.Vector(x, y, base_height))
-        pin_disk = pin_disk.cut(neg_fixed_ring_pin) #make a hole if multple gearboxes are in line
-        pin_disk = pin_disk.fuse(fixed_ring_pin_pin) # make the pins the cycloid gear uses, and the Part that goes into the above hole
-        pin_disk = pin_disk.fuse(fixed_ring_pin) # make the pins the cycloid gear uses
-    # todo  allow user values for sizes
-    # todo allow bearing option
-    shaft = Part.makeCylinder(shaft_diameter/ 2.0+clearance,base_height*2,Base.Vector(0,0,-base_height))
-    return pin_disk.cut(shaft) #.scale(Base.Vector(1,1,0))
-
-def SketchCircle(sketch,x,y,r,last,Name="",ref=False):
-    #print("SketchCircle",x,y,r,last,ref)
-    c = sketch.addGeometry(Part.Circle())
-    if x==0 and y==0:
-        cst = sketch.addConstraint(Sketcher.Constraint('Coincident',c,3,-1,1))#3 (edge selector) means center point of circle,
-    else:
-        if x==0:            
-            #print('point x')
-            cst = sketch.addConstraint(Sketcher.Constraint('PointOnObject',c,3,-2))
-        else:
-            #print('Distance X')
-            cst = sketch.addConstraint(Sketcher.Constraint('DistanceX',c,3,-1,1,x))                    
-        if y==0:
-            #print('Point Y',c)
-            cst = sketch.addConstraint(Sketcher.Constraint('PointOnObject',c,3,-1))
-        else:
-            #print('Distance Y')
-            cst = sketch.addConstraint(Sketcher.Constraint('DistanceY',c,3,-1,1,y))    
-        #sketch.setDatum(yc,y)    
-    if last!=-1:
-        rad = sketch.addConstraint(Sketcher.Constraint('Equal',last,c))
-    else:
-        rad = sketch.addConstraint(Sketcher.Constraint('Radius',c,r))
-        if Name!="":
-            sketch.renameConstraint(rad,Name)
-    
-    if (ref):
-        sketch.toggleConstruction(c);    
-    return c
-
-
-def generate_pin_disk_sketch(H,sketch):
-    """ create the base that the fixed_ring_pins will be attached to """
-    sketch.deleteAllConstraints()
-    sketch.deleteAllGeometry()
-    
-    tooth_count = H["tooth_count"]
-    pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
-    base_height = H["base_height"]
-    shaft_diameter = H["shaft_diameter"]
-    Height = H["Height"]
-    clearance = H["clearance"]
-    min_radius, max_radius= calculate_min_max_radii(H)
-    driver_disk_height = generate_DiskHeight(H,False)
-    pin_height = driver_disk_height*3
-    SketchCircle(sketch,0,0,H["Diameter"]/2,-1,"OuterDiameter")   #outer circle
-    SketchCircle(sketch,0,0,min_radius * 0.75 + clearance,-1,"OutputDia",True)
-    
-        
-    # generate the pin locations
-    pin_circle_radius =  ((min_radius+max_radius)/2.0 + pin_disk_pin_diameter/2)
-    last = -1
-    last1 = -1
-    for i in range(0, tooth_count):
-        x = pin_circle_radius * math.cos(2.0 * math.pi * i/tooth_count)
-        y = pin_circle_radius * math.sin(2.0 * math.pi * i/tooth_count)
-        last = SketchCircle(sketch,x,y,pin_disk_pin_diameter/2.0 +clearance,last,"JoiningPin",True) #joining pins
-        last1 = SketchCircle(sketch,x,y,pin_disk_pin_diameter,last1,"RollerPin")
-    SketchCircle(sketch,0,0,shaft_diameter/ 2.0+clearance,-1)
-
-    
-def generate_output_shaft(H):
-    min_radius,max_radius= calculate_min_max_radii(H)
-    driver_disk_hole_count = H["driver_disk_hole_count"]
-    eccentricity = H["eccentricity"]
-    pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
-    clearance = H["clearance"]
-    base_height = H["base_height"]
-    diskHeight = generate_DiskHeight(H)
-    mmr = calc_mmr(min_radius,max_radius)
-    r = calc_DriverRad(H,min_radius)    
-    #mainDriverDisk = Part.makeCylinder(min_radius * 0.75, diskHeight, Base.Vector(0, 0, 0))
-    mainDriverDisk = Part.makeCylinder(mmr+r, diskHeight, Base.Vector(0, 0, 0))
-    mainDriverDisk = mainDriverDisk.fuse(generate_key(H,False))
-    r = calc_DriverRad(H,min_radius)    
-    for i in range(0, driver_disk_hole_count):
-        #x = min_radius / 2 * math.cos(2.0 * math.pi / (driver_disk_hole_count) * i)
-        #y = min_radius / 2 * math.sin(2.0 * math.pi / (driver_disk_hole_count) * i)
-        x = mmr *  math.cos(2.0 * math.pi / (driver_disk_hole_count) * i)
-        y = mmr *  math.sin(2.0 * math.pi / (driver_disk_hole_count) * i)
-        # offset the eccentricity to line up with cycloidal disk
-        #fixed_ring_pin = Part.makeCylinder(pin_disk_pin_diameter * 2 - eccentricity+clearance, diskHeight * 3, Base.Vector(x, y, -1))  # driver pins
-        fixed_ring_pin = Part.makeCylinder(r - eccentricity+clearance, diskHeight * 3, Base.Vector(x, y, -1))  # driver pins
-        mainDriverDisk = mainDriverDisk.cut(fixed_ring_pin)
-    return mainDriverDisk.translate(Base.Vector(0, 0, base_height + diskHeight *2))
-
-def generate_output_shaft_sketch(H,sketch):    
-    sketch.deleteAllConstraints()
-    sketch.deleteAllGeometry()
-    min_radius,max_radius= calculate_min_max_radii(H)
-    driver_disk_hole_count = H["driver_disk_hole_count"]
-    eccentricity = H["eccentricity"]
-    pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
-    clearance = H["clearance"]
-    base_height = H["base_height"]
-    SketchCircle(sketch,0,0,min_radius*0.75,-1,"Base") #outer circle
-    generate_key_sketch(H,False,sketch)            
-    r = calc_DriverRad(H,min_radius)
-    last = -1        
-    mmr = calc_mmr(min_radius,max_radius);
-    for i in range(0, driver_disk_hole_count):
-        #x = min_radius / 2 * math.cos(2.0 * math.pi / (driver_disk_hole_count) * i)
-        #y = min_radius / 2 * math.sin(2.0 * math.pi / (driver_disk_hole_count) * i)
-        x = mmr *  math.cos(2.0 * math.pi / (driver_disk_hole_count) * i)
-        y = mmr *  math.sin(2.0 * math.pi / (driver_disk_hole_count) * i)
-        last = SketchCircle(sketch,x,y,r - eccentricity+clearance,last,"DriverPin")
-
-def generate_key(H,add_clearence=False):
-    x,y = generate_slot_size(H,add_clearence)
-    y /= 2  # comment out for square, else it's a cross
-    z = generate_DiskHeight(H,False)*3  # in disk, at pinbase hight, out of disk
-    c = 0
+    slot_size_width = shaft_diameter / 2
+    slot_size_height = shaft_diameter / 2
     if add_clearence:
-        c = H["clearance"]
-    z += c
-    key1 = Part.makeBox(x,y,z,Base.Vector(-x + x/2,-y+y/2,0.0))
-    key2 = Part.makeBox(y,x,z,Base.Vector(-y+y/2,-x+x/2,0.0))
-    return key1.fuse(key2)
+        slot_size_width += clearance /2
+        slot_size_height += clearance /2
+    return slot_size_width,slot_size_height
+
 
 def generate_key_sketch(H,add_clearence,sketch):    
     x,y = generate_slot_size(H,add_clearence)
@@ -344,71 +278,6 @@ def generate_key_sketch(H,add_clearence,sketch):
     sketch.addConstraint(Sketcher.Constraint('Coincident',l,2,arc,2))
     sketch.addConstraint(Sketcher.Constraint('Horizontal',l))
     vc = sketch.addConstraint(Sketcher.Constraint('DistanceY',0,3,l,1,y/3))
-    
-def generate_slot_size(H,add_clearence=False):
-    shaft_diameter = H["shaft_diameter"]
-    clearance = H["clearance"]
-    slot_size_width = shaft_diameter / 2
-    slot_size_height = shaft_diameter / 2
-    if add_clearence:
-        slot_size_width += clearance /2
-        slot_size_height += clearance /2
-    return slot_size_width,slot_size_height
-
-def generate_key_key(H,add_clearence):
-    x,y = generate_slot_size(H,add_clearence)
-    x /= 2
-    y /= 2
-    z = generate_DiskHeight(H,False)
-    return Part.makeBox(x,y,z,Base.Vector(-x+x/2,-y+y/2,0.0))
-
-def generate_eccentric_shaft(H):
-    eccentricity = H["eccentricity"]
-    base_height = H["base_height"]
-    shaft_diameter = H["shaft_diameter"]
-    clearance = H["clearance"]
-    DiskHeight = generate_DiskHeight(H,False)
-    #make shaft and eccentric cylinders
-    eccentric_disk = Part.makeCylinder(shaft_diameter / 2.0, DiskHeight, Base.Vector(-eccentricity , 0,base_height))
-    MainShaft = Part.makeCylinder(shaft_diameter/ 2.0,base_height,Base.Vector(0,0,0)) # one base out sticking out the bottom, one base height through the base
-    MainShaft = MainShaft.fuse(eccentric_disk) #base with the excentric disk on top
-    #make hole in bottom
-    key = generate_key(H,True)
-    MainShaft = MainShaft.cut(key)
-    #make key to drive eccentric key
-    return MainShaft.fuse(generate_key_key(H,True).translate(Base.Vector(0,0,base_height+DiskHeight)))
-
-def generate_eccentric_shaft_sketch(H,sketch):
-    sketch.deleteAllConstraints()
-    sketch.deleteAllGeometry()
-    eccentricity = H["eccentricity"]
-    base_height = H["base_height"]
-    shaft_diameter = H["shaft_diameter"]
-    clearance = H["clearance"]
-    DiskHeight = generate_DiskHeight(H,False)
-    #make shaft and eccentric cylinders
-    SketchCircle(sketch,0,-eccentricity,shaft_diameter / 2.0,-1,"EccentrickDisk",True) #outer circle
-    SketchCircle(sketch,0,0,shaft_diameter / 2.0,-1,"Shaft",True)
-    generate_key_sketch(H,clearance,sketch)
-
-def generate_eccentric_key(H):
-    eccentricity = H["eccentricity"]
-    base_height = H["base_height"]
-    shaft_diameter = H["shaft_diameter"]
-    dh = generate_DiskHeight(H,False)
-    key = Part.makeCylinder(shaft_diameter / 2.0, dh, Base.Vector(eccentricity , 0,base_height+dh))
-    key = key.cut(generate_key_key(H,True).translate(Base.Vector(0,0,base_height+dh)))
-    return key
-
-def generate_eccentric_key_sketch(H,sketch):
-    sketch.deleteAllConstraints()
-    sketch.deleteAllGeometry()
-    eccentricity = H["eccentricity"]
-    base_height = H["base_height"]
-    shaft_diameter = H["shaft_diameter"]
-    SketchCircle(sketch,eccentricity,0,shaft_diameter/2.0,-1,"Key")
-    generate_key_sketch(H,False,sketch)
-
 
 def generate_cycloidal_disk_array(H,min_radius,max_radius):
     tooth_count = H["tooth_count"]-1
@@ -449,10 +318,288 @@ def generate_cycloidal_disk_array(H,min_radius,max_radius):
     return cycloidal_disk_array#,cycloidal_disk_array_alternative
 
 
+def generate_pin_disk_model(body,H):
+    """ create the base that the fixed_ring_pins will be attached to """
+    sketch = newSketch(body,'DriverDiskBase')
+    #sketch.deleteAllConstraints()
+    #sketch.deleteAllGeometry()
+    
+    tooth_count = H["tooth_count"]
+    pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
+    base_height = H["base_height"]
+    shaft_diameter = H["shaft_diameter"]
+    Height = H["Height"]
+    clearance = H["clearance"]
+    min_radius, max_radius= calculate_min_max_radii(H)
+    driver_disk_height = generate_DiskHeight(H,False)
+    pin_height = driver_disk_height*3
+    SketchCircle(sketch,0,0,shaft_diameter / 2.0 + clearance,-1,"ShaftHole")
+    SketchCircle(sketch,0,0,H["Diameter"]/2,-1,"OuterDiameter")   #outer circle
+    newPad(body,sketch,base_height - driver_disk_height,'centerPad');
+    sketch1 = newSketch(body)
+    SketchCircle(sketch1,0,0,H["Diameter"]/2,-1,"OuterDiameter")   #outer circle
+    SketchCircle(sketch1,0,0,min_radius * 0.75 + clearance,-1,"OutputDia")    
+    newPad(body,sketch1,base_height,'outsidePad')
+    pin_circle_radius =  ((min_radius+max_radius)/2.0 + pin_disk_pin_diameter/2)
+    pinsketch = newSketch(body,'pinSketchMale')    
+    SketchCircleOfHoles(pinsketch,pin_circle_radius,pin_disk_pin_diameter/4.0,tooth_count,"pinMale")    
+    newPad(body,pinsketch,base_height+pin_height+driver_disk_height,'pinMale')    
+    pinsketch1 = newSketch(body,'roller')
+    SketchCircleOfHoles(pinsketch1,pin_circle_radius,pin_disk_pin_diameter,tooth_count,"pinRoller")
+    newPad(body,pinsketch1,base_height+pin_height,"Roller")
+    pinsketch2 = newSketch(body,'pinSketchFemale')
+    SketchCircleOfHoles(pinsketch2,pin_circle_radius,pin_disk_pin_diameter/4.0+clearance,tooth_count,"pinFemale")    
+    newPocket(body,pinsketch,pin_height,'pinJoiner')    
+
+def generate_driver_disk_model(body,H):
+    sketch = newSketch(body,'DriverDiskBase')            
+    min_radius,max_radius= calculate_min_max_radii(H)
+    driver_disk_hole_count = H["driver_disk_hole_count"]
+    pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
+    eccentricity = H["eccentricity"]
+    shaft_diameter = H["shaft_diameter"]
+    base_height = H["base_height"]
+    clearance = H["clearance"]
+    disk_height = generate_DiskHeight(H,False)
+    SketchCircle(sketch,0,0,min_radius*0.75,-1,"")    
+    SketchCircle(sketch,0,0,shaft_diameter / 2.0 + clearance,-1,"ShaftHole")
+    pad = newPad(body,sketch,disk_height)
+    #body.getObject('Pad').Length = DiskHeight        
+    r = calc_DriverRad(H,min_radius)
+    last = -1   
+    mmr = calc_mmr(min_radius,max_radius);
+    sketch1 = newSketch(body,'DriverShaft')
+    #sketch1 = body.Document.addObject('Sketcher::SketchObject', 'DriverShaft')
+    #sketch1.Support = (body.Document.getObject('XY_Plane'),[''])
+    #sketch1.MapMode = 'FlatFace'
+    SketchCircleOfHoles(sketch1,mmr,r ,driver_disk_hole_count,"DriverShaft")
+    pad = body.Document.addObject("PartDesign::Pad","Pad")
+    body.addObject(pad)
+    pad.Length = disk_height * 4
+    pad.Profile = sketch1
+    #body.getObject('Pad').Length = DiskHeight * 3
+    #body.translate(Base.Vector(0,0,base_height - DiskHeight))
+    body.Placement = Base.Placement(Base.Vector(0,0,base_height - disk_height),Base.Rotation(Base.Vector(0,0,1),0))
+
+def generate_eccentric_shaft_model(body,H):
+    eccentricity = H["eccentricity"]
+    base_height = H["base_height"]
+    shaft_diameter = H["shaft_diameter"]
+    clearance = H["clearance"]
+    driver_disk_height = generate_DiskHeight(H,False)
+    #make shaft and eccentric cylinders
+    sketch = newSketch(body,'Shaft')
+    SketchCircle(sketch,0,0,shaft_diameter / 2.0,-1,"Shaft")
+    newPad(body,sketch,base_height - driver_disk_height,'Shaft')
+    sketch1 = newSketch(body,'EccentricShaft')   
+    SketchCircle(sketch1,0,-eccentricity,shaft_diameter / 2.0,-1,"EccentrickDisk") #outer circle
+    sketch1.AttachmentOffset = Base.Placement(Base.Vector(eccentricity,0,base_height-driver_disk_height),Base.Rotation(Base.Vector(0,0,1),0))
+    newPad(body,sketch1,driver_disk_height)    
+    keysketch = newSketch(body,'InputKey')
+    generate_key_sketch(H,clearance,keysketch)
+    newPocket(body,keysketch,base_height,'InputKey')
+    keysketch = newSketch(body,'InputKey') #second one for second disk key
+    generate_key_sketch(H,clearance*2,keysketch)    # make this hole a bit smaller
+    newPocket(body,keysketch,base_height+driver_disk_height,'SecondDiskKey')
+    body.Placement = Base.Placement(Base.Vector(0,0,1),Base.Rotation(Base.Vector(0,0,1),-90))
+
+def generate_cycloidal_disk_model(body,H,DiskOne):
+    pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
+    eccentricity = H["eccentricity"]
+    base_height = H["base_height"]
+    shaft_diameter = H["shaft_diameter"]
+    driver_disk_hole_count = H["driver_disk_hole_count"]
+    clearance = H["clearance"]
+    min_radius, max_radius = calculate_min_max_radii(H)
+    DiskHeight = generate_DiskHeight(H,False)
+    offset = 0.0
+    rot = 5.0
+    xeccentricy = eccentricity
+    yeccentricy = -eccentricity
+    name = "cycloid001"
+    #get shape of cycloidal disk
+    if not DiskOne: #second disk
+        offset = DiskHeight
+        rot = -5
+        xeccentricy = 0.0
+        yeccentricy = eccentricity
+        name = "cycloid002"
+    array = generate_cycloidal_disk_array(H,min_radius,max_radius)
+    """testcode"""
+    curve = Part.BSplineCurve()
+    curve.interpolate(array)    
+        
+    sketch = newSketch(body,name)
+    sketch.addGeometry(curve);
+    sketch.addConstraint(Sketcher.Constraint('Block',0))
+    #sketch.addGeometry(Part.BSplineCurve(array))
+    """a = Part.BSplineCurve(array).toShape()
+    w = Part.Wire([a])
+    f = Part.Face(w)"""    
+    SketchCircle(sketch,0,0,shaft_diameter / 2.0+clearance,-1,"centerHole")    
+    r = calc_DriverRad(H,min_radius)
+    last = -1
+    mmr = calc_mmr(min_radius,max_radius);
+    SketchCircleOfHoles(sketch,mmr,r+eccentricity*2 ,driver_disk_hole_count,"DriverShaftHoles")
+    pad = newPad(body,sketch,generate_DiskHeight(H,False),name+'Pad')    
+    body.Placement = Base.Placement(Base.Vector(xeccentricy,yeccentricy,base_height+offset),Base.Rotation(Base.Vector(0,0,1),rot))
+
+def generate_eccentric_key_model(body,H):    
+    eccentricity = H["eccentricity"]
+    base_height = H["base_height"]
+    clearance = H["clearance"]
+    shaft_diameter = H["shaft_diameter"]
+    DiskHeight = generate_DiskHeight(H,False)
+    sketch = newSketch(body,'key')
+    SketchCircle(sketch,eccentricity,0,shaft_diameter/2.0,-1,"Key")
+    newPad(body,sketch,DiskHeight,'keyPad')
+    sketch = newSketch(body,"KeyLock")
+    generate_key_sketch(H,clearance*2,sketch)    
+    pad = newPad(body,sketch,DiskHeight,'keyPad')
+    pad.Reversed = True
+    body.Placement = Base.Placement(Base.Vector(0,0,base_height+DiskHeight),Base.Rotation(Base.Vector(0,0,1),-90))
+
+def generate_output_shaft_model(body,H):    
+    sketch = newSketch(body,'OutputShaftBase') 
+    min_radius,max_radius= calculate_min_max_radii(H)
+    driver_disk_hole_count = H["driver_disk_hole_count"]
+    eccentricity = H["eccentricity"]
+    pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
+    clearance = H["clearance"]
+    base_height = H["base_height"]
+    disk_height = generate_DiskHeight(H,False)
+    SketchCircle(sketch,0,0,min_radius*0.75,-1,"Base") #outer circle    
+    r = calc_DriverRad(H,min_radius)
+    last = -1        
+    mmr = calc_mmr(min_radius,max_radius);
+    SketchCircleOfHoles(sketch,mmr,r ,driver_disk_hole_count,"DriverHoles")    
+    pad = newPad(body,sketch,disk_height)
+    keysketch = newSketch(body,'InputKey')
+    generate_key_sketch(H,0,keysketch)
+    pad = newPad(body,keysketch,20)
+    body.Placement = Base.Placement(Base.Vector(0,0,base_height+disk_height*2),Base.Rotation(Base.Vector(0,0,1),0))
+
+"""
+def generate_pin_disk(H):
+    # create the base that the fixed_ring_pins will be attached to 
+    tooth_count = H["tooth_count"]
+    pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
+    base_height = H["base_height"]
+    shaft_diameter = H["shaft_diameter"]
+    Height = H["Height"]
+    clearance = H["clearance"]
+    min_radius, max_radius= calculate_min_max_radii(H)
+    driver_disk_height = generate_DiskHeight(H,False)
+    pin_height = driver_disk_height*3
+    pin_disk = Part.makeCylinder( H["Diameter"]/2, base_height) # base of the whole system
+    dd = Part.makeCylinder(min_radius * 0.75 + clearance, driver_disk_height*2, Base.Vector(0, 0,base_height-driver_disk_height)) #hole for the driver disk to fit in
+    pin_disk = pin_disk.cut(dd)
+    # generate the pin locations
+    pin_circle_radius =  ((min_radius+max_radius)/2.0 + pin_disk_pin_diameter/2)
+    for i in range(0, tooth_count):
+        x = pin_circle_radius * math.cos(2.0 * math.pi * i/tooth_count)
+        y = pin_circle_radius * math.sin(2.0 * math.pi * i/tooth_count)
+
+        neg_fixed_ring_pin = Part.makeCylinder(pin_disk_pin_diameter/2.0 +clearance , pin_height, Base.Vector(x, y, 0))
+        fixed_ring_pin = Part.makeCylinder(pin_disk_pin_diameter , pin_height, Base.Vector(x, y, base_height))
+        fixed_ring_pin_pin = Part.makeCylinder(pin_disk_pin_diameter/2.0 -clearance, pin_height +driver_disk_height, Base.Vector(x, y, base_height))
+        pin_disk = pin_disk.cut(neg_fixed_ring_pin) #make a hole if multple gearboxes are in line
+        pin_disk = pin_disk.fuse(fixed_ring_pin_pin) # make the pins the cycloid gear uses, and the Part that goes into the above hole
+        pin_disk = pin_disk.fuse(fixed_ring_pin) # make the pins the cycloid gear uses
+    # todo  allow user values for sizes
+    # todo allow bearing option
+    shaft = Part.makeCylinder(shaft_diameter/ 2.0+clearance,base_height*2,Base.Vector(0,0,-base_height))
+    return pin_disk.cut(shaft) #.scale(Base.Vector(1,1,0))
+
+
+
+    
+def generate_output_shaft(H):
+    min_radius,max_radius= calculate_min_max_radii(H)
+    driver_disk_hole_count = H["driver_disk_hole_count"]
+    eccentricity = H["eccentricity"]
+    pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
+    clearance = H["clearance"]
+    base_height = H["base_height"]
+    diskHeight = generate_DiskHeight(H)
+    mmr = calc_mmr(min_radius,max_radius)
+    r = calc_DriverRad(H,min_radius)    
+    #mainDriverDisk = Part.makeCylinder(min_radius * 0.75, diskHeight, Base.Vector(0, 0, 0))
+    mainDriverDisk = Part.makeCylinder(mmr+r, diskHeight, Base.Vector(0, 0, 0))
+    mainDriverDisk = mainDriverDisk.fuse(generate_key(H,False))
+    r = calc_DriverRad(H,min_radius)    
+    for i in range(0, driver_disk_hole_count):
+        #x = min_radius / 2 * math.cos(2.0 * math.pi / (driver_disk_hole_count) * i)
+        #y = min_radius / 2 * math.sin(2.0 * math.pi / (driver_disk_hole_count) * i)
+        x = mmr *  math.cos(2.0 * math.pi / (driver_disk_hole_count) * i)
+        y = mmr *  math.sin(2.0 * math.pi / (driver_disk_hole_count) * i)
+        # offset the eccentricity to line up with cycloidal disk
+        #fixed_ring_pin = Part.makeCylinder(pin_disk_pin_diameter * 2 - eccentricity+clearance, diskHeight * 3, Base.Vector(x, y, -1))  # driver pins
+        fixed_ring_pin = Part.makeCylinder(r - eccentricity+clearance, diskHeight * 3, Base.Vector(x, y, -1))  # driver pins
+        mainDriverDisk = mainDriverDisk.cut(fixed_ring_pin)
+    return mainDriverDisk.translate(Base.Vector(0, 0, base_height + diskHeight *2))
+
+
+def generate_key(H,add_clearence=False):
+    x,y = generate_slot_size(H,add_clearence)
+    y /= 2  # comment out for square, else it's a cross
+    z = generate_DiskHeight(H,False)*3  # in disk, at pinbase hight, out of disk
+    c = 0
+    if add_clearence:
+        c = H["clearance"]
+    z += c
+    key1 = Part.makeBox(x,y,z,Base.Vector(-x + x/2,-y+y/2,0.0))
+    key2 = Part.makeBox(y,x,z,Base.Vector(-y+y/2,-x+x/2,0.0))
+    return key1.fuse(key2)
+
+    
+def generate_slot_size(H,add_clearence=False):
+    shaft_diameter = H["shaft_diameter"]
+    clearance = H["clearance"]
+    slot_size_width = shaft_diameter / 2
+    slot_size_height = shaft_diameter / 2
+    if add_clearence:
+        slot_size_width += clearance /2
+        slot_size_height += clearance /2
+    return slot_size_width,slot_size_height
+
+def generate_key_key(H,add_clearence):
+    x,y = generate_slot_size(H,add_clearence)
+    x /= 2
+    y /= 2
+    z = generate_DiskHeight(H,False)
+    return Part.makeBox(x,y,z,Base.Vector(-x+x/2,-y+y/2,0.0))
+
+def generate_eccentric_shaft(H):
+    eccentricity = H["eccentricity"]
+    base_height = H["base_height"]
+    shaft_diameter = H["shaft_diameter"]
+    clearance = H["clearance"]
+    DiskHeight = generate_DiskHeight(H,False)
+    #make shaft and eccentric cylinders
+    eccentric_disk = Part.makeCylinder(shaft_diameter / 2.0, DiskHeight, Base.Vector(-eccentricity , 0,base_height))
+    MainShaft = Part.makeCylinder(shaft_diameter/ 2.0,base_height,Base.Vector(0,0,0)) # one base out sticking out the bottom, one base height through the base
+    MainShaft = MainShaft.fuse(eccentric_disk) #base with the excentric disk on top
+    #make hole in bottom
+    key = generate_key(H,True)
+    MainShaft = MainShaft.cut(key)
+    #make key to drive eccentric key
+    return MainShaft.fuse(generate_key_key(H,True).translate(Base.Vector(0,0,base_height+DiskHeight)))
+
+
+def generate_eccentric_key(H):
+    eccentricity = H["eccentricity"]
+    base_height = H["base_height"]
+    shaft_diameter = H["shaft_diameter"]
+    dh = generate_DiskHeight(H,False)
+    key = Part.makeCylinder(shaft_diameter / 2.0, dh, Base.Vector(eccentricity , 0,base_height+dh))
+    key = key.cut(generate_key_key(H,True).translate(Base.Vector(0,0,base_height+dh)))
+    return key
+
+
+
 def generate_cycloidal_disk(H):
-    """
-    make the complete cycloidal disk
-    """
+    #make the complete cycloidal disk    
     pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
     eccentricity = H["eccentricity"]
     base_height = H["base_height"]
@@ -462,7 +609,7 @@ def generate_cycloidal_disk(H):
     min_radius, max_radius = calculate_min_max_radii(H)
     #get shape of cycloidal disk
     array = generate_cycloidal_disk_array(H,min_radius,max_radius)
-    """testcode"""
+    #testcode
     curve = Part.BSplineCurve()
     curve.interpolate(array)
     a = curve.toShape()
@@ -479,6 +626,8 @@ def generate_cycloidal_disk(H):
     r = calc_DriverRad(H,min_radius)
     
     mmr = calc_mmr(min_radius,max_radius);
+    
+    
     for i in range(0, driver_disk_hole_count):
         #x = min_radius / 2 * math.cos(2.0 * math.pi * (i / driver_disk_hole_count))
         #y = min_radius / 2 * math.sin(2.0 * math.pi * (i / driver_disk_hole_count))
@@ -494,37 +643,6 @@ def generate_cycloidal_disk(H):
     e.translate(Base.Vector(-eccentricity, 0, base_height ))
     return e
 
-def generate_cycloidal_disk_sketch(H,sketch):
-    sketch.deleteAllConstraints()
-    sketch.deleteAllGeometry()
-    pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
-    eccentricity = H["eccentricity"]
-    base_height = H["base_height"]
-    shaft_diameter = H["shaft_diameter"]
-    driver_disk_hole_count = H["driver_disk_hole_count"]
-    clearance = H["clearance"]
-    min_radius, max_radius = calculate_min_max_radii(H)
-    #get shape of cycloidal disk
-    array = generate_cycloidal_disk_array(H,min_radius,max_radius)
-    """testcode"""
-    curve = Part.BSplineCurve()
-    curve.interpolate(array)
-    sketch.addGeometry(curve);
-    
-    #sketch.addGeometry(Part.BSplineCurve(array))
-    """a = Part.BSplineCurve(array).toShape()
-    w = Part.Wire([a])
-    f = Part.Face(w)"""    
-    SketchCircle(sketch,0,0,shaft_diameter / 2.0+clearance,-1)    
-    r = calc_DriverRad(H,min_radius)
-    last = -1
-    mmr = calc_mmr(min_radius,max_radius);
-    for i in range(0, driver_disk_hole_count):
-        #x = min_radius / 2 * math.cos(2.0 * math.pi * (i / driver_disk_hole_count))
-        #y = min_radius / 2 * math.sin(2.0 * math.pi * (i / driver_disk_hole_count))
-        x = mmr *  math.cos(2.0 * math.pi * (i / driver_disk_hole_count))
-        y = mmr *  math.sin(2.0 * math.pi * (i / driver_disk_hole_count))
-        last = SketchCircle(sketch,x,y,r+clearance,last,"DriverHole")
 
 def generate_driver_disk(H):
     min_radius,max_radius= calculate_min_max_radii(H)
@@ -556,39 +674,62 @@ def generate_driver_disk(H):
     fp = fp.cut(shaft)
     return fp
 
-def generate_driver_disk_sketch(H,sketch):
-    sketch.deleteAllConstraints()
-    sketch.deleteAllGeometry()
-    min_radius,max_radius= calculate_min_max_radii(H)
-    driver_disk_hole_count = H["driver_disk_hole_count"]
-    pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
-    eccentricity = H["eccentricity"]
-    shaft_diameter = H["shaft_diameter"]
-    base_height = H["base_height"]
-    clearance = H["clearance"]
-    DiskHeight = generate_DiskHeight(H,False)
-    SketchCircle(sketch,0,0,min_radius*0.75,-1,"")    
-    SketchCircle(sketch,0,0,shaft_diameter / 2.0 + clearance,-1,"ShaftHole")
-    r = calc_DriverRad(H,min_radius)
-    last = -1
     
-    mmr = calc_mmr(min_radius,max_radius);
-    for i in range(0, driver_disk_hole_count):
-        #x = min_radius / 2 * math.cos(2.0 * math.pi / (driver_disk_hole_count) * i)
-        #y = min_radius / 2 * math.sin(2.0 * math.pi / (driver_disk_hole_count) * i)
-        x = mmr *  math.cos(2.0 * math.pi / (driver_disk_hole_count) * i)
-        y = mmr *  math.sin(2.0 * math.pi / (driver_disk_hole_count) * i)
-        last = SketchCircle(sketch,x,y,r - eccentricity,last,"DriverShaft",True)
+    
+"""
 
-def generate_sketch(H):
-    return generate_cycloidal_disk(H)
+def ready_part(doc,name):
+    body = doc.getObject(name)
+    if (body):        
+        body.removeObjectsFromDocument()
+    else:
+        body = doc.addObject('PartDesign::Body', name)        
+    return body
 
+def model(doc,h):
+    
+    random.seed(444)
+    body = ready_part(doc,'pinDisk')    
+    
+    #body = doc.addObject('PartDesign::Body', 'pinDisk')    
+    generate_pin_disk_model(body,h)    
+    
+    body.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
+    body = ready_part(doc,'driverDisk')    
+    
+    generate_driver_disk_model(body,h) 
+    body.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)     
+    body = ready_part(doc,'eccentricShaft')       
+    
+    generate_eccentric_shaft_model(body,h)    
+    body.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
+    body = ready_part(doc,'cycloidalDisk1')    
+    
+    generate_cycloidal_disk_model(body,h,True)
+    body.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
+    body = ready_part(doc,'cycloidalDisk2')    
+    
+    generate_cycloidal_disk_model(body,h,False)
+    body.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)
+    
+    body = ready_part(doc,'eccentricKey')    
+    generate_eccentric_key_model(body,h)
+    
+    body.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
+    body = ready_part(doc,'outputShaft')    
+    
+    generate_output_shaft_model(body,h)   
+    body.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
+    
+    #doc.recompute()
+    
+    
 def generate_default_hyperparam():
     hyperparameters = {
         "eccentricity": 2,#4.7 / 2,
         "tooth_count": 11,#12,
         "driver_disk_hole_count": 3,#6,
-        "driver_hole_diameter": 22,#5,
+        "driver_hole_diameter": 11,#5,
         "line_segment_count": 121, #tooth_count squared
         "tooth_pitch": 4,
         "Diameter" : 97,#110,
@@ -596,12 +737,13 @@ def generate_default_hyperparam():
         "pressure_angle_limit": 50.0,
         "pressure_angle_offset": 0.0,
         "base_height":10.0,
+        "disk_height":5.0,
         "shaft_diameter":13.0,
         "Height" : 20.0,
         "clearance" : 0.5
         }
     return hyperparameters
-
+"""
 def test_generate_eccentric_shaft():
     Part.show(generate_eccentric_shaft(generate_default_hyperparam()))
 
@@ -624,17 +766,21 @@ def test_generate_eccentric_shaft_sketch(sketch):
     generate_eccentric_shaft_sketch(generate_default_hyperparam(),sketch)
 
 def test_generate_eccentric_key_sketch(sketch):
-    generate_eccentric_key_sketch(generate_default_hyperparam(),sketch)
+    generate_eccentric_key_model(generate_default_hyperparam(),sketch)
 
-def test_generate_pin_disk_sketch(sketch):
-    generate_pin_disk_sketch(generate_default_hyperparam(),sketch)
-
-def test_generate_driver_disk_sketch(sketch):
-    generate_driver_disk_sketch(generate_default_hyperparam(),sketch)
 
 def test_generate_cycloidal_disk_sketch(sketch):
-    generate_cycloidal_disk_sketch(generate_default_hyperparam(),sketch)
+    generate_cycloidal_disk_model(generate_default_hyperparam(),sketch)
 
     
 def test_generate_output_shaft_sketch(sketch):
     generate_output_shaft_sketch(generate_default_hyperparam(),sketch)
+"""
+def test_model():
+    if not App.ActiveDocument:
+        App.newDocument()
+    doc = App.ActiveDocument
+    h = generate_default_hyperparam()    
+    model(doc,h)
+
+    

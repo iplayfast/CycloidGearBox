@@ -20,8 +20,8 @@
 #*   USA                                                                   *
 #*                                                                         *
 #***************************************************************************
-#import cycloidbox
-import os
+
+
 import cycloidFun
 
 smWBpath = os.path.dirname(cycloidFun.__file__)
@@ -64,36 +64,34 @@ class CycloidSketch(Workbench):
 class CycloidGearBoxWorkbench(Workbench):
     "Cycloid Gear Box object"
     
-    Icon = main_CGB_Icon
     MenuText = "CycloidalGearBox"
-    ToolTip = "A complete Cycloidal Gear Box"
-    
-    def __init__(self):
+    ToolTip = "A complete Cycloidal Gear Box that can be modified to suit"
+    Icon = main_CGB_Icon
+    """    def __init__(self):
             pass
-            
+    """
 
     def Initialize(self):
-        #import cycloidbox        
-        import cycloidbox
+        """This function is executed when FreeCAD starts"""       
+        import cycloidbox        
+        import os
         self.__class__.Icon = main_CGB_Icon
         profileitems = ["CycloidGearBoxCreateObject"]
         self.appendToolbar("CycloidGearBox",profileitems)
         self.appendMenu("CycloidGearBox",profileitems)
-#        Gui.addCommand("CreateCycloidSketch",cycloidDiskSketch.CycloidCreateSketch(self,self))
-
         Log("Loading CycloidGearBox ... done\n")
 
     def GetClassName(self):
             return "Gui::PythonWorkbench"
         
     def Activated(self):            
-            Msg ("CycloidalGearBox.Activated()\n")               
+            Msg("CycloidalGearBox.Activated()\n")               
     def Deactivated(self):
         " This function is executed when the workbench is deactivated"
-        Msg ("CycloidalGearBox.Deactivated()\n")               
+        Msg("CycloidalGearBox.Deactivated()\n")               
 
         
-FreeCADGui.addWorkbench(CycloidGearBoxWorkbench)
+FreeCADGui.addWorkbench(CycloidGearBoxWorkbench())
 
 # File format pref pages are independent and can be loaded at startup
 FreeCAD.__unit_test__ += [ "TestCycloid" ]

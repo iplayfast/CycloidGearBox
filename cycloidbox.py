@@ -66,7 +66,7 @@ global sketchIcon
 sketchIcon = os.path.join(smWB_icons_path,'SketcherWorkbench.svg')
 # # iconPath = os.path.join( __dir__, 'Resources', 'icons' )
 # keepToolbar = False
-version = 'Oct 10,2020'
+version = 'Mar 5,2022'
 
 
 def QT_TRANSLATE_NOOP(scope, text):
@@ -106,123 +106,22 @@ class CycloidGearBoxCreateObject():
             App.newDocument()
         doc = App.ActiveDocument
         body = doc.addObject('PartDesign::Body', 'gear_box')
+        
+        
         # doc.RecomputesFrozen = True
         gear_box_obj = doc.addObject(
             "Part::FeaturePython", "GearBoxParameters")
-        gear_box = CycloidalGearBox(gear_box_obj)
+        gear_box = CycloidalGearBox(gear_box_obj)        
         doc.recompute()
-        random.seed(444)
-        pindiskobj = doc.addObject("Part::FeaturePython", "pin_disk")
-        gear_box_obj.addProperty(
-            "App::PropertyString", "IconFilename", "", "", 8).IconFilename = pinIcon
-        # print(gear_box.GetHyperParameters())
-        pin_disk = pinDisk.pindiskClass(pindiskobj, gear_box_obj)
-
-
-
-
-        gear_box.pin_disk = pin_disk
-        pindiskobj.Proxy = pin_disk
-        gear_box.recomputeList.append(pin_disk)
-        ViewProviderCGBox(pindiskobj.ViewObject, pinIcon)
-        pindiskobj.ViewObject.ShapeColor = (
-            random.random(), random.random(), random.random(), 0.0)
-
-        cycloidal_diskobj = doc.addObject("Part::FeaturePython", "cycloidal_disk")
-        cycloidal_disk = cycloidalDisk.cycdiskClass(cycloidal_diskobj, gear_box_obj)
-        gear_box.cycloidal_disk = cycloidal_disk
-        cycloidal_diskobj.Proxy = cycloidal_disk
-        gear_box.recomputeList.append(cycloidal_disk)
-        ViewProviderCGBox(cycloidal_diskobj.ViewObject, mainIcon)
-        cycloidal_diskobj.ViewObject.ShapeColor = (
-            random.random(), random.random(), random.random(), 0.0)
-
-        driver_diskobj = doc.addObject("Part::FeaturePython", "driver_disk")
-        driver_disk = driverDisk.driver_diskClass(driver_diskobj, gear_box_obj)
-        gear_box.driver_disk = driver_disk
-        driver_diskobj.Proxy = driver_disk
-        gear_box.recomputeList.append(driver_disk)
-        ViewProviderCGBox(driver_diskobj.ViewObject, pinIcon)
-        driver_diskobj.ViewObject.ShapeColor = (
-            random.random(), random.random(), random.random(), 0.0)
-
-        eccentric_shaft_obj = doc.addObject( "Part::FeaturePython", "eccentric_shaft")
-        eccentric_shaft = eccShaft.EccShaft(eccentric_shaft_obj, gear_box_obj)
-        gear_box.eccentric_shaft = eccentric_shaft
-        eccentric_shaft_obj.Proxy = eccentric_shaft
-        gear_box.recomputeList.append(eccentric_shaft)
-        ViewProviderCGBox(eccentric_shaft_obj.ViewObject, eccentricIcon)
-        eccentric_shaft_obj.ViewObject.ShapeColor = (
-            random.random(), random.random(), random.random(), 0.0)
-
-        ekobj = doc.addObject("Part::FeaturePython", "eccentricKey")
-        eccentric_key = eccKey.EccKey(ekobj, gear_box_obj)
-        gear_box.eccentric_key = eccentric_key
-        ekobj.Proxy = eccentric_key
-        gear_box.recomputeList.append(eccentric_key)
-        ViewProviderCGBox(ekobj.ViewObject, eccentricIcon)
-        ekobj.ViewObject.ShapeColor = (
-            random.random(), random.random(), random.random(), 0.0)
-
-        oShaftObj = doc.addObject("Part::FeaturePython", "output_shaft")
-        output_shaft = outShaft.OutShaft(oShaftObj, gear_box_obj)
-        gear_box.output_shaft = output_shaft
-        output_shaft.Proxy = output_shaft
-        gear_box.recomputeList.append(output_shaft)
-        ViewProviderCGBox(oShaftObj.ViewObject, pinIcon)
-        oShaftObj.ViewObject.ShapeColor = (
-            random.random(), random.random(), random.random(), 0.0)
-
-        Body = doc.addObject('PartDesign::Body','MasterPinDisk')
-        sketch = doc.addObject('Sketcher::SketchObject','MasterSketch')
-        sketch.Support = (doc.getObject('XY_Plane'), ['']);
-        sketch.MapMode = 'FlatFace';
-        Body.addObject(sketch)
-        gear_box.pin_disk.assign_sketch(sketch)
-               
-        Body = doc.addObject('PartDesign::Body','MasterCycloidalDisk')
-        sketch = doc.addObject('Sketcher::SketchObject','MasterSketch')
-        sketch.MapMode = 'FlatFace';
-        sketch.Support = (doc.getObject('XY_Plane'), ['']);
-        Body.addObject(sketch)
-        gear_box.cycloidal_disk.assign_sketch(sketch)
         
-        Body = doc.addObject('PartDesign::Body','MasterDriverDisk')
-        sketch = doc.addObject('Sketcher::SketchObject','MasterSketch')
-        sketch.MapMode = 'FlatFace';
-        sketch.Support = (doc.getObject('XY_Plane'), ['']);
-        Body.addObject(sketch)
-        gear_box.driver_disk.assign_sketch(sketch)
-
-        Body = doc.addObject('PartDesign::Body','MasterEccentricShaft')
-        sketch = doc.addObject('Sketcher::SketchObject','MasterSketch')
-        sketch.MapMode = 'FlatFace';
-        sketch.Support = (doc.getObject('XY_Plane'), ['']);
-        Body.addObject(sketch)
-        gear_box.eccentric_shaft.assign_sketch(sketch)
-        
-        Body = doc.addObject('PartDesign::Body','MasterEccentricKey')
-        sketch = doc.addObject('Sketcher::SketchObject','MasterSketch')
-        sketch.MapMode = 'FlatFace';
-        sketch.Support = (doc.getObject('XY_Plane'), ['']);
-        Body.addObject(sketch)
-        gear_box.eccentric_key.assign_sketch(sketch)
-        
-        Body = doc.addObject('PartDesign::Body','MasterOutputShaft')
-        sketch = doc.addObject('Sketcher::SketchObject','MasterSketch')
-        sketch.MapMode = 'FlatFace';
-        sketch.Support = (doc.getObject('XY_Plane'), ['']);
-        Body.addObject(sketch)
-        gear_box.output_shaft.assign_sketch(sketch)
-        
-        gear_box.busy = False
-        doc.recompute()
-        #Gui.SendMsgToActiveView("ViewFit")
-        gear_box.onChanged('', 'Refresh')
-        gear_box.recompute()        
+        #gear_box.onChanged('', 'Refresh')
+        #gear_box.recompute()        
         FreeCADGui.SendMsgToActiveView("ViewFit")
         FreeCADGui.ActiveDocument.ActiveView.viewIsometric()
         return gear_box
+
+    def IsActive(self):
+        return True
 
     def Deactivated(self):
         " This function is executed when the workbench is deactivated"
@@ -256,6 +155,9 @@ class CycloidalGearBox():
             "App::Property", "pin_disk_pin_diameter")).pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
         obj.addProperty("App::PropertyLength",  "base_height",      "pin_disk,eccentric_shaft,eccentric_key",
                         QT_TRANSLATE_NOOP("App::Property", "base_height")).base_height = H["base_height"]
+        obj.addProperty("App::PropertyLength",  "disk_height",      "pin_disk,eccentric_shaft,eccentric_key",
+                        QT_TRANSLATE_NOOP("App::Property", "base_height")).disk_height = H["disk_height"]
+    
         obj.addProperty("App::PropertyLength",  "shaft_diameter",   "pin_disk,driver_disk,eccentric_shaft,eccentric_key",
                         QT_TRANSLATE_NOOP("App::Property", "shaft_diameter")).shaft_diameter = H["shaft_diameter"]
         obj.addProperty("App::PropertyInteger", "tooth_count",      "pin_disk,cycloidal_disk", QT_TRANSLATE_NOOP(
@@ -287,9 +189,7 @@ class CycloidalGearBox():
             "App::Property", "clearance between parts")).clearance = H["clearance"]
         # eccentric Shaft
         # shaft diameter also in output shaft
-        # driver_disk_hole_count (also in output shaft)
-
-        self.recomputeList = []        
+        # driver_disk_hole_count (also in output shaft)              
         self.Type = 'CycloidalGearBox'
         self.Object = obj
         obj.Proxy = self
@@ -306,18 +206,8 @@ class CycloidalGearBox():
         if hasattr(self, "busy"):
             if self.busy:
                 return
-        else:
+        else:            
             return        
-        self.Dirty |= self.checksetProp(self.pin_disk,prop)
-        self.Dirty |= self.checksetProp(self.cycloidal_disk,prop)
-        self.Dirty |= self.checksetProp(self.driver_disk,prop)
-        self.Dirty |= self.checksetProp(self.eccentric_shaft,prop)
-        self.Dirty |= self.checksetProp(self.eccentric_key,prop)
-        self.Dirty |= self.checksetProp(self.output_shaft,prop)
-        self.Dirty |= prop == 'Refresh'
-        self.Dirty |= prop == 'clearance'
-        return
-
 
     def checksetProp(self,part, prop):
       """
@@ -343,6 +233,7 @@ class CycloidalGearBox():
                            "pressure_angle_limit": float(self.Object.__getattribute__("pressure_angle_limit").Value),
                            "pressure_angle_offset": float(self.Object.__getattribute__("pressure_angle_offset").Value),
                            "base_height": float(self.Object.__getattribute__("base_height").Value),
+                           "disk_height": float(self.Object.__getattribute__("disk_height").Value),
                            "driver_disk_hole_count": int(self.Object.__getattribute__("driver_disk_hole_count")),
                            "driver_hole_diameter" : float(self.Object.__getattribute__("driver_hole_diameter").Value),
                            "Height": int(self.Object.__getattribute__("Height")),
@@ -356,22 +247,38 @@ class CycloidalGearBox():
         self.recompute()
 
     def recompute(self):        
-        H = self.GetHyperParameters()
+        print("recompute started")
+        H = self.GetHyperParameters()        
         minDia = cycloidFun.calc_min_dia(H)
         if minDia > getattr(self.Object,'Diameter'):
             print('updating Diameter attribute, was too small')
             setattr(self.Object, 'Diameter', minDia)
             self.Diameter = minDia
         hyperparameters = self.GetHyperParameters()
-        for a in self.recomputeList:
-            a.recompute_gearbox(hyperparameters)
-        self.Dirty = False
+        print("making models")
+        cycloidFun.model(App.ActiveDocument, hyperparameters)        
+
+        return
+        
 
     def set_dirty(self):
         self.Dirty = True
 
     def execute(self, obj):               
+        print("Execute started")
         self.recompute()
+        """
+        H = self.GetHyperParameters()        
+        minDia = cycloidFun.calc_min_dia(H)
+        if minDia > getattr(self.Object,'Diameter'):
+            print('updating Diameter attribute, was too small')
+            setattr(self.Object, 'Diameter', minDia)
+            self.Diameter = minDia
+        hyperparameters = self.GetHyperParameters()
+        print("making models")
+        cycloidFun.model(App.ActiveDocument, hyperparameters)        
+        print("done")
+        """
 
 class ViewProviderCGBox:
     def __init__(self, obj, iconfile):
