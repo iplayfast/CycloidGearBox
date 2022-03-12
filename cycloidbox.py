@@ -140,17 +140,19 @@ class CycloidalGearBox():
         # pin_disk
         obj.addProperty("App::PropertyLength",  "pin_disk_pin_diameter",  "pin_disk,eccentric_shaft,eccentric_key", QT_TRANSLATE_NOOP(
             "App::Property", "pin_disk_pin_diameter")).pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
-        obj.addProperty("App::PropertyLength",  "base_height",      "pin_disk,eccentric_shaft,eccentric_key",
-                        QT_TRANSLATE_NOOP("App::Property", "base_height")).base_height = H["base_height"]
-        obj.addProperty("App::PropertyLength",  "disk_height",      "pin_disk,eccentric_shaft,eccentric_key",
+        obj.addProperty("App::PropertyLength",  "disk_height",      "pin_disk,eccentric_shaft,eccentric_key,driver_disk,eccentric_shaft,eccentric_key,cycloidal_disk,eccentric_shaft,eccentric_key",
                         QT_TRANSLATE_NOOP("App::Property", "base_height")).disk_height = H["disk_height"]
     
         obj.addProperty("App::PropertyLength",  "shaft_diameter",   "pin_disk,driver_disk,eccentric_shaft,eccentric_key",
                         QT_TRANSLATE_NOOP("App::Property", "shaft_diameter")).shaft_diameter = H["shaft_diameter"]
+        #cycloidal disks
         obj.addProperty("App::PropertyInteger", "tooth_count",      "pin_disk,cycloidal_disk", QT_TRANSLATE_NOOP(
             "App::Property", "number of cycloidal teeth, ratio = 1/(tooth_count - 1)")).tooth_count = H["tooth_count"]
         obj.addProperty("App::PropertyAngle", "tooth_pitch",        "pin_disk,cycloidal_disk",
                         QT_TRANSLATE_NOOP("App::Property", "Cycloidal Disk")).tooth_pitch = H["tooth_pitch"]
+        obj.addProperty("App::PropertyLength",  "base_height",      "pin_disk",
+                        QT_TRANSLATE_NOOP("App::Property", "base_height")).base_height = H["base_height"]
+        
         # driver_disk
         obj.addProperty("App::PropertyInteger", "driver_disk_hole_count",       "driver_disk,output_shaft,cycloidal_disk",
                         QT_TRANSLATE_NOOP("APP::Property", "Output Shaft")).driver_disk_hole_count = H["driver_disk_hole_count"]

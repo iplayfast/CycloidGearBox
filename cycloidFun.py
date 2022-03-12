@@ -114,7 +114,7 @@ def calc_DriverRad(H,min_radius):
     #return (math.pi * 2 * min_radius) / (count*6)
 
 
-def generate_DiskHeight(H,add_clearence=False):
+####def generate_DiskHeight(H,add_clearence=False):
     if (H["Height"]<=H["base_height"]):
         print("gearbox might be larger than base")
         return 1
@@ -122,7 +122,7 @@ def generate_DiskHeight(H,add_clearence=False):
         return (H["Height"] - H["base_height"]) / 3 + H["clearance"]
     else:
         return (H["Height"] - H["base_height"]) / 3
-
+####
 def calculate(step : int, eccentricity, r1, r2: float):
     X = (r1 + r2) * math.cos(2 * math.pi * step) + eccentricity * math.cos((r1 + r2) * 2 * math.pi * step / r2)
     Y = (r1 + r2) * math.sin(2 * math.pi * step) + eccentricity * math.sin((r1 + r2) * 2 * math.pi * step / r2)
@@ -331,7 +331,7 @@ def generate_pin_disk_part(body,H):
     Height = H["Height"]
     clearance = H["clearance"]
     min_radius, max_radius= calculate_min_max_radii(H)
-    driver_disk_height = generate_DiskHeight(H,False)
+    driver_disk_height = H["disk_height"]
     pin_height = driver_disk_height*3
     SketchCircle(sketch,0,0,shaft_diameter / 2.0 + clearance,-1,"ShaftHole")
     SketchCircle(sketch,0,0,H["Diameter"]/2,-1,"OuterDiameter")   #outer circle
@@ -360,7 +360,7 @@ def generate_driver_disk_part(body,H):
     shaft_diameter = H["shaft_diameter"]
     base_height = H["base_height"]
     clearance = H["clearance"]
-    disk_height = generate_DiskHeight(H,False)
+    disk_height = H["disk_height"]
     SketchCircle(sketch,0,0,min_radius*0.75,-1,"")    
     SketchCircle(sketch,0,0,shaft_diameter / 2.0 + clearance,-1,"ShaftHole")
     pad = newPad(body,sketch,disk_height)
@@ -386,7 +386,7 @@ def generate_eccentric_shaft_part(body,H):
     base_height = H["base_height"]
     shaft_diameter = H["shaft_diameter"]
     clearance = H["clearance"]
-    driver_disk_height = generate_DiskHeight(H,False)
+    driver_disk_height = H["disk_height"]
     #make shaft and eccentric cylinders
     sketch = newSketch(body,'Shaft')
     SketchCircle(sketch,0,0,shaft_diameter / 2.0,-1,"Shaft")
@@ -411,7 +411,7 @@ def generate_cycloidal_disk_part(body,H,DiskOne):
     driver_disk_hole_count = H["driver_disk_hole_count"]
     clearance = H["clearance"]
     min_radius, max_radius = calculate_min_max_radii(H)
-    DiskHeight = generate_DiskHeight(H,False)
+    DiskHeight = H["disk_height"]
     offset = 0.0
     rot = 5.0
     xeccentricy = eccentricity
@@ -441,7 +441,7 @@ def generate_cycloidal_disk_part(body,H,DiskOne):
     last = -1
     mmr = calc_mmr(min_radius,max_radius);
     SketchCircleOfHoles(sketch,mmr,r+eccentricity*2 ,driver_disk_hole_count,"DriverShaftHoles")
-    pad = newPad(body,sketch,generate_DiskHeight(H,False),name+'Pad')    
+    pad = newPad(body,sketch,DiskHeight,name+'Pad')    
     body.Placement = Base.Placement(Base.Vector(xeccentricy,yeccentricy,base_height+offset),Base.Rotation(Base.Vector(0,0,1),rot))
 
 def generate_eccentric_key_part(body,H):    
@@ -449,7 +449,7 @@ def generate_eccentric_key_part(body,H):
     base_height = H["base_height"]
     clearance = H["clearance"]
     shaft_diameter = H["shaft_diameter"]
-    DiskHeight = generate_DiskHeight(H,False)
+    DiskHeight = H["disk_height"]
     sketch = newSketch(body,'key')
     SketchCircle(sketch,eccentricity,0,shaft_diameter/2.0,-1,"Key")
     newPad(body,sketch,DiskHeight,'keyPad')
@@ -467,7 +467,7 @@ def generate_output_shaft_part(body,H):
     pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
     clearance = H["clearance"]
     base_height = H["base_height"]
-    disk_height = generate_DiskHeight(H,False)
+    disk_height = H["disk_height"]
     SketchCircle(sketch,0,0,min_radius*0.75,-1,"Base") #outer circle    
     r = calc_DriverRad(H,min_radius)
     last = -1        
