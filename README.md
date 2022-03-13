@@ -33,7 +33,8 @@ git clone git@github.com:iplayfast/CycloidGearBox.git
 
 ![logo](icons/cycloidgearbox.svg) **cycloidal gearbox icon**
 
-4. To modify parts in FreeCad see this video [youtube](https://youtu.be/Q2j7iGGt7Qo) for a nice little tutorial.
+Working on the last bug... But the default parameters work fine. You can also export as stl files, and print this on a 3d printer.
+
 ### Feedback
 
 Please open a ticket in this repository's issue queue.
