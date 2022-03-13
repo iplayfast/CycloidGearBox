@@ -44,12 +44,6 @@ import random
 import FreeCADGui
 import FreeCAD as App
 import cycloidFun
-import pinDisk
-import driverDisk
-import eccShaft
-import eccKey
-import outShaft
-import cycloidalDisk
 
 smWBpath = os.path.dirname(cycloidFun.__file__)
 smWB_icons_path = os.path.join(smWBpath, 'icons')
