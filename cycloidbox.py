@@ -75,9 +75,7 @@ def QT_TRANSLATE_NOOP(scope, text):
 
 """
 todo:
-Driver Pin Height doesn't update
-Driver Disk Height should be Driver Disk Offset
-Driver Disk Height should refer to depth of driver disk
+
 """
 """class CycloidCreateSketch():
 
