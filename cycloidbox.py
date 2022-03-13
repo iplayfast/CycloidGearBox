@@ -121,7 +121,7 @@ class CycloidGearBoxCreateObject():
 
 class CycloidalGearBox():
     def __init__(self, obj):        
-        H = cycloidFun.generate_default_hyperparam()
+        H = cycloidFun.generate_default_parameters()
         # read only properites
         obj.addProperty("App::PropertyString", "Version", "read only", QT_TRANSLATE_NOOP(
             "App::Property", "The version of CycloidGearBox Workbench used to create this object"), 1).Version = version
@@ -205,8 +205,8 @@ class CycloidalGearBox():
                return True
       return False
 
-    def GetHyperParameters(self):
-        hyperparameters = {"tooth_count": int(self.Object.__getattribute__("tooth_count")),
+    def GetParameters(self):
+        parameters = {"tooth_count": int(self.Object.__getattribute__("tooth_count")),
                            "line_segment_count": int(self.Object.__getattribute__("line_segment_count")),
                            "pin_disk_pin_diameter": float(self.Object.__getattribute__("pin_disk_pin_diameter").Value),
                            "Diameter": float(self.Object.__getattribute__("Diameter").Value),
@@ -222,7 +222,7 @@ class CycloidalGearBox():
                            "shaft_diameter": float(self.Object.__getattribute__("shaft_diameter")),
                            "clearance": float(self.Object.__getattribute__("clearance"))
                            }
-        return hyperparameters
+        return parameters
 
     def force_Recompute(self):
         self.Dirty = True
@@ -230,7 +230,7 @@ class CycloidalGearBox():
 
     def recompute(self):
         #cycloidFun.parts(App.ActiveDocument, self.GetHyperParameters())
-        cycloidFun.parts(self.doc, self.GetHyperParameters())
+        cycloidFun.generate_parts(self.doc, self.GetParameters())
         
         
     """    def recompute(self):        
