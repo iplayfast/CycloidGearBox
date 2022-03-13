@@ -468,7 +468,9 @@ def ready_part(doc,name):
     if Is present, will delete anything in it """
     body = doc.getObject(name)
     if (body):        
+        print("going to hang here")
         body.removeObjectsFromDocument()
+        print("didn't hang here")
     else:
         body = doc.addObject('PartDesign::Body', name)        
     return body

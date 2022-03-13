@@ -179,6 +179,7 @@ class CycloidalGearBox():
         # driver_disk_hole_count (also in output shaft)              
         self.Type = 'CycloidalGearBox'
         self.Object = obj
+        self.doc = App.ActiveDocument
         obj.Proxy = self
         attrs = vars(self)
 
@@ -233,7 +234,12 @@ class CycloidalGearBox():
         self.Dirty = True
         self.recompute()
 
-    def recompute(self):        
+    def recompute(self):
+        #cycloidFun.parts(App.ActiveDocument, self.GetHyperParameters())
+        cycloidFun.parts(self.doc, self.GetHyperParameters())
+        
+        
+    """    def recompute(self):        
         print("gearbox recompute started")
         H = self.GetHyperParameters()        
         minDia = cycloidFun.calc_min_dia(H)
@@ -244,26 +250,18 @@ class CycloidalGearBox():
         hyperparameters = self.GetHyperParameters()        
         cycloidFun.parts(App.ActiveDocument, hyperparameters)
         return
-        
+"""        
 
     def set_dirty(self):
         self.Dirty = True
 
     def execute(self, obj):               
-        print("Execute started")
+        print("Execute started")        
+        print("starting hang sequence")
         #self.recompute()
-        """
-        H = self.GetHyperParameters()        
-        minDia = cycloidFun.calc_min_dia(H)
-        if minDia > getattr(self.Object,'Diameter'):
-            print('updating Diameter attribute, was too small')
-            setattr(self.Object, 'Diameter', minDia)
-            self.Diameter = minDia
-        hyperparameters = self.GetHyperParameters()
-        print("making models")
-        cycloidFun.model(App.ActiveDocument, hyperparameters)        
-        print("done")
-        """
+        #this next line hangs in cycloidFun 471 body.removeObjectsFromDocument()
+        #cycloidFun.parts(App.ActiveDocument, self.GetHyperParameters())
+        print("execute done")
 
 class ViewProviderCGBox:
     def __init__(self, obj, iconfile):
