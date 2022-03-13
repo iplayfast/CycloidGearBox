@@ -44,7 +44,7 @@ import random
 import FreeCADGui
 import FreeCAD as App
 import cycloidFun
-
+from PySide import QtCore
 smWBpath = os.path.dirname(cycloidFun.__file__)
 smWB_icons_path = os.path.join(smWBpath, 'icons')
 global mainIcon
@@ -231,7 +231,7 @@ class CycloidalGearBox():
     def recompute(self):
         #cycloidFun.parts(App.ActiveDocument, self.GetHyperParameters())
         cycloidFun.generate_parts(self.doc, self.GetParameters())
-        
+        self.doc.recompute()
         
     """    def recompute(self):        
         print("gearbox recompute started")
@@ -252,6 +252,8 @@ class CycloidalGearBox():
     def execute(self, obj):               
         print("Execute started")        
         print("starting hang sequence")
+        t = QtCore.QTimer()
+        t.singleShot(50, self.recompute)
         #self.recompute()
         #this next line hangs in cycloidFun 471 body.removeObjectsFromDocument()
         #cycloidFun.parts(App.ActiveDocument, self.GetHyperParameters())

@@ -468,6 +468,7 @@ def ready_part(doc,name):
         part = doc.addObject('PartDesign::Body', name)        
     return part
 
+    
 def generate_parts(doc,parameters):
     """ will (re)create all bodys of all parts needed """
     print("cyloidFun creating parts")
