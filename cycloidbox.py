@@ -249,15 +249,9 @@ class CycloidalGearBox():
     def set_dirty(self):
         self.Dirty = True
 
-    def execute(self, obj):               
-        print("Execute started")        
-        print("starting hang sequence")
+    def execute(self, obj):                       
         t = QtCore.QTimer()
         t.singleShot(50, self.recompute)
-        #self.recompute()
-        #this next line hangs in cycloidFun 471 body.removeObjectsFromDocument()
-        #cycloidFun.parts(App.ActiveDocument, self.GetHyperParameters())
-        print("execute done")
 
 class ViewProviderCGBox:
     def __init__(self, obj, iconfile):

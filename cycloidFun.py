@@ -363,20 +363,20 @@ def generate_eccentric_shaft_part(body,parameters):
     base_height = parameters["base_height"]
     shaft_diameter = parameters["shaft_diameter"]
     clearance = parameters["clearance"]
-    driver_disk_height = parameters["disk_height"]
+    disk_height = parameters["disk_height"]
     sketch = newSketch(body,'Shaft')
     SketchCircle(sketch,0,0,shaft_diameter / 2.0,-1,"Shaft")
-    newPad(body,sketch,base_height - driver_disk_height,'Shaft')
+    newPad(body,sketch,base_height,'Shaft')
     sketch1 = newSketch(body,'EccentricShaft')   
     SketchCircle(sketch1,0,-eccentricity,shaft_diameter / 2.0,-1,"EccentrickDisk") #outer circle
-    sketch1.AttachmentOffset = Base.Placement(Base.Vector(eccentricity,0,base_height-driver_disk_height),Base.Rotation(Base.Vector(0,0,1),0))
-    newPad(body,sketch1,driver_disk_height)    
+    sketch1.AttachmentOffset = Base.Placement(Base.Vector(eccentricity,0,base_height),Base.Rotation(Base.Vector(0,0,1),0))
+    newPad(body,sketch1,disk_height)    
     keysketch = newSketch(body,'InputKey')
     generate_key_sketch(parameters,clearance,keysketch)
     newPocket(body,keysketch,base_height,'InputKey')
     keysketch = newSketch(body,'InputKey') #second one for second disk key
     generate_key_sketch(parameters,clearance*2,keysketch)    # make this hole a bit smaller
-    newPocket(body,keysketch,base_height+driver_disk_height,'SecondDiskKey')
+    newPocket(body,keysketch,base_height+disk_height,'SecondDiskKey')
     body.Placement = Base.Placement(Base.Vector(0,0,1),Base.Rotation(Base.Vector(0,0,1),-90))
 
 def generate_cycloidal_disk_part(body,parameters,DiskOne):
@@ -448,7 +448,7 @@ def generate_output_shaft_part(body,parameters):
     r = parameters["driver_hole_diameter"] / 2    
     last = -1        
     mmr = calc_mmr(min_radius,max_radius);
-    SketchCircleOfHoles(sketch,mmr,r ,driver_disk_hole_count,"DriverHoles")    
+    SketchCircleOfHoles(sketch,mmr,r+clearance ,driver_disk_hole_count,"DriverHoles")    
     pad = newPad(body,sketch,disk_height)
     keysketch = newSketch(body,'InputKey')
     generate_key_sketch(parameters,0,keysketch)
@@ -461,9 +461,7 @@ def ready_part(doc,name):
     if Is present, will delete anything in it """
     part = doc.getObject(name)
     if part:        
-        print("going to hang here")
         part.removeObjectsFromDocument()
-        print("didn't hang here")
     else:
         part = doc.addObject('PartDesign::Body', name)        
     return part
