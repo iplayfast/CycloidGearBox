@@ -402,7 +402,7 @@ def generate_driver_disk_part(part,parameters):
     innershaft = (shaft_diameter  + eccentricity+clearance/2) / 2.0
     SketchCircle(sketch,0,0,innershaft+clearance,-1,"ShaftHole")
     pad = newPad(part,sketch,disk_height)
-    r = parameters["driver_hole_diameter"]
+    r = parameters["driver_hole_diameter"]/2.0
     last = -1   
     DriveHoleRRadius = calc_DriveHoleRRadius(parameters);
     
@@ -491,7 +491,7 @@ def generate_cycloidal_disk_part(part,parameters,DiskOne):
     w = Part.Wire([a])
     f = Part.Face(w)"""    
     SketchCircle(sketch,0,0,shaft_diameter / 2.0+clearance,-1,"centerHole")    
-    r = parameters["driver_hole_diameter"]    
+    r = (parameters["driver_hole_diameter"]/2.0+eccentricity*2) 
     last = -1
     DriveHoleRRadius = calc_DriveHoleRRadius(parameters)
     
@@ -499,7 +499,7 @@ def generate_cycloidal_disk_part(part,parameters,DiskOne):
     pad = newPad(part,sketch,disk_height,name+'Pad')        
     part.Placement = Base.Placement(Base.Vector(xeccentricy,yeccentricy,base_height+offset),Base.Rotation(Base.Vector(0,0,1),rot))
     sketch = newSketch(part,'DriverShaftHoles')
-    SketchCircle(sketch,DriveHoleRRadius,0,r+eccentricity*2,-1,"DriverShaftHole")    
+    SketchCircle(sketch,DriveHoleRRadius,0,r,-1,"DriverShaftHole")    
     hole = newPocket(part,sketch,disk_height,'DriverShaftHole')
     pol = newPolar(part,hole,sketch,driver_disk_hole_count,'DriverShaftHoles')
     pol.Originals = [hole]
@@ -554,7 +554,7 @@ def generate_output_shaft_part(part,parameters):
     SketchCircle(sketch,0,0,driver_disk_diameter,-1,"Base") #outer circle    
     pad = newPad(part,sketch,disk_height)
     sketchh = newSketch(part,'holes')
-    r = (parameters["driver_hole_diameter"]+clearance) 
+    r = (parameters["driver_hole_diameter"]+clearance)  / 2.0
     last = -1        
     DriveHoleRRadius = calc_DriveHoleRRadius(parameters)
     SketchCircle(sketchh,DriveHoleRRadius,0,r,-1,"DriverHoles")
