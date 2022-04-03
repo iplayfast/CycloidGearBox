@@ -386,6 +386,7 @@ def generate_pin_disk_part(part,parameters):
     rol.Visibility = False
     join.Visibility = False    
     pol.Visibility = True
+    part.Tip = pol
 
 def generate_driver_disk_part(part,parameters):
     sketch = newSketch(part,'DriverDiskBase')            
@@ -419,6 +420,7 @@ def generate_driver_disk_part(part,parameters):
     pol.Originals = [pad]
     pad.Visibility = False
     pol.Visibility = True
+    part.Tip = pol
 
 def generate_eccentric_shaft_part(body,parameters):
     eccentricity = parameters["eccentricity"]
@@ -505,7 +507,7 @@ def generate_cycloidal_disk_part(part,parameters,DiskOne):
     pol.Originals = [hole]
     hole.Visibility = False
     pol.Visibility = True
-    
+    part.Tip = pol
 
 def generate_eccentric_key_part(part,parameters):    
     eccentricity = parameters["eccentricity"]
@@ -569,7 +571,7 @@ def generate_output_shaft_part(part,parameters):
     generate_key_sketch(parameters,0,keysketch)
     pad = newPad(part,keysketch,20)
     part.Placement = Base.Placement(Base.Vector(0,0,base_height+disk_height*2),Base.Rotation(Base.Vector(0,0,1),0))
-
+    part.Tip = pad
 
 def ready_part(doc,name):
     """ will create a body of "name" if not already present.
