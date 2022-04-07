@@ -219,7 +219,7 @@ def check_limit(v: FreeCAD.Vector, pressure_angle_offset, minrad, maxrad):
 def calculate_min_max_radii(parameters):
     """ Find the pressure angle limit circles """
     #test code
-    tooth_count= parameters['tooth_count']
+    """tooth_count= parameters['tooth_count']
     radius_requested = parameters['Diameter']/2.0
     pi2 = 2 * math.pi
     circumfrence_requested = pi2 * radius_requested 
@@ -232,7 +232,7 @@ def calculate_min_max_radii(parameters):
         print("Diameter too small-- resizing")
         
     return roller_cirumfrence_needed/pi2,circumfrence_requested / pi2
-    
+    """
     tooth_count= parameters['tooth_count']
     tooth_pitch= parameters['tooth_pitch']
     pin_disk_pin_diameter= parameters['pin_disk_pin_diameter']
@@ -341,9 +341,9 @@ def generate_pin_disk_part(part,parameters):
     
     driver_disk_height = parameters["disk_height"]
     driver_disk_diameter = parameters["driver_disk_diameter"]
-    if driver_disk_diameter>max_radius*2-eccentric:
+    if driver_disk_diameter>min_radius*2-pin_disk_pin_diameter/2:
         print("driver diameter too big, resizing")
-        driver_disk_diameter = max_radius*2-eccentric;
+        driver_disk_diameter = min_radius*2-pin_disk_pin_diameter/2
         parameters["driver_disk_diameter"] = driver_disk_diameter
 
     outdiameter = (max_radius*2+pin_disk_pin_diameter*2)
@@ -363,7 +363,7 @@ def generate_pin_disk_part(part,parameters):
     newPad(part,sketch1,base_height,'outside')
     #base is done, now for the rollers
     
-    roller_ring_radius = max_radius+pin_disk_pin_diameter/2
+    roller_ring_radius = max_radius
     pinsketch = newSketch(part,'pinMale')    
     SketchCircle(pinsketch,roller_ring_radius,0,pin_disk_pin_diameter/4.0,-1,"pinMale")
     pad = newPad(part,pinsketch,base_height+pin_height+driver_disk_height,'pinMale')    
@@ -396,9 +396,9 @@ def generate_driver_disk_part(part,parameters):
     disk_height = parameters["disk_height"]
     driver_disk_diameter = parameters["driver_disk_diameter"]
     
-    if driver_disk_diameter>max_radius*2-eccentricity:
+    if driver_disk_diameter>min_radius-pin_disk_pin_diameter/2:
         print("driver diameter too big, resizing")
-        driver_disk_diameter = max_radius*2-eccentricity;
+        driver_disk_diameter = min_radius*2-pin_disk_pin_diameter/2
         parameters["driver_disk_diameter"] = driver_disk_diameter
     driver_disk_diameter -= clearance
     SketchCircle(sketch,0,0,driver_disk_diameter,-1,"")    
@@ -455,7 +455,7 @@ def generate_eccentric_shaft_part(body,parameters):
     generate_key_sketch(parameters,0,keysketch)
     newPocket(body,keysketch,base_height+driver_disk_height,'InputKey')
     
-    body.Placement = Base.Placement(Base.Vector(0,0,0),Base.Rotation(Base.Vector(0,0,1),-90))
+    body.Placement = Base.Placement(Base.Vector(0,0,0),Base.Rotation(Base.Vector(0,0,1),222))
 
 def generate_cycloidal_disk_part(part,parameters,DiskOne):
     pin_disk_pin_diameter = parameters["pin_disk_pin_diameter"]
@@ -468,16 +468,16 @@ def generate_cycloidal_disk_part(part,parameters,DiskOne):
     disk_height = parameters["disk_height"]
     driver_disk_diameter = parameters["driver_disk_diameter"]
     offset = 0.0
-    rot = 7.0
-    xeccentricy = 0
-    yeccentricy = -eccentricity*2
+    rot = 60.0
+    xeccentricy = -eccentricity
+    yeccentricy = 0.0
     name = "cycloid001"
     #get shape of cycloidal disk
     if not DiskOne: #second disk
         offset = disk_height
-        rot = -7
-        xeccentricy = 0.0
-        yeccentricy = eccentricity*2
+        rot = -180
+        xeccentricy = eccentricity
+        yeccentricy = 0.0
         name = "cycloid002"
     array = generate_cycloidal_disk_array(parameters,min_radius,max_radius)
     
@@ -516,12 +516,12 @@ def generate_eccentric_key_part(part,parameters):
     driver_disk_height = parameters["disk_height"]
     
     sketch = newSketch(part,'key1')
-    SketchCircle(sketch,-eccentricity*2,0,shaft_diameter,-1,"Key1")    
+    SketchCircle(sketch,-eccentricity,0,shaft_diameter,-1,"Key1")    
     newPad(part,sketch,disk_height,'keyPad')
     
     sketch = newSketch(part,'key2')
     sketch.AttachmentOffset = Base.Placement(Base.Vector(0,0,disk_height),Base.Rotation(Base.Vector(0,0,1),0))     
-    SketchCircle(sketch,eccentricity*2,0,shaft_diameter,-1,"Key1")    
+    SketchCircle(sketch,eccentricity,0,shaft_diameter,-1,"Key1")    
     newPad(part,sketch,disk_height,'keyPad')
     
     pin_dia = eccentricity
@@ -540,7 +540,7 @@ def generate_eccentric_key_part(part,parameters):
     pock2 = newPocket(part,pinsketch2,driver_disk_height+disk_height,'Pin2');
     pock2.Reversed = False
         
-    part.Placement = Base.Placement(Base.Vector(0,0,base_height),Base.Rotation(Base.Vector(0,0,1),-90))
+    part.Placement = Base.Placement(Base.Vector(0,0,base_height),Base.Rotation(Base.Vector(0,0,1),222))
 
 def generate_output_shaft_part(part,parameters):    
     sketch = newSketch(part,'OutputShaftBase') 
@@ -553,9 +553,9 @@ def generate_output_shaft_part(part,parameters):
     base_height = parameters["base_height"]
     disk_height = parameters["disk_height"]
     driver_disk_diameter = parameters["driver_disk_diameter"]
-    if driver_disk_diameter>max_radius*2-eccentricity:
+    if driver_disk_diameter>min_radius*2-pin_disk_pin_diameter/2:
         print("driver diameter too big, resizing")
-        driver_disk_diameter = max_radius*2-eccentricity;
+        driver_disk_diameter = min_radius*2-pin_disk_pin_diameter/2
         parameters["driver_disk_diameter"] = driver_disk_diameter
 
     SketchCircle(sketch,0,0,driver_disk_diameter,-1,"Base") #outer circle    
@@ -644,8 +644,11 @@ def generate_default_parameters():
         "key_diameter":5,
         "key_flat_diameter": 4.8,
         "Height" : 20.0,
-        "clearance" : 0.5
+        "clearance" : 0.5        
         }
+    minr,maxr = calculate_min_max_radii(parameters)
+    parameters["min_rad"] = minr
+    parameters["max_rad"] = maxr
     return parameters
 
 def test_parts():
