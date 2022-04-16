@@ -23,6 +23,7 @@ while True:
 """
 
 import math
+from operator import truediv
 import FreeCAD
 from FreeCAD import Base
 import FreeCAD as App
@@ -54,22 +55,62 @@ def to_polar(x, y):
 def to_rect(r, a):
     return r * math.cos(a), r * math.sin(a)
 
+def calcyp(pin_circle_radius,a,eccentricity,tooth_count):
+    return math.atan(math.sin(tooth_count*a)/(math.cos(tooth_count*a)+pin_circle_radius/(eccentricity*(tooth_count+1))))
 
-def calc_yp(tooth_count, eccentricity, tooth_pitch, a):
-    return math.atan(math.sin(tooth_count * a) / (
-            math.cos(tooth_count * a) + (tooth_count * tooth_pitch) / (eccentricity * (tooth_count + 1))))
+def calc_x(pin_circle_radius,roller_diameter,eccentricity,tooth_count,a):
+    return pin_circle_radius*math.cos(a)+eccentricity*math.cos((tooth_count+1)*a)- \
+        roller_diameter/2*math.cos(calcyp(pin_circle_radius,a,eccentricity,tooth_count)+a)
 
-    
-def calc_x(tooth_count, eccentricity, tooth_pitch, pin_disk_pin_diameter: float, a):
-    return (tooth_count * tooth_pitch) * math.cos(a) + eccentricity * \
-           math.cos((tooth_count + 1) * a) - pin_disk_pin_diameter / 2.0 * \
-           math.cos(calc_yp(tooth_count, eccentricity, tooth_pitch, a) + a)
+def calc_y(pin_circle_radius,roller_diameter,eccentricity,tooth_count,a):
+    return (pin_circle_radius)*math.sin(a)+eccentricity*math.sin((tooth_count+1)*a)-roller_diameter/2*math.sin(calcyp(pin_circle_radius,a,eccentricity,tooth_count)+a)
 
+def buildCurve(self, obj):
+        pts = self.Points[obj.FirstIndex:obj.LastIndex+1]
+        bs = Part.BSplineCurve()
+        if (obj.Method == "Parametrization") and (obj.Parametrization == "Curvilinear") and (hasattr(obj.PointObject,"Distance")):
+            params = []
+            try:
+                dis = obj.PointObject.Distance
+            except:
+                dis = 1.0
+            for i in range(len(pts)):
+                params.append(1.0 * i * dis)
+            lv = pts[-1].sub(pts[-2])
+            params[-1] = params[-2] + lv.Length
+            bs.interpolate(Points = pts, Parameters = params, Tolerance = obj.ApproxTolerance)
 
-def calc_y(tooth_count: int, eccentricity, tooth_pitch, pin_disk_pin_diameter: float, a):
-    return (tooth_count * tooth_pitch) * math.sin(a) + eccentricity * \
-           math.sin((tooth_count + 1) * a) - pin_disk_pin_diameter / 2.0 * \
-           math.sin(calc_yp(tooth_count, eccentricity, tooth_pitch, a) + a)
+        elif obj.Method == "Parametrization":
+            bs.approximate(Points = pts, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = obj.Continuity, ParamType = obj.Parametrization)
+        elif obj.Method == "Smoothing Algorithm":
+            bs.approximate(Points = pts, DegMin = obj.DegreeMin, DegMax = obj.DegreeMax, Tolerance = obj.ApproxTolerance, Continuity = obj.Continuity, LengthWeight = obj.LengthWeight, CurvatureWeight = obj.CurvatureWeight , TorsionWeight = obj.TorsionWeight)
+        if obj.ClampEnds:
+            bs.setPole(1,self.Points[0])
+            bs.setPole(int(bs.NbPoles),self.Points[-1])
+        self.curve = bs 
+
+def calc_pressure_angle(pin_circle_radius,roller_diameter,tooth_count,a):
+    ex = 2**0.5
+    pin_circle_radius
+    rg = pin_circle_radius/ex
+    pp = rg * (ex**2 + 1 - 2*ex*math.cos(a))**0.5 - roller_diameter/2
+    return math.asin( (pin_circle_radius*math.cos(a)-rg)/(pp+roller_diameter/2))*180/math.pi
+
+def calc_pressure_limit(pin_circle_radius,roller_diameter,eccentricity,tooth_count,angle):
+    ex = 2**0.5        
+    rg = pin_circle_radius/ex
+    q = (pin_circle_radius**2 + rg**2 - 2*pin_circle_radius*rg*math.cos(angle))**0.5
+    x = rg - eccentricity + (q-roller_diameter/2)*(pin_circle_radius*math.cos(angle)-rg)/q
+    y = (q-roller_diameter/2)*pin_circle_radius*math.sin(angle)/q
+    return (x**2 + y**2)**0.5
+
+def check_limit(x,y,maxrad,minrad,offset):
+    r, a = to_polar(x, y)
+    if (r > maxrad) or (r < minrad):
+            r = r - offset
+            x, y = to_rect(r, a)
+    return x, y
+
 
 def calculate_radii(pin_count: int, eccentricity, outer_diameter, pin_diameter:float):
     """
@@ -114,6 +155,21 @@ def calculate(step : int, eccentricity, r1, r2: float):
 def clean1(a):
     """ return -1 < a < 1 """
     return min(1, max(a, -1))
+
+def fcvec(x):
+    if len(x) == 2:
+        return(App.Vector(x[0], x[1], 0))
+    else:
+        return(App.Vector(x[0], x[1], x[2]))
+
+def make_bspline(pts):
+    curve = []
+    for i in pts:
+        out = Part.BSplineCurve()
+        out.interpolate(list(map(fcvec, i)))
+        curve.append(out)
+    return curve
+
 
 def driver_shaft_hole(radius,hole_count,hole_number):        
     x = radius * math.cos((2.0 * math.pi / hole_count) * hole_number)
@@ -186,71 +242,41 @@ def SketchCircle(sketch,x,y,diameter,last,Name="",ref=False):
         sketch.toggleConstruction(c);    
     return c    
 
-def calculate_pressure_angle(tooth_count, tooth_pitch, pin_disk_pin_diameter, angle):
-    """ calculate the angle of the cycloidalDisk teeth at the angle """
-    ex = 2.0 ** 0.5
-    r3 = tooth_pitch * tooth_count
-    #        p * n
-    rg = r3 / ex
-    pp = rg * (ex ** 2.0 + 1 - 2.0 * ex * math.cos(angle)) ** 0.5 - pin_disk_pin_diameter / 2.0
-    return math.asin(clean1(((r3 * math.cos(angle) - rg) / (pp + pin_disk_pin_diameter / 2.0)))) * 180 / math.pi
+def calculate_pressure_angle(pin_circle_radius,roller_diameter,angle):
+        ex = 2**0.5        
+        rg = pin_circle_radius/ex
+        pp = rg * (ex**2 + 1 - 2*ex*math.cos(angle))**0.5 - roller_diameter/2
+        return math.asin( (pin_circle_radius*math.cos(angle)-rg)/(pp+roller_diameter/2))*180/math.pi
 
 
-def calculate_pressure_limit(tooth_count, tooth_pitch, eccentricity, pin_disk_pin_diameter, a):
-    ex = 2.0 ** 0.5
-    r3 = tooth_pitch * tooth_count
-    rg = r3 / ex
-    q = (r3 ** 2.0 + rg ** 2.0 - 2.0 * r3 * rg * math.cos(a)) ** 0.5
-    x = rg - eccentricity + (q - pin_disk_pin_diameter / 2.0) * (r3 * math.cos(a) - rg) / q
-    y = (q - pin_disk_pin_diameter / 2.0) * r3 * math.sin(a) / q
-    return (x ** 2.0 + y ** 2.0) ** 0.5
+def calculate_pressure_limit(pin_circle_radius,roller_diameter,eccentricity,min_max_angle):
+        ex = 2**0.5        
+        rg = pin_circle_radius/ex
+        q = (pin_circle_radius**2 + rg**2 - 2*pin_circle_radius*rg*math.cos(min_max_angle))**0.5
+        x = rg - eccentricity + (q-roller_diameter/2)*(pin_circle_radius*math.cos(min_max_angle)-rg)/q
+        y = (q-roller_diameter/2)*pin_circle_radius*math.sin(min_max_angle)/q
+        return (x**2 + y**2)**0.5
 
 
-def check_limit(v: FreeCAD.Vector, pressure_angle_offset, minrad, maxrad):
-    """ if x,y outside limit return x,y as at limit, else return x,y
-        :type v: FreeCAD.Vector """
-    r, a = to_polar(v.x, v.y)
-    if (r > maxrad) or (r < minrad):
-        r = r - pressure_angle_offset
-        v.x, v.y = to_rect(r, a)
-    return v
 
 
-def calculate_min_max_radii(parameters):
+def calculate_min_max_radii(pin_circle_radius,roller_diameter,eccentricity,pressure_angle_limit):
     """ Find the pressure angle limit circles """
-    #test code
-    """tooth_count= parameters['tooth_count']
-    radius_requested = parameters['Diameter']/2.0
-    pi2 = 2 * math.pi
-    circumfrence_requested = pi2 * radius_requested 
-    roller_diameter = parameters['pin_disk_pin_diameter']
-    roller_cirumfrence_needed = tooth_count*2*roller_diameter #  teeth and space betweenteeth * roller diameter
-    roller_ring_radius = roller_cirumfrence_needed / pi2   
-    
-    if (roller_cirumfrence_needed>circumfrence_requested): # rollers larger than base
-        circumfrence_requested = roller_cirumfrence_needed + roller_diameter        
-        print("Diameter too small-- resizing")
-        
-    return roller_cirumfrence_needed/pi2,circumfrence_requested / pi2
-    """
-    tooth_count= parameters['tooth_count']
-    tooth_pitch= parameters['tooth_pitch']
-    pin_disk_pin_diameter= parameters['pin_disk_pin_diameter']
-    eccentricity= parameters['eccentricity']
-    pressure_angle_limit= parameters['pressure_angle_limit']
-
-    min_angle = -1.0
-    max_angle = -1.0
+    minAngle = -1.0
+    maxAngle = -1.0
     for i in range(0, 180):
-        x = calculate_pressure_angle(tooth_count, tooth_pitch, pin_disk_pin_diameter, i * math.pi / 180)
-        if (x < pressure_angle_limit) and (min_angle < 0):
-            min_angle = i * 1.0
-        if (x < -pressure_angle_limit) and (max_angle < 0):
-            max_angle = i  - 1.0
-    min_radius = calculate_pressure_limit(tooth_count, tooth_pitch, eccentricity, pin_disk_pin_diameter, min_angle * math.pi / 180)
-    max_radius = calculate_pressure_limit(tooth_count, tooth_pitch, eccentricity, pin_disk_pin_diameter, max_angle * math.pi / 180)
+        x = calculate_pressure_angle(pin_circle_radius, roller_diameter, i * math.pi / 180.)
+        if ( x < pressure_angle_limit) and (minAngle < 0):
+            minAngle = float(i)
+        if (x < -pressure_angle_limit) and (maxAngle < 0):
+            maxAngle = float(i-1)
+            
+    min_radius = calculate_pressure_limit(pin_circle_radius, roller_diameter, eccentricity, minAngle * math.pi / 180.)
+    max_radius = calculate_pressure_limit(pin_circle_radius, roller_diameter, eccentricity, maxAngle * math.pi / 180.)
+
     return min_radius, max_radius
 
+                
 
 def calc_DriveHoleRRadius(driver_disk_diameter,shaft_diameter):
     """ Calculates the radius that the drive holes are in
@@ -258,10 +284,6 @@ def calc_DriveHoleRRadius(driver_disk_diameter,shaft_diameter):
     #not using parameters as these values might be resized from requested  
     cent = (driver_disk_diameter/2+shaft_diameter)/2
     return cent    
-
-def calc_min_dia(parameters):
-    min_radius, max_radius = calculate_min_max_radii(parameters)    
-    return 2 * ((min_radius + max_radius) / 2 + parameters["pin_disk_pin_diameter"]+ parameters["eccentricity"])
 
 def generate_slot_size(parameters,add_clearence):        
     key_radius = parameters["key_diameter"]/2
@@ -285,44 +307,6 @@ def generate_key_sketch(parameters,add_clearence,sketch,Offset=0):
 
    
     
-def generate_cycloidal_disk_array(parameters,min_radius,max_radius):
-    tooth_count = parameters["tooth_count"]-1
-    tooth_pitch = parameters["tooth_pitch"]
-    pin_disk_pin_diameter = parameters["pin_disk_pin_diameter"]
-    eccentricity = parameters["eccentricity"]
-    line_segment_count = parameters["line_segment_count"]
-    pressure_angle_offset = parameters["pressure_angle_offset"]
-    """ make the array to be used in the bspline
-        that is the cycloidalDisk
-    """
-    #min_radius, max_radius= calculate_min_max_radii(H)
-    q = 2.0 * math.pi / line_segment_count
-    i = 0
-    #r1,r2 = calculate_radii(tooth_count,eccentricity,105,10)
-    r1,r2 = calculate_radii(tooth_count,eccentricity,(min_radius+max_radius)/2,pin_disk_pin_diameter)
-    # v1 is starting point
-    v1 = Base.Vector(calc_x(tooth_count, eccentricity, tooth_pitch, pin_disk_pin_diameter, q * i),
-                     calc_y(tooth_count, eccentricity, tooth_pitch, pin_disk_pin_diameter, q * i),
-                     0)
-    v1 = check_limit(v1, pressure_angle_offset, min_radius, max_radius)
-    #va1 = Base.Vector(calculate(0,eccentricity,r1,r2))
-    #va1 = check_limit(va1, pressure_angle_offset, min_radius, max_radius)
-    cycloidal_disk_array = []
-    #cycloidal_disk_array_alternative = []
-    cycloidal_disk_array.append(v1)
-    #cycloidal_disk_array_alternative.append(va1)
-    for i in range(0, line_segment_count):
-        v2 = Base.Vector(
-            calc_x(tooth_count, eccentricity, tooth_pitch, pin_disk_pin_diameter, q * (i + 1)),
-            calc_y(tooth_count, eccentricity, tooth_pitch, pin_disk_pin_diameter, q * (i + 1)),
-            0)
-        v2 = check_limit(v2, pressure_angle_offset, min_radius, max_radius)
-        cycloidal_disk_array.append(v2)
-        #va2 = Base.Vector(calculate(q * (i + 1), eccentricity, r1, r2))
-        #va2 = check_limit(va2, pressure_angle_offset, min_radius, max_radius)
-        #cycloidal_disk_array_alternative.append(va2)
-    return cycloidal_disk_array#,cycloidal_disk_array_alternative
-
 
 def generate_pin_disk_part(part,parameters):
     """ create the base that the fixed_ring_pins will be attached to """
@@ -331,49 +315,52 @@ def generate_pin_disk_part(part,parameters):
     #sketch.deleteAllGeometry()
     
     tooth_count = parameters["tooth_count"]
-    pin_disk_pin_diameter = parameters["pin_disk_pin_diameter"]
+    roller_diameter = parameters["roller_diameter"]
     base_height = parameters["base_height"]
     shaft_diameter = parameters["shaft_diameter"]
     Height = parameters["Height"]
     clearance = parameters["clearance"]
     eccentric = parameters["eccentricity"]
-    min_radius, max_radius= calculate_min_max_radii(parameters)
-    
+    min_radius = parameters["min_rad"]
+    max_radius = parameters["max_rad"]
+    pin_circle_diameter = parameters["pin_circle_diameter"]
+    Diameter = parameters["Diameter"]
     driver_disk_height = parameters["disk_height"]
     driver_disk_diameter = parameters["driver_disk_diameter"]
-    if driver_disk_diameter>min_radius*2-pin_disk_pin_diameter/2:
-        print("driver diameter too big, resizing")
-        driver_disk_diameter = min_radius*2-pin_disk_pin_diameter/2
-        parameters["driver_disk_diameter"] = driver_disk_diameter
+    #print(driver_disk_diameter,min_radius,roller_diameter)
+    
+    #if driver_disk_diameter>min_radius*2-roller_diameter/2:
+    #    print("driver diameter too big, resizing")
+    #    driver_disk_diameter = min_radius*2-roller_diameter/2
+    #    parameters["driver_disk_diameter"] = driver_disk_diameter
 
-    outdiameter = (max_radius*2+pin_disk_pin_diameter*2)
+    
 
     #driver_disk_diameter += clearance
     
     pin_height = driver_disk_height*3
     #bottom plate, total width of box = outdiameter
     SketchCircle(sketch,0,0,shaft_diameter + clearance,-1,"ShaftHole")
-    SketchCircle(sketch,0,0,outdiameter,-1,"OuterDiameter")   
-    newPad(part,sketch,base_height - driver_disk_height,'centerPad');
+    SketchCircle(sketch,0,0,Diameter,-1,"Diameter")   
+    newPad(part,sketch,base_height - driver_disk_height,'center');
     
     sketch1 = newSketch(part)    
-    SketchCircle(sketch1,0,0,outdiameter,-1,"OuterDiameter")   #outer circle
-    
-    SketchCircle(sketch1,0,0,driver_disk_diameter + clearance,-1,"driver_diameter")    
+    SketchCircle(sketch1,0,0,Diameter,-1,"Diameter")   #outer circle    
+    SketchCircle(sketch1,0,0,driver_disk_diameter + clearance,-1,"driver_disk_diameter")    
     newPad(part,sketch1,base_height,'outside')
     #base is done, now for the rollers
     
-    roller_ring_radius = max_radius
+    roller_ring_radius = pin_circle_diameter /2 + clearance
     pinsketch = newSketch(part,'pinMale')    
-    SketchCircle(pinsketch,roller_ring_radius,0,pin_disk_pin_diameter/4.0,-1,"pinMale")
+    SketchCircle(pinsketch,roller_ring_radius,0,roller_diameter/4.0,-1,"pin_circle_diameter_male")
     pad = newPad(part,pinsketch,base_height+pin_height+driver_disk_height,'pinMale')    
     
     pinsketch1 = newSketch(part,'roller')
-    SketchCircle(pinsketch1,roller_ring_radius,0,pin_disk_pin_diameter,-1,"pinRoller")
+    SketchCircle(pinsketch1,roller_ring_radius,0,roller_diameter,-1,"pin_circle_diameter_roller")
     rol = newPad(part,pinsketch1,base_height+pin_height,"Roller")
     
     pinsketch2 = newSketch(part,'pinSketchFemale')    
-    SketchCircle(pinsketch2,roller_ring_radius,0,pin_disk_pin_diameter/4.0+clearance,-1,"pinFemale")
+    SketchCircle(pinsketch2,roller_ring_radius,0,roller_diameter/4.0+clearance,-1,"pin_circle_diameter_female")
     
     join = newPocket(part,pinsketch2,pin_height,'pinJoiner')    
     pol = newPolar(part,pad,pinsketch,tooth_count,'pin')
@@ -386,9 +373,10 @@ def generate_pin_disk_part(part,parameters):
 
 def generate_driver_disk_part(part,parameters):
     sketch = newSketch(part,'DriverDiskBase')            
-    min_radius,max_radius= calculate_min_max_radii(parameters)
+    min_radius = parameters["min_rad"]
+    max_radius = parameters["max_rad"]
     driver_disk_hole_count = parameters["driver_disk_hole_count"]
-    pin_disk_pin_diameter = parameters["pin_disk_pin_diameter"]
+    roller_diameter = parameters["roller_diameter"]
     eccentricity = parameters["eccentricity"]
     shaft_diameter = parameters["shaft_diameter"]
     base_height = parameters["base_height"]
@@ -396,12 +384,12 @@ def generate_driver_disk_part(part,parameters):
     disk_height = parameters["disk_height"]
     driver_disk_diameter = parameters["driver_disk_diameter"]
     
-    if driver_disk_diameter>min_radius-pin_disk_pin_diameter/2:
-        print("driver diameter too big, resizing")
-        driver_disk_diameter = min_radius*2-pin_disk_pin_diameter/2
-        parameters["driver_disk_diameter"] = driver_disk_diameter
-    driver_disk_diameter -= clearance
-    SketchCircle(sketch,0,0,driver_disk_diameter,-1,"")    
+    #if driver_disk_diameter>min_radius-roller_diameter/2:
+    #    print("driver diameter too big, resizing")
+    #    driver_disk_diameter = min_radius*2-roller_diameter/2
+    #    parameters["driver_disk_diameter"] = driver_disk_diameter
+    
+    SketchCircle(sketch,0,0,driver_disk_diameter,-1,"DriverDiameter")    
     innershaftDia = (shaft_diameter  + eccentricity+clearance/2) 
     SketchCircle(sketch,0,0,innershaftDia,-1,"ShaftHole")
     pad = newPad(part,sketch,disk_height)
@@ -457,14 +445,51 @@ def generate_eccentric_shaft_part(body,parameters):
     
     body.Placement = Base.Placement(Base.Vector(0,0,0),Base.Rotation(Base.Vector(0,0,1),222))
 
+def generate_cycloidal_disk_array(parameters):
+    tooth_count = parameters["tooth_count"]
+    tooth_pitch = parameters["tooth_pitch"]
+    pin_circle_radius = parameters["pin_circle_diameter"] / 2.0
+    roller_diameter = parameters["roller_diameter"]
+    eccentricity = parameters["eccentricity"]
+    line_segment_count = parameters["line_segment_count"]
+    pressure_angle_offset = parameters["pressure_angle_offset"]
+    pressure_angle_limit = parameters["pressure_angle_limit"]
+    min_radius = parameters["min_rad"]
+    max_radius = parameters["max_rad"]
+
+    """ make the array to be used in the bspline
+        that is the cycloidalDisk
+    """
+    q = 2 * math.pi / float(line_segment_count)
+    # Find the pressure angle limit circles
+    tooth_count -= 1                
+    i=0
+    x = calc_x(pin_circle_radius,  roller_diameter, eccentricity, tooth_count, q*i )#/ float(tooth_count))
+    y = calc_y(pin_circle_radius,  roller_diameter, eccentricity, tooth_count, q*i )#/ float(tooth_count))
+    
+    x, y = check_limit(x,y,max_radius,min_radius,pressure_angle_offset)
+    
+    cycloidal_disk_array = [Base.Vector(x-eccentricity, y, 0)]
+    for i in range(0,line_segment_count):
+        x = calc_x(pin_circle_radius,  roller_diameter, eccentricity, tooth_count, q*(i+1) / float(tooth_count))
+        y = calc_y(pin_circle_radius,  roller_diameter, eccentricity, tooth_count, q*(i+i)/ float(tooth_count))
+        x, y = check_limit(x,y,max_radius,min_radius,pressure_angle_offset)
+        cycloidal_disk_array.append(Base.Vector(x-eccentricity, y, 0))
+    
+    #cycloidal_disk_array.append(cycloidal_disk_array[0])
+    #print("diskarray")
+    #print(cycloidal_disk_array)
+    return cycloidal_disk_array
+
+
+
 def generate_cycloidal_disk_part(part,parameters,DiskOne):
-    pin_disk_pin_diameter = parameters["pin_disk_pin_diameter"]
     eccentricity = parameters["eccentricity"]
     base_height = parameters["base_height"]
     shaft_diameter = parameters["shaft_diameter"]
     driver_disk_hole_count = parameters["driver_disk_hole_count"]
     clearance = parameters["clearance"]
-    min_radius, max_radius = calculate_min_max_radii(parameters)
+    tooth_count = parameters["tooth_count"]
     disk_height = parameters["disk_height"]
     driver_disk_diameter = parameters["driver_disk_diameter"]
     offset = 0.0
@@ -479,13 +504,38 @@ def generate_cycloidal_disk_part(part,parameters,DiskOne):
         xeccentricy = eccentricity
         yeccentricy = 0.0
         name = "cycloid002"
-    array = generate_cycloidal_disk_array(parameters,min_radius,max_radius)
+    array = generate_cycloidal_disk_array(parameters)
+    #wire = make_bspline_wire(part,array)
+    #curve = make_bspline_curve(Part,array)
+    #curve = Part.BSplineCurve()
+    #curve.interpolate(array)    
     
-    curve = Part.BSplineCurve()
-    curve.interpolate(array)    
-        
+    curve = make_bspline([array])
+    curves = []
+    mat= App.Matrix()
+    mat.move(App.Vector(eccentricity, 0., 0.))
+    mat.rotateZ(2 * math.pi / tooth_count)
+    mat.move(App.Vector(-eccentricity, 0., 0.))
+    for _ in range(tooth_count):        
+        curve = curve.transformGeometry(mat)        
+        curves.append(curve)
     sketch = newSketch(part,name)
-    sketch.addGeometry(curve);
+    sketch.addGeometry(curves);
+    sketch.addConstraint(Sketcher.Constraint('Block',0))
+        
+    
+    return part,sketch,curves
+    #cam = Part.Face(Part.Wire(wires))
+    return
+    previous = array[-1]
+    curve_list = []
+    for i in array:
+        out = part.BSplineCurve()
+        out.interpolate(list(map(fcvec,i)))
+        curve_list.append(out.toShape())
+    sketch.addGeometry(curve_list)
+        
+    #sketch.addGeometry(wire);
     sketch.addConstraint(Sketcher.Constraint('Block',0))
     #sketch.addGeometry(Part.BSplineCurve(array))
     """a = Part.BSplineCurve(array).toShape()
@@ -496,7 +546,7 @@ def generate_cycloidal_disk_part(part,parameters,DiskOne):
     last = -1
     
     DriveHoleRRadius = calc_DriveHoleRRadius(driver_disk_diameter,shaft_diameter);
-    pad = newPad(part,sketch,disk_height,name+'Pad')        
+    pad = newPad(part,sketch,disk_height,name)        
     part.Placement = Base.Placement(Base.Vector(xeccentricy,yeccentricy,base_height+offset),Base.Rotation(Base.Vector(0,0,1),rot))
     sketch = newSketch(part,'DriverShaftHoles')
     SketchCircle(sketch,DriveHoleRRadius,0,driver_hold_diameter,-1,"DriverShaftHole")    
@@ -544,19 +594,21 @@ def generate_eccentric_key_part(part,parameters):
 
 def generate_output_shaft_part(part,parameters):    
     sketch = newSketch(part,'OutputShaftBase') 
-    min_radius,max_radius= calculate_min_max_radii(parameters)
+    min_radius = parameters["min_rad"]
+    max_radius = parameters["max_rad"]
+
     driver_disk_hole_count = parameters["driver_disk_hole_count"]
     eccentricity = parameters["eccentricity"]
-    pin_disk_pin_diameter = parameters["pin_disk_pin_diameter"]
+    roller_diameter = parameters["roller_diameter"]
     shaft_diameter = parameters["shaft_diameter"]
     clearance = parameters["clearance"]
     base_height = parameters["base_height"]
     disk_height = parameters["disk_height"]
     driver_disk_diameter = parameters["driver_disk_diameter"]
-    if driver_disk_diameter>min_radius*2-pin_disk_pin_diameter/2:
-        print("driver diameter too big, resizing")
-        driver_disk_diameter = min_radius*2-pin_disk_pin_diameter/2
-        parameters["driver_disk_diameter"] = driver_disk_diameter
+    #if driver_disk_diameter>min_radius*2-roller_diameter/2:
+    #    print("driver diameter too big, resizing")
+    #    driver_disk_diameter = min_radius*2-roller_diameter/2
+    #    parameters["driver_disk_diameter"] = driver_disk_diameter
 
     SketchCircle(sketch,0,0,driver_disk_diameter,-1,"Base") #outer circle    
     pad = newPad(part,sketch,disk_height)
@@ -576,7 +628,9 @@ def generate_output_shaft_part(part,parameters):
     generate_key_sketch(parameters,0,keysketch)
     pad = newPad(part,keysketch,20)
     part.Placement = Base.Placement(Base.Vector(0,0,base_height+disk_height*2),Base.Rotation(Base.Vector(0,0,1),0))
+    pol.Visibility = False
     part.Tip = pol
+    pol.Visibility = True
 
 def ready_part(doc,name):
     """ will create a body of "name" if not already present.
@@ -588,9 +642,24 @@ def ready_part(doc,name):
         part = doc.addObject('PartDesign::Body', name)        
     return part
 
-    
+def testcycloidal():
+    if not App.ActiveDocument:
+        App.newDocument()
+    doc = App.ActiveDocument
+    p = generate_default_parameters()    
+    part = ready_part(doc,'cycloidalDisk1')        
+    return generate_cycloidal_disk_part(part,p,True)        
+
 def generate_parts(doc,parameters):
     """ will (re)create all bodys of all parts needed """
+    minr,maxr = calculate_min_max_radii(
+            parameters["pin_circle_diameter"]/2,
+            parameters["roller_diameter"],
+            parameters["eccentricity"],
+            parameters["pressure_angle_limit"])
+    parameters["min_rad"] = minr
+    parameters["max_rad"] = maxr
+
     print("cyloidFun creating parts")
     random.seed(555)
 
@@ -621,7 +690,7 @@ def generate_parts(doc,parameters):
     part = ready_part(doc,'outputShaft')       
     generate_output_shaft_part(part,parameters)   
     part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
-    print("done creating parts")
+    
     #doc.recompute()
     
     
@@ -631,13 +700,14 @@ def generate_default_parameters():
         "tooth_count": 11,#12,
         "driver_disk_hole_count": 6,
         "driver_hole_diameter": 10,
-        "driver_disk_diameter": 76,
+        "driver_disk_diameter": 50,
         "line_segment_count": 121, #tooth_count squared
         "tooth_pitch": 4,
-        "Diameter" : 40,#110,
-        "pin_disk_pin_diameter": 9.4,
+        "Diameter" : 95,#110,
+        "roller_diameter": 9.4,
+        "pin_circle_diameter" : 80,
         "pressure_angle_limit": 50.0,
-        "pressure_angle_offset": 0.0,
+        "pressure_angle_offset": 0.1,
         "base_height":10.0,
         "disk_height":5.0,
         "shaft_diameter":13.0,
@@ -646,7 +716,11 @@ def generate_default_parameters():
         "Height" : 20.0,
         "clearance" : 0.5        
         }
-    minr,maxr = calculate_min_max_radii(parameters)
+    minr,maxr = calculate_min_max_radii(
+            parameters["pin_circle_diameter"]/2,
+            parameters["roller_diameter"],
+            parameters["eccentricity"],
+            parameters["pressure_angle_limit"])
     parameters["min_rad"] = minr
     parameters["max_rad"] = maxr
     return parameters

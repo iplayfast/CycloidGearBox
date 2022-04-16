@@ -130,8 +130,11 @@ class CycloidalGearBox():
         obj.addProperty("App::PropertyLength",
                         "Max_Diameter", "read only", "", 1)
         # pin_disk
-        obj.addProperty("App::PropertyLength",  "pin_disk_pin_diameter",  "pin_disk,eccentric_shaft,eccentric_key", QT_TRANSLATE_NOOP(
-            "App::Property", "pin_disk_pin_diameter")).pin_disk_pin_diameter = H["pin_disk_pin_diameter"]
+        obj.addProperty("App::PropertyLength",  "roller_diameter",  "pin_disk,eccentric_shaft,eccentric_key", QT_TRANSLATE_NOOP(
+            "App::Property", "roller_diameter")).roller_diameter = H["roller_diameter"]
+        obj.addProperty("App::PropertyLength",  "pin_circle_diameter",  "pin_disk", QT_TRANSLATE_NOOP(
+            "App::Property", "pin_circle_diameter")).pin_circle_diameter = H["pin_circle_diameter"]
+        
         obj.addProperty("App::PropertyLength",  "disk_height",      "pin_disk,eccentric_shaft,eccentric_key,driver_disk,eccentric_shaft,eccentric_key,cycloidal_disk,eccentric_shaft,eccentric_key",
                         QT_TRANSLATE_NOOP("App::Property", "base_height")).disk_height = H["disk_height"]
     
@@ -217,7 +220,8 @@ class CycloidalGearBox():
     def GetParameters(self):
         parameters = {"tooth_count": int(self.Object.__getattribute__("tooth_count")),
                            "line_segment_count": int(self.Object.__getattribute__("line_segment_count")),
-                           "pin_disk_pin_diameter": float(self.Object.__getattribute__("pin_disk_pin_diameter").Value),
+                           "roller_diameter": float(self.Object.__getattribute__("roller_diameter").Value),
+                           "pin_circle_diameter": float(self.Object.__getattribute__("pin_circle_diameter").Value),
                            "driver_disk_diameter" : float(self.Object.__getattribute__("driver_disk_diameter").Value),
                            "Diameter": float(self.Object.__getattribute__("Diameter").Value),
                            "tooth_pitch": float(self.Object.__getattribute__("tooth_pitch").Value),
@@ -234,9 +238,17 @@ class CycloidalGearBox():
                            "key_flat_diameter" : float(self.Object.__getattribute__("key_flat_diameter")),
                            "clearance": float(self.Object.__getattribute__("clearance"))
                            }
-        #minrad,maxrad = cycloidFun.calculate_min_max_radii(parameters)
-        #self.Object.__setattr__("Max_Diameter",maxrad*2)
-        #self.Object.__setattr__("Min_Diameter",minrad*2)
+        minr,maxr = cycloidFun.calculate_min_max_radii(
+            parameters["pin_circle_diameter"]/2,
+            parameters["roller_diameter"],
+            parameters["eccentricity"],
+            parameters["pressure_angle_limit"])
+        if (self.Object.__getattribute__("Max_Diameter")!=maxr*2):
+            self.Object.__setattr__("Max_Diameter",maxr*2)    
+        if (self.Object.__getattribute__("Min_Diameter")!=minr*2):
+                self.Object.__setattr__("Min_Diameter",minr*2)    
+        parameters["min_rad"] = minr
+        parameters["max_rad"] = maxr        
         return parameters
 
     def force_Recompute(self):
