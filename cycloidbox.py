@@ -238,11 +238,8 @@ class CycloidalGearBox():
                            "key_flat_diameter" : float(self.Object.__getattribute__("key_flat_diameter")),
                            "clearance": float(self.Object.__getattribute__("clearance"))
                            }
-        minr,maxr = cycloidFun.calculate_min_max_radii(
-            parameters["pin_circle_diameter"]/2,
-            parameters["roller_diameter"],
-            parameters["eccentricity"],
-            parameters["pressure_angle_limit"])
+        minr,maxr = cycloidFun.calculate_min_max_radii(parameters)
+            
         if (self.Object.__getattribute__("Max_Diameter")!=maxr*2):
             self.Object.__setattr__("Max_Diameter",maxr*2)    
         if (self.Object.__getattribute__("Min_Diameter")!=minr*2):

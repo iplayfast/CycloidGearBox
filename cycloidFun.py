@@ -27,9 +27,15 @@ from operator import truediv
 import FreeCAD
 from FreeCAD import Base
 import FreeCAD as App
-import Part
+
 import Sketcher
 import random # for colors
+import numpy as np
+import Part
+from Part import BSplineCurve, Shape, Wire, Face, makePolygon, \
+    makeLoft, Line, BSplineSurface, \
+    makePolygon, makeHelix, makeShell, makeSolid
+
 
 from inspect import currentframe    #for debugging
 """ style guide
@@ -55,15 +61,18 @@ def to_polar(x, y):
 def to_rect(r, a):
     return r * math.cos(a), r * math.sin(a)
 
-def calcyp(pin_circle_radius,a,eccentricity,tooth_count):
-    return math.atan(math.sin(tooth_count*a)/(math.cos(tooth_count*a)+pin_circle_radius/(eccentricity*(tooth_count+1))))
+                                                                              
+def calcyp(p,a,e,n):                                                   
+    return math.atan(math.sin(n*a)/(math.cos(n*a)+(n*p)/(e*(n+1))))  
 
-def calc_x(pin_circle_radius,roller_diameter,eccentricity,tooth_count,a):
-    return pin_circle_radius*math.cos(a)+eccentricity*math.cos((tooth_count+1)*a)- \
-        roller_diameter/2*math.cos(calcyp(pin_circle_radius,a,eccentricity,tooth_count)+a)
+def calc_x(p,roller_diameter,eccentricty,tooth_count,angle):                                                 
+    return (tooth_count*p)*math.cos(angle)+eccentricty*math.cos((tooth_count+1)*angle)-roller_diameter/2*math.cos(calcyp(p,angle,eccentricty,tooth_count)+angle)
+                                                                                
+def calc_y(p,roller_diameter,eccentricity,tooth_count,angle):                                                 
+    print("calc_y",p,roller_diameter,eccentricity,tooth_count,angle,calcyp(p,angle,eccentricity,tooth_count))
+    return (tooth_count*p)*math.sin(angle)+eccentricity*math.sin((tooth_count+1)*angle)-roller_diameter/2*math.sin(calcyp(p,angle,eccentricity,tooth_count)+angle)
+         
 
-def calc_y(pin_circle_radius,roller_diameter,eccentricity,tooth_count,a):
-    return (pin_circle_radius)*math.sin(a)+eccentricity*math.sin((tooth_count+1)*a)-roller_diameter/2*math.sin(calcyp(pin_circle_radius,a,eccentricity,tooth_count)+a)
 
 def buildCurve(self, obj):
         pts = self.Points[obj.FirstIndex:obj.LastIndex+1]
@@ -89,14 +98,14 @@ def buildCurve(self, obj):
             bs.setPole(int(bs.NbPoles),self.Points[-1])
         self.curve = bs 
 
-def calc_pressure_angle(pin_circle_radius,roller_diameter,tooth_count,a):
+def calc_pressure_angle(pin_circle_radius,roller_diameter,a):
     ex = 2**0.5
     pin_circle_radius
     rg = pin_circle_radius/ex
     pp = rg * (ex**2 + 1 - 2*ex*math.cos(a))**0.5 - roller_diameter/2
     return math.asin( (pin_circle_radius*math.cos(a)-rg)/(pp+roller_diameter/2))*180/math.pi
 
-def calc_pressure_limit(pin_circle_radius,roller_diameter,eccentricity,tooth_count,angle):
+def calc_pressure_limit(pin_circle_radius,roller_diameter,eccentricity,angle):
     ex = 2**0.5        
     rg = pin_circle_radius/ex
     q = (pin_circle_radius**2 + rg**2 - 2*pin_circle_radius*rg*math.cos(angle))**0.5
@@ -165,11 +174,18 @@ def fcvec(x):
 def make_bspline(pts):
     curve = []
     for i in pts:
-        out = Part.BSplineCurve()
+        out = BSplineCurve()
         out.interpolate(list(map(fcvec, i)))
         curve.append(out)
     return curve
 
+def make_bspline_wire(pts):
+    wi = []
+    for i in pts:
+        out = BSplineCurve()
+        out.interpolate(list(map(fcvec, i)))
+        wi.append(out.toShape())
+    return Wire(wi)
 
 def driver_shaft_hole(radius,hole_count,hole_number):        
     x = radius * math.cos((2.0 * math.pi / hole_count) * hole_number)
@@ -242,37 +258,47 @@ def SketchCircle(sketch,x,y,diameter,last,Name="",ref=False):
         sketch.toggleConstruction(c);    
     return c    
 
-def calculate_pressure_angle(pin_circle_radius,roller_diameter,angle):
-        ex = 2**0.5        
-        rg = pin_circle_radius/ex
-        pp = rg * (ex**2 + 1 - 2*ex*math.cos(angle))**0.5 - roller_diameter/2
-        return math.asin( (pin_circle_radius*math.cos(angle)-rg)/(pp+roller_diameter/2))*180/math.pi
+def calculate_pressure_angle(p,roller_diameter,tooth_count,angle):
+    ex = 2**0.5        
+    r3 = p * tooth_count
+    rg = r3/ex
+    pp = rg * (ex**2 + 1 - 2*ex*math.cos(angle))**0.5 - roller_diameter/2
+    return math.asin( (r3*math.cos(angle)-rg)/(pp+roller_diameter/2))*180/math.pi
+
+    
+
+def calculate_pressure_limit(p,roller_diameter,eccentricity,tooth_count,a):                                    
+    #print("calc_pressure_limit",p,roller_diameter,eccentricity,tooth_count,a)
+    ex = 2**0.5
+    r3 = p*tooth_count
+    rg = r3/ex
+    q = (r3**2 + rg**2 - 2*r3*rg*math.cos(a))**0.5
+    x = rg - eccentricity + (q-roller_diameter/2)*(r3*math.cos(a)-rg)/q
+    y = (q-roller_diameter/2)*r3*math.sin(a)/q
+    return (x**2 + y**2)**0.5
 
 
-def calculate_pressure_limit(pin_circle_radius,roller_diameter,eccentricity,min_max_angle):
-        ex = 2**0.5        
-        rg = pin_circle_radius/ex
-        q = (pin_circle_radius**2 + rg**2 - 2*pin_circle_radius*rg*math.cos(min_max_angle))**0.5
-        x = rg - eccentricity + (q-roller_diameter/2)*(pin_circle_radius*math.cos(min_max_angle)-rg)/q
-        y = (q-roller_diameter/2)*pin_circle_radius*math.sin(min_max_angle)/q
-        return (x**2 + y**2)**0.5
-
-
-
-
-def calculate_min_max_radii(pin_circle_radius,roller_diameter,eccentricity,pressure_angle_limit):
+def calculate_min_max_radii(parameters):    
     """ Find the pressure angle limit circles """
+    pin_circle_radius = parameters["pin_circle_diameter"] / 2.0
+    tooth_count = parameters["tooth_count"]
+    roller_diameter = parameters["roller_diameter"]
+    pressure_angle_limit = parameters["pressure_angle_limit"]
+    eccentricity = parameters["eccentricity"]
+    p = pin_circle_radius / tooth_count
+    
     minAngle = -1.0
     maxAngle = -1.0
     for i in range(0, 180):
-        x = calculate_pressure_angle(pin_circle_radius, roller_diameter, i * math.pi / 180.)
+        x = calculate_pressure_angle(p,roller_diameter,tooth_count, i * math.pi / 180.)
         if ( x < pressure_angle_limit) and (minAngle < 0):
             minAngle = float(i)
         if (x < -pressure_angle_limit) and (maxAngle < 0):
             maxAngle = float(i-1)
-            
-    min_radius = calculate_pressure_limit(pin_circle_radius, roller_diameter, eccentricity, minAngle * math.pi / 180.)
-    max_radius = calculate_pressure_limit(pin_circle_radius, roller_diameter, eccentricity, maxAngle * math.pi / 180.)
+    #print("min/max angle",minAngle,maxAngle)
+    min_radius = calculate_pressure_limit(p,roller_diameter,eccentricity,tooth_count, minAngle * math.pi / 180.)
+    max_radius = calculate_pressure_limit(p,roller_diameter,eccentricity,tooth_count, maxAngle * math.pi / 180.)
+    #print("min/max Radius",min_radius,max_radius)
 
     return min_radius, max_radius
 
@@ -456,31 +482,29 @@ def generate_cycloidal_disk_array(parameters):
     pressure_angle_limit = parameters["pressure_angle_limit"]
     min_radius = parameters["min_rad"]
     max_radius = parameters["max_rad"]
-
+    p = pin_circle_radius / tooth_count
     """ make the array to be used in the bspline
         that is the cycloidalDisk
     """
     q = 2 * math.pi / float(line_segment_count)
     # Find the pressure angle limit circles
-    tooth_count -= 1                
+
     i=0
-    x = calc_x(pin_circle_radius,  roller_diameter, eccentricity, tooth_count, q*i )#/ float(tooth_count))
-    y = calc_y(pin_circle_radius,  roller_diameter, eccentricity, tooth_count, q*i )#/ float(tooth_count))
-    
+    x = calc_x(p,  roller_diameter, eccentricity, tooth_count, q*i / float(tooth_count))
+    y = calc_y(p,  roller_diameter, eccentricity, tooth_count, q*i / tooth_count)
     x, y = check_limit(x,y,max_radius,min_radius,pressure_angle_offset)
-    
+
     cycloidal_disk_array = [Base.Vector(x-eccentricity, y, 0)]
     for i in range(0,line_segment_count):
-        x = calc_x(pin_circle_radius,  roller_diameter, eccentricity, tooth_count, q*(i+1) / float(tooth_count))
-        y = calc_y(pin_circle_radius,  roller_diameter, eccentricity, tooth_count, q*(i+i)/ float(tooth_count))
+        x = calc_x(p,  roller_diameter, eccentricity, tooth_count, q*(i+1) / tooth_count)
+        y = calc_y(p,  roller_diameter, eccentricity, tooth_count, q*(i+1)/ tooth_count)
         x, y = check_limit(x,y,max_radius,min_radius,pressure_angle_offset)
-        cycloidal_disk_array.append(Base.Vector(x-eccentricity, y, 0))
+        cycloidal_disk_array.append([x-eccentricity, y, 0])
     
     #cycloidal_disk_array.append(cycloidal_disk_array[0])
     #print("diskarray")
     #print(cycloidal_disk_array)
     return cycloidal_disk_array
-
 
 
 def generate_cycloidal_disk_part(part,parameters,DiskOne):
@@ -497,6 +521,8 @@ def generate_cycloidal_disk_part(part,parameters,DiskOne):
     xeccentricy = -eccentricity
     yeccentricy = 0.0
     name = "cycloid001"
+    
+    
     #get shape of cycloidal disk
     if not DiskOne: #second disk
         offset = disk_height
@@ -504,27 +530,35 @@ def generate_cycloidal_disk_part(part,parameters,DiskOne):
         xeccentricy = eccentricity
         yeccentricy = 0.0
         name = "cycloid002"
+
+
     array = generate_cycloidal_disk_array(parameters)
-    #wire = make_bspline_wire(part,array)
-    #curve = make_bspline_curve(Part,array)
-    #curve = Part.BSplineCurve()
-    #curve.interpolate(array)    
-    
-    curve = make_bspline([array])
-    curves = []
+    sketch = newSketch(part,name)
+    print(array)
+    wi = make_bspline_wire([array])    
+    wires = []
     mat= App.Matrix()
     mat.move(App.Vector(eccentricity, 0., 0.))
-    mat.rotateZ(2 * math.pi / tooth_count)
+    mat.rotateZ(2 * np.pi / tooth_count)
     mat.move(App.Vector(-eccentricity, 0., 0.))
-    for _ in range(tooth_count):        
-        curve = curve.transformGeometry(mat)        
-        curves.append(curve)
-    sketch = newSketch(part,name)
-    sketch.addGeometry(curves);
-    sketch.addConstraint(Sketcher.Constraint('Block',0))
-        
     
-    return part,sketch,curves
+    for _ in range(tooth_count):
+        wi = wi.transformGeometry(mat)        
+        wires.append(wi)
+        
+        
+        
+        
+    return Wire(wires)
+    cam = Face(Wire(wires))
+    return cam
+    for EDGE in wi.Edges:
+        sketch.addGeometry(EDGE.Curve.toBSpline()) 
+                      
+    sketch.addConstraint(Sketcher.Constraint('Block',0))
+    #part.Face(Wire(wires))
+    
+
     #cam = Part.Face(Part.Wire(wires))
     return
     previous = array[-1]
@@ -652,11 +686,7 @@ def testcycloidal():
 
 def generate_parts(doc,parameters):
     """ will (re)create all bodys of all parts needed """
-    minr,maxr = calculate_min_max_radii(
-            parameters["pin_circle_diameter"]/2,
-            parameters["roller_diameter"],
-            parameters["eccentricity"],
-            parameters["pressure_angle_limit"])
+    minr,maxr = calculate_min_max_radii(parameters)            
     parameters["min_rad"] = minr
     parameters["max_rad"] = maxr
 
@@ -696,12 +726,12 @@ def generate_parts(doc,parameters):
     
 def generate_default_parameters():
     parameters = {
-        "eccentricity": 2,#4.7 / 2,
+        "eccentricity": 2.0,#4.7 / 2,
         "tooth_count": 11,#12,
         "driver_disk_hole_count": 6,
         "driver_hole_diameter": 10,
-        "driver_disk_diameter": 50,
-        "line_segment_count": 121, #tooth_count squared
+        "driver_disk_diameter": 50.0,
+        "line_segment_count": 42, #tooth_count squared
         "tooth_pitch": 4,
         "Diameter" : 95,#110,
         "roller_diameter": 9.4,
@@ -716,11 +746,7 @@ def generate_default_parameters():
         "Height" : 20.0,
         "clearance" : 0.5        
         }
-    minr,maxr = calculate_min_max_radii(
-            parameters["pin_circle_diameter"]/2,
-            parameters["roller_diameter"],
-            parameters["eccentricity"],
-            parameters["pressure_angle_limit"])
+    minr,maxr = calculate_min_max_radii(parameters)            
     parameters["min_rad"] = minr
     parameters["max_rad"] = maxr
     return parameters
