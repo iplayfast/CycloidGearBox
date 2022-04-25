@@ -287,7 +287,7 @@ def calculate_pressure_limit(p,roller_diameter,eccentricity,tooth_count,a):
 
 def calculate_min_max_radii(parameters):    
     """ Find the pressure angle limit circles """
-    pin_circle_radius = parameters["pin_circle_diameter"] / 2.0
+    pin_circle_radius = parameters["roller_circle_diameter"] / 2.0
     tooth_count = parameters["tooth_count"]
     roller_diameter = parameters["roller_diameter"]
     pressure_angle_limit = parameters["pressure_angle_limit"]
@@ -311,11 +311,11 @@ def calculate_min_max_radii(parameters):
 
                 
 
-def calc_DriveHoleRRadius(driver_disk_diameter,shaft_diameter):
+def calc_DriveHoleRRadius(driver_circle_diameter,shaft_diameter):
     """ Calculates the radius that the drive holes are in
     about 1/2 way between rollers and central shaft."""  
     #not using parameters as these values might be resized from requested  
-    cent = (driver_disk_diameter/2+shaft_diameter)/2
+    cent = (driver_circle_diameter/2+shaft_diameter)/2
     return cent    
 
 def generate_slot_size(parameters,add_clearence):        
@@ -356,20 +356,20 @@ def generate_pin_disk_part(part,parameters):
     eccentric = parameters["eccentricity"]
     min_radius = parameters["min_rad"]
     max_radius = parameters["max_rad"]
-    pin_circle_diameter = parameters["pin_circle_diameter"]
+    roller_circle_diameter = parameters["roller_circle_diameter"]
     Diameter = parameters["Diameter"]
     driver_disk_height = parameters["disk_height"]
-    driver_disk_diameter = parameters["driver_disk_diameter"]
-    #print(driver_disk_diameter,min_radius,roller_diameter)
+    driver_circle_diameter = parameters["driver_circle_diameter"]
+    #print(driver_circle_diameter,min_radius,roller_diameter)
     
-    #if driver_disk_diameter>min_radius*2-roller_diameter/2:
+    #if driver_circle_diameter>min_radius*2-roller_diameter/2:
     #    print("driver diameter too big, resizing")
-    #    driver_disk_diameter = min_radius*2-roller_diameter/2
-    #    parameters["driver_disk_diameter"] = driver_disk_diameter
+    #    driver_circle_diameter = min_radius*2-roller_diameter/2
+    #    parameters["driver_circle_diameter"] = driver_circle_diameter
 
     
 
-    #driver_disk_diameter += clearance
+    #driver_circle_diameter += clearance
     
     pin_height = driver_disk_height*3
     #bottom plate, total width of box = outdiameter
@@ -379,13 +379,13 @@ def generate_pin_disk_part(part,parameters):
     
     sketch1 = newSketch(part)    
     SketchCircle(sketch1,0,0,Diameter,-1,"Diameter")   #outer circle    
-    SketchCircle(sketch1,0,0,driver_disk_diameter + clearance,-1,"driver_disk_diameter")    
+    SketchCircle(sketch1,0,0,min_radius*2+ clearance,-1,"driver_disk_diameter")    
     newPad(part,sketch1,base_height,'outside')
     #base is done, now for the rollers
     
-    roller_ring_radius = pin_circle_diameter /2 + clearance
+    roller_ring_radius = roller_circle_diameter /2 + clearance
     pinsketch = newSketch(part,'pinMale')    
-    SketchCircle(pinsketch,roller_ring_radius,0,roller_diameter/4.0,-1,"pin_circle_diameter_male")
+    SketchCircle(pinsketch,roller_ring_radius,0,roller_diameter/4.0,-1,"roller_circle_diameter_male")
     pad = newPad(part,pinsketch,base_height+pin_height+driver_disk_height,'pinMale')    
     
     pinsketch1 = newSketch(part,'roller')
@@ -393,11 +393,11 @@ def generate_pin_disk_part(part,parameters):
     i = 0
     x = p * tooth_count * math.cos(2 * math.pi / (tooth_count + 1) * i)
     y = p * tooth_count * math.sin(2 * math.pi / (tooth_count + 1) * i)
-    SketchCircle(pinsketch1,roller_ring_radius,0,roller_diameter,-1,"pin_circle_diameter_roller")
+    SketchCircle(pinsketch1,roller_ring_radius,0,roller_diameter,-1,"roller_circle_diameter_roller")
     rol = newPad(part,pinsketch1,base_height+pin_height,"Roller")
     
     pinsketch2 = newSketch(part,'pinSketchFemale')    
-    SketchCircle(pinsketch2,roller_ring_radius,0,roller_diameter/4.0+clearance,-1,"pin_circle_diameter_female")
+    SketchCircle(pinsketch2,roller_ring_radius,0,roller_diameter/4.0+clearance,-1,"roller_circle_diameter_female")
     
     join = newPocket(part,pinsketch2,pin_height,'pinJoiner')    
     pol = newPolar(part,pad,pinsketch,tooth_count+1,'pin')
@@ -419,23 +419,22 @@ def generate_driver_disk_part(part,parameters):
     base_height = parameters["base_height"]
     clearance = parameters["clearance"]
     disk_height = parameters["disk_height"]
-    driver_disk_diameter = parameters["driver_disk_diameter"]
+    driver_circle_radius = parameters["driver_circle_diameter"]/2
     
-    #if driver_disk_diameter>min_radius-roller_diameter/2:
+    #if driver_circle_diameter>min_radius-roller_diameter/2:
     #    print("driver diameter too big, resizing")
-    #    driver_disk_diameter = min_radius*2-roller_diameter/2
-    #    parameters["driver_disk_diameter"] = driver_disk_diameter
+    #    driver_circle_diameter = min_radius*2-roller_diameter/2
+    #    parameters["driver_circle_diameter"] = driver_circle_diameter
     
-    SketchCircle(sketch,0,0,driver_disk_diameter,-1,"DriverDiameter")    
+    SketchCircle(sketch,0,0,min_radius*2,-1,"DriverDiameter")    
     innershaftDia = (shaft_diameter  + eccentricity+clearance/2) 
     SketchCircle(sketch,0,0,innershaftDia,-1,"ShaftHole")
     pad = newPad(part,sketch,disk_height)
     driver_hole_diameter = parameters["driver_hole_diameter"]
-    last = -1   
-    DriveHoleRRadius = calc_DriveHoleRRadius(driver_disk_diameter,shaft_diameter);
+    last = -1       
     
     sketch1 = newSketch(part,'DriverShaft')
-    SketchCircle(sketch1,DriveHoleRRadius,0,driver_hole_diameter,-1,"DriverShaft")    
+    SketchCircle(sketch1,driver_circle_radius,0,driver_hole_diameter,-1,"DriverShaft")    
     pad = newPad(part,sketch1,disk_height*4)    
     
     part.Placement = Base.Placement(Base.Vector(0,0,base_height - disk_height),Base.Rotation(Base.Vector(0,0,1),0))
@@ -485,7 +484,7 @@ def generate_input_shaft_part(body,parameters):
 def generate_cycloidal_disk_array(parameters):
     tooth_count = parameters["tooth_count"]
     tooth_pitch = parameters["tooth_pitch"]
-    pin_circle_radius = parameters["pin_circle_diameter"] / 2.0
+    pin_circle_radius = parameters["roller_circle_diameter"] / 2.0
     roller_diameter = parameters["roller_diameter"]
     eccentricity = parameters["eccentricity"]
     line_segment_count = parameters["line_segment_count"]
@@ -526,7 +525,7 @@ def generate_cycloidal_disk_part(part,parameters,DiskOne):
     clearance = parameters["clearance"]
     tooth_count = parameters["tooth_count"]
     disk_height = parameters["disk_height"]
-    driver_disk_diameter = parameters["driver_disk_diameter"]
+    driver_circle_radius = parameters["driver_circle_diameter"]/2
     offset = 0.0
     rot = 180 - (tooth_count+1)/tooth_count
     name = "cycloid001"
@@ -558,10 +557,10 @@ def generate_cycloidal_disk_part(part,parameters,DiskOne):
     SketchCircle(sketch,eccentricity,0,shaft_diameter +clearance,-1,"centerHole")        
     driver_hold_diameter = (parameters["driver_hole_diameter"]+eccentricity*2) 
     last = -1
-    DriveHoleRRadius = calc_DriveHoleRRadius(driver_disk_diameter,shaft_diameter);
-    pad = newPad(part,sketch,disk_height,name)                
-    SketchCircleOfHoles(sketch,DriveHoleRRadius,driver_hold_diameter,driver_disk_hole_count,eccentricity,0,"DriverShaftHole")
     
+    
+    SketchCircleOfHoles(sketch,driver_circle_radius,driver_hold_diameter,driver_disk_hole_count,eccentricity,0,"DriverShaftHole")
+    pad = newPad(part,sketch,disk_height,name)                
     
 def generate_eccentric_key_part(part,parameters):    
     eccentricity = parameters["eccentricity"]
@@ -610,20 +609,19 @@ def generate_output_shaft_part(part,parameters):
     clearance = parameters["clearance"]
     base_height = parameters["base_height"]
     disk_height = parameters["disk_height"]
-    driver_disk_diameter = parameters["driver_disk_diameter"]
-    #if driver_disk_diameter>min_radius*2-roller_diameter/2:
+    driver_circle_radius = parameters["driver_circle_diameter"] /2
+    #if driver_circle_diameter>min_radius*2-roller_diameter/2:
     #    print("driver diameter too big, resizing")
-    #    driver_disk_diameter = min_radius*2-roller_diameter/2
-    #    parameters["driver_disk_diameter"] = driver_disk_diameter
+    #    driver_circle_diameter = min_radius*2-roller_diameter/2
+    #    parameters["driver_circle_diameter"] = driver_circle_diameter
 
-    SketchCircle(sketch,0,0,driver_disk_diameter,-1,"Base") #outer circle    
+    SketchCircle(sketch,0,0,min_radius*2,-1,"Base") #outer circle    
     pad = newPad(part,sketch,disk_height)
     sketchh = newSketch(part,'holes')
     driver_hole_diameter = (parameters["driver_hole_diameter"]+clearance)
     last = -1        
-    DriveHoleRRadius = calc_DriveHoleRRadius(driver_disk_diameter,shaft_diameter);
-    
-    SketchCircle(sketchh,DriveHoleRRadius,0,driver_hole_diameter,-1,"DriverHoles")
+        
+    SketchCircle(sketchh,driver_circle_radius,0,driver_hole_diameter,-1,"DriverHoles")
     pocket = newPocket(part,sketchh,disk_height)
     pol = newPolar(part,pocket,sketchh,driver_disk_hole_count,"DriverHole")
     pol.Originals = [pocket]
@@ -702,12 +700,12 @@ def generate_default_parameters():
         "tooth_count": 11,#12,
         "driver_disk_hole_count": 6,
         "driver_hole_diameter": 10,
-        "driver_disk_diameter": 50.0,
+        "driver_circle_diameter": 50.0,
         "line_segment_count": 42, #tooth_count squared
         "tooth_pitch": 4,
         "Diameter" : 95,#110,
         "roller_diameter": 9.4,
-        "pin_circle_diameter" : 80,
+        "roller_circle_diameter" : 80,
         "pressure_angle_limit": 50.0,
         "pressure_angle_offset": 0.1,
         "base_height":10.0,

@@ -132,8 +132,8 @@ class CycloidalGearBox():
         # pin_disk
         obj.addProperty("App::PropertyLength",  "roller_diameter",  "pin_disk,input_shaft,eccentric_key", QT_TRANSLATE_NOOP(
             "App::Property", "roller_diameter")).roller_diameter = H["roller_diameter"]
-        obj.addProperty("App::PropertyLength",  "pin_circle_diameter",  "pin_disk", QT_TRANSLATE_NOOP(
-            "App::Property", "pin_circle_diameter")).pin_circle_diameter = H["pin_circle_diameter"]
+        obj.addProperty("App::PropertyLength",  "roller_circle_diameter",  "pin_disk", QT_TRANSLATE_NOOP(
+            "App::Property", "roller_circle_diameter")).roller_circle_diameter = H["roller_circle_diameter"]
         
         obj.addProperty("App::PropertyLength",  "disk_height",      "pin_disk,input_shaft,eccentric_key,driver_disk,input_shaft,eccentric_key,cycloidal_disk,input_shaft,eccentric_key",
                         QT_TRANSLATE_NOOP("App::Property", "base_height")).disk_height = H["disk_height"]
@@ -155,8 +155,8 @@ class CycloidalGearBox():
                         QT_TRANSLATE_NOOP("App::Property", "base_height")).base_height = H["base_height"]
         
         # driver_disk
-        obj.addProperty("App::PropertyLength", "driver_disk_diameter",       "driver_disk,pin_disk",
-                        QT_TRANSLATE_NOOP("APP::Property", "Driver Disk")).driver_disk_diameter = H["driver_disk_diameter"]
+        obj.addProperty("App::PropertyLength", "driver_circle_diameter",       "driver_disk,pin_disk",
+                        QT_TRANSLATE_NOOP("APP::Property", "Driver Disk")).driver_circle_diameter = H["driver_circle_diameter"]
         obj.addProperty("App::PropertyInteger", "driver_disk_hole_count",       "driver_disk,output_shaft,cycloidal_disk",
                         QT_TRANSLATE_NOOP("APP::Property", "Output Shaft")).driver_disk_hole_count = H["driver_disk_hole_count"]
         obj.addProperty("App::PropertyLength", "driver_hole_diameter",       "driver_disk,output_shaft,cycloidal_disk",
@@ -221,8 +221,8 @@ class CycloidalGearBox():
         parameters = {"tooth_count": int(self.Object.__getattribute__("tooth_count")),
                            "line_segment_count": int(self.Object.__getattribute__("line_segment_count")),
                            "roller_diameter": float(self.Object.__getattribute__("roller_diameter").Value),
-                           "pin_circle_diameter": float(self.Object.__getattribute__("pin_circle_diameter").Value),
-                           "driver_disk_diameter" : float(self.Object.__getattribute__("driver_disk_diameter").Value),
+                           "roller_circle_diameter": float(self.Object.__getattribute__("roller_circle_diameter").Value),
+                           "driver_circle_diameter" : float(self.Object.__getattribute__("driver_circle_diameter").Value),
                            "Diameter": float(self.Object.__getattribute__("Diameter").Value),
                            "tooth_pitch": float(self.Object.__getattribute__("tooth_pitch").Value),
                            "eccentricity": float(self.Object.__getattribute__("eccentricity").Value),
