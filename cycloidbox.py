@@ -101,7 +101,7 @@ class CycloidGearBoxCreateObject():
         gear_box_obj = doc.addObject("Part::FeaturePython", "GearBoxParameters")
         gear_box = CycloidalGearBox(gear_box_obj)        
         print("gearbox created")
-        gear_box.recompute()
+        #gear_box.recompute()
         print("doc.recompute started")
         doc.recompute()
         FreeCADGui.SendMsgToActiveView("ViewFit")
@@ -130,20 +130,20 @@ class CycloidalGearBox():
         obj.addProperty("App::PropertyLength",
                         "Max_Diameter", "read only", "", 1)
         # pin_disk
-        obj.addProperty("App::PropertyLength",  "roller_diameter",  "pin_disk,eccentric_shaft,eccentric_key", QT_TRANSLATE_NOOP(
+        obj.addProperty("App::PropertyLength",  "roller_diameter",  "pin_disk,input_shaft,eccentric_key", QT_TRANSLATE_NOOP(
             "App::Property", "roller_diameter")).roller_diameter = H["roller_diameter"]
         obj.addProperty("App::PropertyLength",  "pin_circle_diameter",  "pin_disk", QT_TRANSLATE_NOOP(
             "App::Property", "pin_circle_diameter")).pin_circle_diameter = H["pin_circle_diameter"]
         
-        obj.addProperty("App::PropertyLength",  "disk_height",      "pin_disk,eccentric_shaft,eccentric_key,driver_disk,eccentric_shaft,eccentric_key,cycloidal_disk,eccentric_shaft,eccentric_key",
+        obj.addProperty("App::PropertyLength",  "disk_height",      "pin_disk,input_shaft,eccentric_key,driver_disk,input_shaft,eccentric_key,cycloidal_disk,input_shaft,eccentric_key",
                         QT_TRANSLATE_NOOP("App::Property", "base_height")).disk_height = H["disk_height"]
     
-        obj.addProperty("App::PropertyLength",  "shaft_diameter",   "pin_disk,driver_disk,eccentric_shaft,eccentric_key",
+        obj.addProperty("App::PropertyLength",  "shaft_diameter",   "pin_disk,driver_disk,input_shaft,eccentric_key",
                         QT_TRANSLATE_NOOP("App::Property", "shaft_diameter")).shaft_diameter = H["shaft_diameter"]
         
-        obj.addProperty("App::PropertyLength",  "key_diameter",   "eccentric_shaft,eccentric_key",
+        obj.addProperty("App::PropertyLength",  "key_diameter",   "input_shaft,eccentric_key",
                         QT_TRANSLATE_NOOP("App::Property", "key_diameter")).key_diameter = H["key_diameter"]
-        obj.addProperty("App::PropertyLength",  "key_flat_diameter",   "eccentric_shaft,eccentric_key",
+        obj.addProperty("App::PropertyLength",  "key_flat_diameter",   "input_shaft,eccentric_key",
                         QT_TRANSLATE_NOOP("App::Property", "key_diameter")).key_flat_diameter = H["key_flat_diameter"]
 
         #cycloidal disks
@@ -161,10 +161,10 @@ class CycloidalGearBox():
                         QT_TRANSLATE_NOOP("APP::Property", "Output Shaft")).driver_disk_hole_count = H["driver_disk_hole_count"]
         obj.addProperty("App::PropertyLength", "driver_hole_diameter",       "driver_disk,output_shaft,cycloidal_disk",
                         QT_TRANSLATE_NOOP("APP::Property", "Output Shaft")).driver_hole_diameter = H["driver_hole_diameter"]
-        obj.addProperty("App::PropertyLength", "eccentricity",          "driver_disk,eccentric_shaft,eccentric_key",
+        obj.addProperty("App::PropertyLength", "eccentricity",          "driver_disk,input_shaft,eccentric_key",
                         QT_TRANSLATE_NOOP("App::Property", "eccentricity")).eccentricity = H["eccentricity"]
         
-        # eccentric_shaft all properties in other classes
+        # input_shaft all properties in other classes
 
         obj.addProperty("App::PropertyLength", "Height",           "CycloidGearBox",
                         QT_TRANSLATE_NOOP("App::Property", "gearbox")).Height = H["Height"]
@@ -180,7 +180,7 @@ class CycloidalGearBox():
             "App::Property", "Pressure Angle Offset")).pressure_angle_offset = H["pressure_angle_offset"]
         obj.addProperty("App::PropertyLength", "clearance", "CycloidGearBox", QT_TRANSLATE_NOOP(
             "App::Property", "clearance between parts")).clearance = H["clearance"]
-        # eccentric Shaft
+        # input Shaft
         # shaft diameter also in output shaft
         # driver_disk_hole_count (also in output shaft)              
         self.Type = 'CycloidalGearBox'
