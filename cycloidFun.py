@@ -37,7 +37,7 @@ from Part import BSplineCurve, Shape, Wire, Face, makePolygon, \
     makeLoft, Line, BSplineSurface, \
     makePolygon, makeHelix, makeShell, makeSolid
 
-
+busy = False
 from inspect import currentframe    #for debugging
 """ style guide
 def functions_are_lowercase(variables_as_well):
@@ -655,6 +655,10 @@ def testcycloidal():
     return generate_cycloidal_disk_part(part,p,True)        
 
 def generate_parts(doc,parameters):
+    global busy
+    if busy:
+        return
+    busy = True
     """ will (re)create all bodys of all parts needed """
     minr,maxr = calculate_min_max_radii(parameters)            
     parameters["min_rad"] = minr
@@ -665,32 +669,39 @@ def generate_parts(doc,parameters):
 
     part = ready_part(doc,'pinDisk')           
     generate_pin_disk_part(part,parameters)            
+    print("pindisk")
     part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
-    
+        
     part = ready_part(doc,'driverDisk')    
     generate_driver_disk_part(part,parameters) 
+    print("driverdisk")
     part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)     
     
     part = ready_part(doc,'inputShaft')           
     generate_input_shaft_part(part,parameters)    
+    print("inputShaft")
     part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
     
     part = ready_part(doc,'cycloidalDisk1')        
     generate_cycloidal_disk_part(part,parameters,True)
+    print("cycloidal Disk 1")    
     part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
     
     part = ready_part(doc,'cycloidalDisk2')    
     generate_cycloidal_disk_part(part,parameters,False)
+    print("cycloidal Disk 2")
     part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)
     
     part = ready_part(doc,'eccentricKey')    
     generate_eccentric_key_part(part,parameters)   
+    print("eccentric Key")    
     part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
     
     part = ready_part(doc,'outputShaft')       
     generate_output_shaft_part(part,parameters)   
+    print("outputShaft")
     part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
-    
+    busy = False
     #doc.recompute()
     
     

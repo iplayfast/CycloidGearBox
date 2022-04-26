@@ -254,8 +254,8 @@ class CycloidalGearBox():
 
     def recompute(self):
         #cycloidFun.parts(App.ActiveDocument, self.GetHyperParameters())
-        cycloidFun.generate_parts(self.doc, self.GetParameters())
-        self.doc.recompute()
+        cycloidFun.generate_parts(App.ActiveDocument, self.GetParameters())
+        App.ActiveDocument.recompute()
         
     """    def recompute(self):        
         print("gearbox recompute started")
