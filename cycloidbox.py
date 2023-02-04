@@ -121,6 +121,7 @@ class CycloidGearBoxCreateObject():
 
 class CycloidalGearBox():
     def __init__(self, obj):        
+        self.Dirty = False
         H = cycloidFun.generate_default_parameters()
         # read only properites
         obj.addProperty("App::PropertyString", "Version", "read only", QT_TRANSLATE_NOOP(
@@ -197,6 +198,7 @@ class CycloidalGearBox():
             self.Type = state
 
     def onChanged(self, fp, prop):
+        self.Dirty = True
         if hasattr(self, "busy"):
             if self.busy:
                 return
@@ -254,8 +256,10 @@ class CycloidalGearBox():
 
     def recompute(self):
         #cycloidFun.parts(App.ActiveDocument, self.GetHyperParameters())
-        cycloidFun.generate_parts(App.ActiveDocument, self.GetParameters())
-        App.ActiveDocument.recompute()
+        if self.Dirty:
+            cycloidFun.generate_parts(App.ActiveDocument, self.GetParameters())
+            self.Dirty = False
+            App.ActiveDocument.recompute()
         
     """    def recompute(self):        
         print("gearbox recompute started")
