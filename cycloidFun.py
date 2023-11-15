@@ -22,7 +22,6 @@ while True:
         foo = reload(foo)
 """
 
-from locale import YESEXPR
 import math
 from operator import truediv
 import FreeCAD
