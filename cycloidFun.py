@@ -22,9 +22,10 @@ while True:
         foo = reload(foo)
 """
 
-from locale import YESEXPR
 import math
-from operator import truediv
+import logging
+import threading
+from typing import Tuple, List, Dict, Any, Optional
 import FreeCAD
 from FreeCAD import Base
 import FreeCAD as App
@@ -37,8 +38,26 @@ from Part import BSplineCurve, Shape, Wire, Face, makePolygon, \
     makeLoft, Line, BSplineSurface, \
     makePolygon, makeHelix, makeShell, makeSolid
 
-busy = False
 from inspect import currentframe    #for debugging
+
+# Setup logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# Thread-safe lock for generate_parts
+_generate_parts_lock = threading.Lock()
+
+# Module-level constants
+MIN_TOOTH_COUNT = 3
+MAX_TOOTH_COUNT = 50
+DEG_TO_RAD = math.pi / 180.0
+RAD_TO_DEG = 180.0 / math.pi
+MIN_ECCENTRICITY = 0.1
+MIN_ROLLER_DIAMETER = 0.1
+MIN_SHAFT_DIAMETER = 0.1
+MIN_PRESSURE_ANGLE_LIMIT = 10.0
+MAX_PRESSURE_ANGLE_LIMIT = 85.0
+
 """ style guide
 def functions_are_lowercase(variables_as_well):
 
@@ -47,29 +66,188 @@ class ClassesArePascalCase:
 SomeClass.some_variable
 """
 
-def get_linenumber():
+
+class ParameterValidationError(ValueError):
+    """Raised when gearbox parameters are invalid."""
+    pass
+
+def get_linenumber() -> int:
+    """Get the current line number for debugging."""
     cf = currentframe()
     return cf.f_back.f_lineno
 
-def QT_TRANSLATE_NOOP(scope, text):
+def QT_TRANSLATE_NOOP(scope: str, text: str) -> str:
+    """Qt translation placeholder."""
     return text
 
 
-def to_polar(x, y):
+def validate_parameters(parameters: Dict[str, Any]) -> None:
+    """Validate gearbox parameters for physical and mathematical constraints.
+
+    Args:
+        parameters: Dictionary containing gearbox parameters
+
+    Raises:
+        ParameterValidationError: If any parameter is invalid
+
+    Returns:
+        None
+    """
+    # Tooth count validation
+    tooth_count = parameters.get("tooth_count", 0)
+    if not isinstance(tooth_count, int) or tooth_count < MIN_TOOTH_COUNT:
+        raise ParameterValidationError(
+            f"tooth_count must be an integer >= {MIN_TOOTH_COUNT}, got {tooth_count}")
+    if tooth_count > MAX_TOOTH_COUNT:
+        raise ParameterValidationError(
+            f"tooth_count must be <= {MAX_TOOTH_COUNT}, got {tooth_count}")
+
+    # Eccentricity validation
+    eccentricity = parameters.get("eccentricity", 0)
+    if eccentricity < MIN_ECCENTRICITY:
+        raise ParameterValidationError(
+            f"eccentricity must be >= {MIN_ECCENTRICITY}, got {eccentricity}")
+
+    # Roller diameter validation
+    roller_diameter = parameters.get("roller_diameter", 0)
+    if roller_diameter < MIN_ROLLER_DIAMETER:
+        raise ParameterValidationError(
+            f"roller_diameter must be >= {MIN_ROLLER_DIAMETER}, got {roller_diameter}")
+
+    # Eccentricity should not be more than roller radius
+    roller_radius = roller_diameter / 2.0
+    if eccentricity > roller_radius:
+        logger.warning(
+            f"eccentricity ({eccentricity}) > roller_radius ({roller_radius}). "
+            f"This may cause manufacturing issues.")
+
+    # Roller circle diameter validation
+    roller_circle_diameter = parameters.get("roller_circle_diameter", 0)
+    if roller_circle_diameter <= roller_diameter:
+        raise ParameterValidationError(
+            f"roller_circle_diameter ({roller_circle_diameter}) must be > "
+            f"roller_diameter ({roller_diameter})")
+
+    # Shaft diameter validation
+    shaft_diameter = parameters.get("shaft_diameter", 0)
+    if shaft_diameter < MIN_SHAFT_DIAMETER:
+        raise ParameterValidationError(
+            f"shaft_diameter must be >= {MIN_SHAFT_DIAMETER}, got {shaft_diameter}")
+
+    # Pressure angle limit validation
+    pressure_angle_limit = parameters.get("pressure_angle_limit", 0)
+    if pressure_angle_limit < MIN_PRESSURE_ANGLE_LIMIT:
+        raise ParameterValidationError(
+            f"pressure_angle_limit must be >= {MIN_PRESSURE_ANGLE_LIMIT}, got {pressure_angle_limit}")
+    if pressure_angle_limit > MAX_PRESSURE_ANGLE_LIMIT:
+        raise ParameterValidationError(
+            f"pressure_angle_limit must be <= {MAX_PRESSURE_ANGLE_LIMIT}, got {pressure_angle_limit}")
+
+    # Diameter validation
+    diameter = parameters.get("Diameter", 0)
+    if diameter <= roller_circle_diameter:
+        raise ParameterValidationError(
+            f"Diameter ({diameter}) must be > roller_circle_diameter ({roller_circle_diameter})")
+
+    # Driver circle diameter validation
+    driver_circle_diameter = parameters.get("driver_circle_diameter", 0)
+    if driver_circle_diameter <= shaft_diameter:
+        raise ParameterValidationError(
+            f"driver_circle_diameter ({driver_circle_diameter}) must be > "
+            f"shaft_diameter ({shaft_diameter})")
+
+    # Height validations
+    base_height = parameters.get("base_height", 0)
+    disk_height = parameters.get("disk_height", 0)
+    if base_height <= 0 or disk_height <= 0:
+        raise ParameterValidationError(
+            f"Heights must be positive: base_height={base_height}, disk_height={disk_height}")
+
+    # Driver disk hole count
+    driver_disk_hole_count = parameters.get("driver_disk_hole_count", 0)
+    if driver_disk_hole_count < 3:
+        raise ParameterValidationError(
+            f"driver_disk_hole_count must be >= 3, got {driver_disk_hole_count}")
+
+    logger.info("Parameter validation passed")
+
+
+def to_polar(x: float, y: float) -> Tuple[float, float]:
+    """Convert Cartesian to polar coordinates.
+
+    Args:
+        x: X coordinate
+        y: Y coordinate
+
+    Returns:
+        Tuple of (radius, angle_in_radians)
+    """
     return (x ** 2.0 + y ** 2.0) ** 0.5, math.atan2(y, x)
 
 
-def to_rect(r, a):
+def to_rect(r: float, a: float) -> Tuple[float, float]:
+    """Convert polar to Cartesian coordinates.
+
+    Args:
+        r: Radius
+        a: Angle in radians
+
+    Returns:
+        Tuple of (x, y) coordinates
+    """
     return r * math.cos(a), r * math.sin(a)
 
                                                                               
-def calcyp(p,a,e,n):                                                   
-    return math.atan(math.sin(n*a)/(math.cos(n*a)+(n*p)/(e*(n+1))))  
+def calcyp(p: float, a: float, e: float, n: int) -> float:
+    """Calculate pressure angle offset parameter.
 
-def calc_x(p,roller_diameter,eccentricty,tooth_count,angle):                                                 
-    return (tooth_count*p)*math.cos(angle)+eccentricty*math.cos((tooth_count+1)*angle)-roller_diameter/2*math.cos(calcyp(p,angle,eccentricty,tooth_count)+angle)
-                                                                                
-def calc_y(p,roller_diameter,eccentricity,tooth_count,angle):                                                     
+    Args:
+        p: Pitch parameter
+        a: Angle
+        e: Eccentricity
+        n: Tooth count
+
+    Returns:
+        Pressure angle offset in radians
+
+    Raises:
+        ValueError: If denominator is too close to zero
+    """
+    denominator = math.cos(n*a) + (n*p)/(e*(n+1))
+    if abs(denominator) < 1e-10:
+        raise ValueError(f"Division by zero in calcyp at angle {a}")
+    return math.atan(math.sin(n*a) / denominator)
+
+def calc_x(p: float, roller_diameter: float, eccentricity: float,
+           tooth_count: int, angle: float) -> float:
+    """Calculate X coordinate of cycloidal disk point.
+
+    Args:
+        p: Pitch parameter
+        roller_diameter: Diameter of roller pins
+        eccentricity: Eccentricity of disk
+        tooth_count: Number of teeth
+        angle: Angle in radians
+
+    Returns:
+        X coordinate
+    """
+    return (tooth_count*p)*math.cos(angle)+eccentricity*math.cos((tooth_count+1)*angle)-roller_diameter/2*math.cos(calcyp(p,angle,eccentricity,tooth_count)+angle)
+
+def calc_y(p: float, roller_diameter: float, eccentricity: float,
+           tooth_count: int, angle: float) -> float:
+    """Calculate Y coordinate of cycloidal disk point.
+
+    Args:
+        p: Pitch parameter
+        roller_diameter: Diameter of roller pins
+        eccentricity: Eccentricity of disk
+        tooth_count: Number of teeth
+        angle: Angle in radians
+
+    Returns:
+        Y coordinate
+    """                                                     
     return (tooth_count*p)*math.sin(angle)+eccentricity*math.sin((tooth_count+1)*angle)-roller_diameter/2*math.sin(calcyp(p,angle,eccentricity,tooth_count)+angle)
          
 
@@ -81,7 +259,8 @@ def buildCurve(self, obj):
             params = []
             try:
                 dis = obj.PointObject.Distance
-            except:
+            except AttributeError as e:
+                logger.warning(f"Could not access PointObject.Distance: {e}. Using default value 1.0")
                 dis = 1.0
             for i in range(len(pts)):
                 params.append(1.0 * i * dis)
@@ -98,12 +277,7 @@ def buildCurve(self, obj):
             bs.setPole(int(bs.NbPoles),self.Points[-1])
         self.curve = bs 
 
-def calc_pressure_angle(pin_circle_radius,roller_diameter,a):
-    ex = 2**0.5
-    pin_circle_radius
-    rg = pin_circle_radius/ex
-    pp = rg * (ex**2 + 1 - 2*ex*math.cos(a))**0.5 - roller_diameter/2
-    return math.asin( (pin_circle_radius*math.cos(a)-rg)/(pp+roller_diameter/2))*180/math.pi
+# calc_pressure_angle removed - duplicate of calculate_pressure_angle below
 
 def calc_pressure_limit(pin_circle_radius,roller_diameter,eccentricity,angle):
     ex = 2**0.5        
@@ -122,7 +296,7 @@ def check_limit(x,y,maxrad,minrad,offset):
 
 
 def calculate_radii(pin_count: int, eccentricity, outer_diameter, pin_diameter:float):
-    """
+    """Calculate radii for epitrochoid generation.
 
     :param pin_count: Number of teeth of cycloidal gear
     :param eccentricity: offset of cycloidal gear
@@ -132,23 +306,30 @@ def calculate_radii(pin_count: int, eccentricity, outer_diameter, pin_diameter:f
     """
     outer_radius = outer_diameter / 2.0
     pin_radius = pin_diameter / 2.0
-    # No less than 3, no more than 50 pins
-    if pin_count<3:
-        pin_count = 3
-    if pin_count>50:
-        pin_count = 50
+
+    # Clamp pin count to valid range
+    if pin_count < MIN_TOOTH_COUNT:
+        logger.warning(f"pin_count {pin_count} < {MIN_TOOTH_COUNT}, clamping to minimum")
+        pin_count = MIN_TOOTH_COUNT
+    if pin_count > MAX_TOOTH_COUNT:
+        logger.warning(f"pin_count {pin_count} > {MAX_TOOTH_COUNT}, clamping to maximum")
+        pin_count = MAX_TOOTH_COUNT
+
     # e cannot be larger than r (d/2)
     if eccentricity > pin_radius:
+        logger.warning(f"eccentricity {eccentricity} > pin_radius {pin_radius}, clamping")
         eccentricity = pin_radius
 
-    # Validate r based on R and N: canot be larger than R * sin(pi/N) or the circles won't fit
-    if pin_radius > outer_radius * math.sin( math.pi)/ pin_count :
-        pin_radius = outer_radius * math.sin(math.pi)/ pin_count
+    # Validate r based on R and N: cannot be larger than R * sin(pi/N) or the circles won't fit
+    max_pin_radius = outer_radius * math.sin(math.pi) / pin_count
+    if pin_radius > max_pin_radius:
+        logger.warning(f"pin_radius {pin_radius} > max {max_pin_radius}, clamping")
+        pin_radius = max_pin_radius
+
     inset = pin_radius
     angle = 360 / pin_count
 
-
-    # To draw a epitrachoid, we need r1 (big circle), r2 (small rolling circle) and d (displament of point)
+    # To draw an epitrochoid, we need r1 (big circle), r2 (small rolling circle) and d (displacement of point)
     # r1 + r2 = R = D/2
     # r1/r2 = (N-1)
     # From the above equations: r1 = (N - 1) * R/N, r2 = R/N
@@ -161,11 +342,26 @@ def calculate(step : int, eccentricity, r1, r2: float):
     Y = (r1 + r2) * math.sin(2 * math.pi * step) + eccentricity * math.sin((r1 + r2) * 2 * math.pi * step / r2)
     return X,Y,0.0
 
-def clean1(a):
-    """ return -1 < a < 1 """
+def clean1(a: float) -> float:
+    """Clamp value to range [-1, 1].
+
+    Args:
+        a: Value to clamp
+
+    Returns:
+        Clamped value between -1 and 1
+    """
     return min(1, max(a, -1))
 
-def fcvec(x):
+def fcvec(x: List[float]) -> App.Vector:
+    """Convert list to FreeCAD Vector.
+
+    Args:
+        x: List of 2 or 3 coordinates
+
+    Returns:
+        FreeCAD Vector object
+    """
     if len(x) == 2:
         return(App.Vector(x[0], x[1], 0))
     else:
@@ -266,11 +462,38 @@ def SketchCircleOfHoles(sketch,circle_radius,hole_radius,hole_count,orgx,orgy,na
         last = SketchCircle(sketch,x,y,hole_radius,last,"")#name + i)
 
 def calculate_pressure_angle(p,roller_diameter,tooth_count,angle):
-    ex = 2**0.5        
+    """Calculate pressure angle at given angle.
+
+    Args:
+        p: Pitch parameter
+        roller_diameter: Diameter of roller
+        tooth_count: Number of teeth
+        angle: Angle in radians
+
+    Returns:
+        Pressure angle in degrees
+
+    Raises:
+        ValueError: If calculation results in invalid domain for asin
+    """
+    ex = 2**0.5
     r3 = p * tooth_count
     rg = r3/ex
     pp = rg * (ex**2 + 1 - 2*ex*math.cos(angle))**0.5 - roller_diameter/2
-    return math.asin( (r3*math.cos(angle)-rg)/(pp+roller_diameter/2))*180/math.pi
+
+    # Protect against math domain errors in asin
+    denominator = pp + roller_diameter/2
+    if abs(denominator) < 1e-10:
+        raise ValueError(f"Division by zero in pressure angle calculation at angle {angle}")
+
+    asin_arg = (r3*math.cos(angle)-rg) / denominator
+
+    # Clamp to valid asin domain [-1, 1]
+    if asin_arg < -1.0 or asin_arg > 1.0:
+        logger.warning(f"asin argument {asin_arg} out of range [-1,1], clamping")
+        asin_arg = max(-1.0, min(1.0, asin_arg))
+
+    return math.asin(asin_arg) * RAD_TO_DEG
 
     
 
@@ -344,8 +567,6 @@ def generate_key_sketch(parameters,add_clearence,sketch,Offset=0):
 def generate_pin_disk_part(part,parameters):
     """ create the base that the fixed_ring_pins will be attached to """
     sketch = newSketch(part,'DriverDiskBase')
-    #sketch.deleteAllConstraints()
-    #sketch.deleteAllGeometry()
     
     tooth_count = parameters["tooth_count"]
     roller_diameter = parameters["roller_diameter"]
@@ -360,16 +581,6 @@ def generate_pin_disk_part(part,parameters):
     Diameter = parameters["Diameter"]
     driver_disk_height = parameters["disk_height"]
     driver_circle_diameter = parameters["driver_circle_diameter"]
-    #print(driver_circle_diameter,min_radius,roller_diameter)
-    
-    #if driver_circle_diameter>min_radius*2-roller_diameter/2:
-    #    print("driver diameter too big, resizing")
-    #    driver_circle_diameter = min_radius*2-roller_diameter/2
-    #    parameters["driver_circle_diameter"] = driver_circle_diameter
-
-    
-
-    #driver_circle_diameter += clearance
     
     pin_height = driver_disk_height*3
     #bottom plate, total width of box = outdiameter
@@ -420,12 +631,7 @@ def generate_driver_disk_part(part,parameters):
     clearance = parameters["clearance"]
     disk_height = parameters["disk_height"]
     driver_circle_radius = parameters["driver_circle_diameter"]/2
-    
-    #if driver_circle_diameter>min_radius-roller_diameter/2:
-    #    print("driver diameter too big, resizing")
-    #    driver_circle_diameter = min_radius*2-roller_diameter/2
-    #    parameters["driver_circle_diameter"] = driver_circle_diameter
-    
+
     SketchCircle(sketch,0,0,min_radius*2,-1,"DriverDiameter")    
     innershaftDia = (shaft_diameter  + eccentricity+clearance/2) 
     SketchCircle(sketch,0,0,innershaftDia,-1,"ShaftHole")
@@ -458,13 +664,12 @@ def generate_input_shaft_part(body,parameters):
         
     sketch2 = newSketch(body,'Shaft1')
     sketch2.AttachmentOffset = Base.Placement(Base.Vector(0,0,base_height-driver_disk_height),Base.Rotation(Base.Vector(0,0,1),0))     
-    innershaftDia = (shaft_diameter  + eccentricity)  
+    innershaftDia = (shaft_diameter  + eccentricity)
     SketchCircle(sketch2,0,0,innershaftDia,-1,"InnerShaft")
     newPad(body,sketch2,driver_disk_height,'shaftabovebase');
     pin_dia = eccentricity*2
-    innershaftRadius = innershaftDia /2 
-    #key_radius = parameters["key_diameter"]/2
-    #generate_key_sketch(parameters,clearance,sketch2,shaft_diameter-(key_radius+clearance))    
+    innershaftRadius = innershaftDia /2
+
     pinsketch1 = newSketch(body,'Pin1')
     pinsketch1.AttachmentOffset = Base.Placement(Base.Vector(0,0,base_height-driver_disk_height),Base.Rotation(Base.Vector(0,0,1),0))     
     SketchCircle(pinsketch1,-(innershaftRadius-pin_dia)/2,0,pin_dia,-1,"pin1")
@@ -610,10 +815,6 @@ def generate_output_shaft_part(part,parameters):
     base_height = parameters["base_height"]
     disk_height = parameters["disk_height"]
     driver_circle_radius = parameters["driver_circle_diameter"] /2
-    #if driver_circle_diameter>min_radius*2-roller_diameter/2:
-    #    print("driver diameter too big, resizing")
-    #    driver_circle_diameter = min_radius*2-roller_diameter/2
-    #    parameters["driver_circle_diameter"] = driver_circle_diameter
 
     SketchCircle(sketch,0,0,min_radius*2,-1,"Base") #outer circle    
     pad = newPad(part,sketch,disk_height)
@@ -655,54 +856,75 @@ def testcycloidal():
     return generate_cycloidal_disk_part(part,p,True)        
 
 def generate_parts(doc,parameters):
-    global busy
-    if busy:
+    """Generate all parts needed for the cycloidal gearbox.
+
+    Uses a thread-safe lock to prevent concurrent execution.
+
+    Args:
+        doc: FreeCAD document object
+        parameters: Dictionary containing gearbox parameters
+
+    Returns:
+        None
+
+    Raises:
+        ParameterValidationError: If parameters are invalid
+    """
+    # Try to acquire lock, return immediately if already locked (prevents recursive calls)
+    if not _generate_parts_lock.acquire(blocking=False):
+        logger.info("generate_parts already running, skipping duplicate call")
         return
-    busy = True
-    """ will (re)create all bodys of all parts needed """
-    minr,maxr = calculate_min_max_radii(parameters)            
-    parameters["min_rad"] = minr
-    parameters["max_rad"] = maxr
 
-    print("cyloidFun creating parts")
-    random.seed(555)
+    try:
+        # Validate parameters before generating parts
+        validate_parameters(parameters)
 
-    part = ready_part(doc,'pinDisk')           
-    generate_pin_disk_part(part,parameters)            
-    print("pindisk")
-    part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
-        
-    part = ready_part(doc,'driverDisk')    
-    generate_driver_disk_part(part,parameters) 
-    print("driverdisk")
-    part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)     
-    
-    part = ready_part(doc,'inputShaft')           
-    generate_input_shaft_part(part,parameters)    
-    print("inputShaft")
-    part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
-    
-    part = ready_part(doc,'cycloidalDisk1')        
-    generate_cycloidal_disk_part(part,parameters,True)
-    print("cycloidal Disk 1")    
-    part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
-    
-    part = ready_part(doc,'cycloidalDisk2')    
-    generate_cycloidal_disk_part(part,parameters,False)
-    print("cycloidal Disk 2")
-    part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)
-    
-    part = ready_part(doc,'eccentricKey')    
-    generate_eccentric_key_part(part,parameters)   
-    print("eccentric Key")    
-    part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
-    
-    part = ready_part(doc,'outputShaft')       
-    generate_output_shaft_part(part,parameters)   
-    print("outputShaft")
-    part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)    
-    busy = False
-    #doc.recompute()
+        """ will (re)create all bodys of all parts needed """
+        minr,maxr = calculate_min_max_radii(parameters)
+        parameters["min_rad"] = minr
+        parameters["max_rad"] = maxr
+
+        logger.info("Creating cycloidal gearbox parts")
+        random.seed(555)
+
+        part = ready_part(doc,'pinDisk')
+        generate_pin_disk_part(part,parameters)
+        logger.info("Generated pin disk")
+        part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)
+
+        part = ready_part(doc,'driverDisk')
+        generate_driver_disk_part(part,parameters)
+        logger.info("Generated driver disk")
+        part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)
+
+        part = ready_part(doc,'inputShaft')
+        generate_input_shaft_part(part,parameters)
+        logger.info("Generated input shaft")
+        part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)
+
+        part = ready_part(doc,'cycloidalDisk1')
+        generate_cycloidal_disk_part(part,parameters,True)
+        logger.info("Generated cycloidal disk 1")
+        part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)
+
+        part = ready_part(doc,'cycloidalDisk2')
+        generate_cycloidal_disk_part(part,parameters,False)
+        logger.info("Generated cycloidal disk 2")
+        part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)
+
+        part = ready_part(doc,'eccentricKey')
+        generate_eccentric_key_part(part,parameters)
+        logger.info("Generated eccentric key")
+        part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)
+
+        part = ready_part(doc,'outputShaft')
+        generate_output_shaft_part(part,parameters)
+        logger.info("Generated output shaft")
+        part.ViewObject.ShapeColor = (random.random(),random.random(),random.random(),0.0)
+        #doc.recompute()
+    finally:
+        # Always release lock, even if exception occurs
+        _generate_parts_lock.release()
     
     
 def generate_default_parameters():

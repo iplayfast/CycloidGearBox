@@ -198,26 +198,30 @@ class CycloidalGearBox():
             self.Type = state
 
     def onChanged(self, fp, prop):
-        self.Dirty = True
-        if hasattr(self, "busy"):
-            if self.busy:
-                return
-        else:            
-            return        
+        """Called when a property changes.
+
+        Args:
+            fp: Feature Python object
+            prop: Property name that changed
+        """
+        # Mark for recompute when any property changes
+        self.Dirty = True        
 
     def checksetProp(self,part, prop):
-      """
-         will check if part has the property, and if so, and if different then self's equilent,
-         will set it to self's equilent and return True
-      """
-      if (hasattr(part.Object, prop)):
-           if (getattr(part.Object, prop) != getattr(self.Object, prop)):
-               OldBusy = self.busy
-               self.busy = True
-               setattr(part.Object, prop, getattr(self.Object, prop))
-               self.busy = OldBusy
-               return True
-      return False
+        """Check if part has property and update if different.
+
+        Args:
+            part: Part object to check
+            prop: Property name to check and update
+
+        Returns:
+            True if property was updated, False otherwise
+        """
+        if (hasattr(part.Object, prop)):
+            if (getattr(part.Object, prop) != getattr(self.Object, prop)):
+                setattr(part.Object, prop, getattr(self.Object, prop))
+                return True
+        return False
 
     def GetParameters(self):
         parameters = {"tooth_count": int(self.Object.__getattribute__("tooth_count")),
@@ -255,11 +259,26 @@ class CycloidalGearBox():
         self.recompute()
 
     def recompute(self):
-        #cycloidFun.parts(App.ActiveDocument, self.GetHyperParameters())
+        """Recompute all gearbox parts if parameters changed."""
         if self.Dirty:
-            cycloidFun.generate_parts(App.ActiveDocument, self.GetParameters())
-            self.Dirty = False
-            App.ActiveDocument.recompute()
+            try:
+                cycloidFun.generate_parts(App.ActiveDocument, self.GetParameters())
+                self.Dirty = False
+                App.ActiveDocument.recompute()
+            except cycloidFun.ParameterValidationError as e:
+                # Show error to user in FreeCAD console
+                App.Console.PrintError(f"Cycloidal Gearbox Parameter Error: {str(e)}\n")
+                App.Console.PrintError("Please adjust the parameters and try again.\n")
+                raise
+            except ValueError as e:
+                App.Console.PrintError(f"Cycloidal Gearbox Math Error: {str(e)}\n")
+                App.Console.PrintError("The current parameters may cause mathematical issues.\n")
+                raise
+            except Exception as e:
+                App.Console.PrintError(f"Cycloidal Gearbox Error: {str(e)}\n")
+                import traceback
+                App.Console.PrintError(traceback.format_exc())
+                raise
         
     """    def recompute(self):        
         print("gearbox recompute started")
@@ -282,66 +301,140 @@ class CycloidalGearBox():
         t.singleShot(50, self.recompute)
 
 class ViewProviderCGBox:
-    def __init__(self, obj, iconfile):
+    """View provider for CycloidalGearBox object."""
+
+    def __init__(self, obj, iconfile=None):
+        """Set this object to the proxy object of the actual view provider.
+
+        Args:
+            obj: View provider object
+            iconfile: Optional path to icon file
         """
-      Set this object to the proxy object of the actual view provider
-      """
         obj.Proxy = self
         self.part = obj
+        self.iconfile = iconfile if iconfile else mainIcon
 
     def attach(self, obj):
+        """Setup the scene sub-graph of the view provider.
+
+        This method is mandatory for view providers.
+
+        Args:
+            obj: View provider object
         """
-      Setup the scene sub-graph of the view provider, this method is mandatory
-      """
+        self.ViewObject = obj
+        self.Object = obj.Object
         return
 
     def updateData(self, fp, prop):
+        """Called when a property of the handled feature has changed.
+
+        Args:
+            fp: Feature Python object
+            prop: Property name that changed
         """
-        If a property of the handled feature has changed we have the chance to handle this here
-        """
-        #print("viewProviderCGBox updateData", fp, prop)
         return
 
     def getDisplayModes(self, obj):
+        """Return a list of display modes.
+
+        Args:
+            obj: View provider object
+
+        Returns:
+            List of mode names
         """
-        Return a list of display modes.
-        """
-        modes = []
-        modes.append("Shaded")
-        modes.append("Wireframe")
+        modes = ["Shaded", "Wireframe", "Flat Lines"]
         return modes
 
     def getDefaultDisplayMode(self):
-        """
-        Return the name of the default display mode. It must be defined in getDisplayModes.
+        """Return the name of the default display mode.
+
+        Must be defined in getDisplayModes.
+
+        Returns:
+            Mode name string
         """
         return "Shaded"
 
     def setDisplayMode(self, mode):
+        """Set the display mode.
+
+        Map the display mode defined in attach with those defined in getDisplayModes.
+
+        Args:
+            mode: Display mode name
+
+        Returns:
+            Actual mode to use
         """
-      Map the display mode defined in attach with those defined in getDisplayModes.
-      Since they have the same names nothing needs to be done.
-      This method is optional.
-      """
-        # print("viewProviderCGBox setDisplayMode", mode)
         return mode
 
     def onChanged(self, vobj, prop):
-        """
-      Print the name of the property that has changed
-      """
+        """Called when a view property has changed.
 
-        # def getIcon(self):
+        Args:
+            vobj: View provider object
+            prop: Property name that changed
         """
-        Return the icon in XMP format which will appear in the tree view. This method is optional and if not defined a default icon is shown.
+        return
+
+    def getIcon(self):
+        """Return the icon in XPM format which will appear in the tree view.
+
+        Returns:
+            Path to icon file or XPM data
         """
-        # return self.icon
-        # return main_CGB_Icon
+        return self.iconfile
+
+    def doubleClicked(self, vobj):
+        """Called when the object is double-clicked in the tree view.
+
+        Args:
+            vobj: View provider object
+
+        Returns:
+            True if handled, False otherwise
+        """
+        # Could open a custom dialog or switch to parameters tab
+        return True
+
+    def setupContextMenu(self, vobj, menu):
+        """Setup custom context menu for the object.
+
+        Args:
+            vobj: View provider object
+            menu: QMenu object to add items to
+        """
+        from PySide import QtGui, QtCore
+
+        action = QtGui.QAction("Regenerate Gearbox", menu)
+        action.triggered.connect(lambda: self.regenerate())
+        menu.addAction(action)
+
+    def regenerate(self):
+        """Force regeneration of the gearbox."""
+        if hasattr(self.Object, 'Proxy'):
+            self.Object.Proxy.force_Recompute()
 
     def __getstate__(self):
-        return None
+        """Return object state for serialization.
+
+        Returns:
+            Icon file path
+        """
+        return self.iconfile
 
     def __setstate__(self, state):
+        """Restore object state from serialization.
+
+        Args:
+            state: Previously saved state
+        """
+        if state:
+            self.iconfile = state
+        else:
+            self.iconfile = mainIcon
         return None
 
 
