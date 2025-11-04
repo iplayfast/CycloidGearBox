@@ -392,8 +392,18 @@ def newSketch(body,name=''):
     """ all sketches are centered around xyplane"""
     name = name + 'Sketch'
     sketch = body.Document.addObject('Sketcher::SketchObject',name)
-    sketch.Support = (body.Document.getObject('XY_Plane'),[''])
-    sketch.MapMode = 'FlatFace'
+
+    # Try to set Support - not all FreeCAD versions support this attribute
+    try:
+        xy_plane = body.Document.getObject('XY_Plane')
+        if xy_plane:
+            sketch.Support = (xy_plane, [''])
+            sketch.MapMode = 'FlatFace'
+    except (AttributeError, TypeError) as e:
+        # FreeCAD version doesn't support Support attribute or XY_Plane doesn't exist
+        # Sketch will be created without support reference
+        logger.debug(f"Could not set sketch support: {e}")
+
     body.addObject(sketch)
     sketch.Visibility = False
     return sketch
