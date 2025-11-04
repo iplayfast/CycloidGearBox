@@ -670,10 +670,11 @@ def generate_input_shaft_part(body,parameters):
     disk_height = parameters["disk_height"]
     driver_disk_height = parameters["disk_height"]
     sketch1 = newSketch(body,'Shaft')
-    
+
     SketchCircle(sketch1,0,0,shaft_diameter,-1,"Shaft")
-    newPad(body,sketch1,base_height - driver_disk_height,'bearinghole');
-        
+    bearingpad = newPad(body,sketch1,base_height - driver_disk_height,'bearinghole')
+    bearingpad.Reversed = True
+
     sketch2 = newSketch(body,'Shaft1')
     sketch2.AttachmentOffset = Base.Placement(Base.Vector(0,0,base_height-driver_disk_height),Base.Rotation(Base.Vector(0,0,1),0))     
     innershaftDia = (shaft_diameter  + eccentricity)
@@ -695,8 +696,10 @@ def generate_input_shaft_part(body,parameters):
     keysketch = newSketch(body,'InputKey')
     generate_key_sketch(parameters,0,keysketch)
     newPocket(body,keysketch,base_height+driver_disk_height,'InputKey')
-    
-    body.Placement = Base.Placement(Base.Vector(0,0,0),Base.Rotation(Base.Vector(0,0,1),0))
+
+    # Move inputShaft up by driver_disk_height to align bottom with pinDisk bottom
+    # Rotate 180 degrees around X axis
+    body.Placement = Base.Placement(Base.Vector(0,0,driver_disk_height),Base.Rotation(Base.Vector(1,0,0),180))
 
 def generate_cycloidal_disk_array(parameters):
     tooth_count = parameters["tooth_count"]
@@ -792,9 +795,10 @@ def generate_eccentric_key_part(part,parameters):
     newPad(part,sketch,disk_height,'keyPad')
     
     sketch = newSketch(part,'key2')
-    sketch.AttachmentOffset = Base.Placement(Base.Vector(0,0,disk_height),Base.Rotation(Base.Vector(0,0,1),0))     
-    SketchCircle(sketch,eccentricity,0,shaft_diameter,-1,"Key1")    
-    newPad(part,sketch,disk_height,'keyPad')
+    sketch.AttachmentOffset = Base.Placement(Base.Vector(0,0,disk_height),Base.Rotation(Base.Vector(0,0,1),0))
+    SketchCircle(sketch,eccentricity,0,shaft_diameter,-1,"Key1")
+    pad2 = newPad(part,sketch,disk_height,'keyPad')
+    pad2.Reversed = True
     
     pin_dia = eccentricity*2
     
@@ -811,8 +815,10 @@ def generate_eccentric_key_part(part,parameters):
     SketchCircle(pinsketch2,-(innershaftRadius-(pin_dia)),0,pin_dia,-1,"pin2")
     pock2 = newPocket(part,pinsketch2,driver_disk_height+disk_height,'Pin2');
     pock2.Reversed = False
-        
-    part.Placement = Base.Placement(Base.Vector(0,0,base_height),Base.Rotation(Base.Vector(0,0,1),0))
+
+    # Position eccentric key on top of inputShaft
+    # Rotate 180 degrees around X axis
+    part.Placement = Base.Placement(Base.Vector(0,0,base_height+driver_disk_height),Base.Rotation(Base.Vector(1,0,0),180))
 
 def generate_output_shaft_part(part,parameters):    
     sketch = newSketch(part,'OutputShaftBase') 
