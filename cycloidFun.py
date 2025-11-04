@@ -391,21 +391,34 @@ def driver_shaft_hole(radius,hole_count,hole_number):
     return x,y
 
 def newSketch(body,name=''):
-    """ all sketches are centered around xyplane"""
+    """Create a new sketch centered around XY plane.
+
+    Args:
+        body: Body object to add sketch to
+        name: Base name for the sketch
+
+    Returns:
+        Created sketch object
+    """
     name = name + 'Sketch'
     sketch = body.Document.addObject('Sketcher::SketchObject',name)
 
-    # Try to set Support - not all FreeCAD versions support this attribute
+    # Try to attach to XY_Plane if it exists - BEFORE adding to body
     try:
         xy_plane = body.Document.getObject('XY_Plane')
-        if xy_plane:
+        if xy_plane and hasattr(sketch, 'Support'):
             sketch.Support = (xy_plane, [''])
             sketch.MapMode = 'FlatFace'
+        elif hasattr(sketch, 'MapMode'):
+            # No XY_Plane, but MapMode exists - use FlatFace
+            # This works in newer FreeCAD versions where bodies don't have XY_Plane
+            sketch.MapMode = 'FlatFace'
     except (AttributeError, TypeError) as e:
-        # FreeCAD version doesn't support Support attribute or XY_Plane doesn't exist
-        # Sketch will be created without support reference
-        logger.debug(f"Could not set sketch support: {e}")
+        # FreeCAD version doesn't support Support attribute or MapMode
+        # Sketch will work without explicit attachment in older versions
+        logger.debug(f"Could not set sketch support/mapmode: {e}")
 
+    # Add sketch to body AFTER setting attachment
     body.addObject(sketch)
     sketch.Visibility = False
     return sketch
