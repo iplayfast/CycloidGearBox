@@ -802,39 +802,47 @@ def generate_cycloidal_disk_part(part,parameters,DiskOne):
     SketchCircleOfHoles(sketch,driver_circle_radius,driver_hold_diameter,driver_disk_hole_count,eccentricity,0,"DriverShaftHole")
     pad = newPad(part,sketch,disk_height,name)                
     
-def generate_eccentric_key_part(part,parameters):    
+def generate_eccentric_key_part(part,parameters):
     eccentricity = parameters["eccentricity"]
     base_height = parameters["base_height"]
     clearance = parameters["clearance"]
     shaft_diameter = parameters["shaft_diameter"]
     disk_height = parameters["disk_height"]
     driver_disk_height = parameters["disk_height"]
-    
-    sketch = newSketch(part,'key1')
-    SketchCircle(sketch,-eccentricity,0,shaft_diameter,-1,"Key1")    
-    newPad(part,sketch,disk_height,'keyPad')
-    
-    sketch = newSketch(part,'key2')
-    sketch.AttachmentOffset = Base.Placement(Base.Vector(0,0,disk_height),Base.Rotation(Base.Vector(0,0,1),0))     
-    SketchCircle(sketch,eccentricity,0,shaft_diameter,-1,"Key1")    
-    newPad(part,sketch,disk_height,'keyPad')
-    
+
+    # First eccentric cam at -eccentricity (for first cycloidal disk)
+    sketch1 = newSketch(part,'key1')
+    SketchCircle(sketch1,-eccentricity,0,shaft_diameter,-1,"Key1")
+    pad1 = newPad(part,sketch1,disk_height,'keyPad1')
+
+    # Second eccentric cam at +eccentricity (for second cycloidal disk)
+    # In PartDesign, this sketch automatically positions on top of previous pad
+    sketch2 = newSketch(part,'key2')
+    SketchCircle(sketch2,eccentricity,0,shaft_diameter,-1,"Key2")
+    pad2 = newPad(part,sketch2,disk_height,'keyPad2')
+
+    # Now add the pin pockets that go through both cams
     pin_dia = eccentricity*2
-    
     innershaftDia = (shaft_diameter  + eccentricity)  #(13+2) = 15
-    innershaftRadius = innershaftDia /2 
+    innershaftRadius = innershaftDia /2
+
+    # First pin pocket - starts from base_height-driver_disk_height
     pinsketch1 = newSketch(part,'Pin1')
-    pinsketch1.AttachmentOffset = Base.Placement(Base.Vector(0,0,base_height-driver_disk_height),Base.Rotation(Base.Vector(0,0,1),0))     
+    if hasattr(pinsketch1, 'AttachmentOffset'):
+        pinsketch1.AttachmentOffset = Base.Placement(Base.Vector(0,0,base_height-driver_disk_height),Base.Rotation(Base.Vector(0,0,1),0))
     SketchCircle(pinsketch1,-(innershaftRadius-pin_dia)/2,0,pin_dia,-1,"pin1")
     pock1 = newPocket(part,pinsketch1,driver_disk_height+disk_height,'Pin1');
     pock1.Reversed = False
 
+    # Second pin pocket - same z-position as first (both cut through both cams)
     pinsketch2 = newSketch(part,'Pin2')
-    pinsketch2.AttachmentOffset = Base.Placement(Base.Vector(0,0,base_height-driver_disk_height),Base.Rotation(Base.Vector(0,0,1),0))     
+    if hasattr(pinsketch2, 'AttachmentOffset'):
+        pinsketch2.AttachmentOffset = Base.Placement(Base.Vector(0,0,base_height-driver_disk_height),Base.Rotation(Base.Vector(0,0,1),0))
     SketchCircle(pinsketch2,-(innershaftRadius-(pin_dia)),0,pin_dia,-1,"pin2")
     pock2 = newPocket(part,pinsketch2,driver_disk_height+disk_height,'Pin2');
     pock2.Reversed = False
-        
+
+    # Position the entire part at base_height
     part.Placement = Base.Placement(Base.Vector(0,0,base_height),Base.Rotation(Base.Vector(0,0,1),0))
 
 def generate_output_shaft_part(part,parameters):    
