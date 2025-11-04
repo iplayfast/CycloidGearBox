@@ -117,70 +117,122 @@ class CycloidGearBoxCreateObject():
 
 
 class CycloidalGearBox():
-    def __init__(self, obj):        
+    # Preset configurations for common gearbox sizes
+    PRESETS = {
+        'Small_10to1': {
+            'tooth_count': 10, 'Diameter': 70, 'roller_diameter': 6.0,
+            'roller_circle_diameter': 50, 'base_height': 8.0, 'disk_height': 4.0,
+            'shaft_diameter': 10.0, 'eccentricity': 1.5,
+            'driver_circle_diameter': 30.0, 'driver_disk_hole_count': 4,
+            'driver_hole_diameter': 6.0,
+        },
+        'Medium_20to1': {
+            'tooth_count': 20, 'Diameter': 120, 'roller_diameter': 8.0,
+            'roller_circle_diameter': 90, 'base_height': 12.0, 'disk_height': 6.0,
+            'shaft_diameter': 15.0, 'eccentricity': 2.0,
+            'driver_circle_diameter': 50.0, 'driver_disk_hole_count': 6,
+            'driver_hole_diameter': 8.0,
+        },
+        'Large_40to1': {
+            'tooth_count': 40, 'Diameter': 200, 'roller_diameter': 10.0,
+            'roller_circle_diameter': 150, 'base_height': 15.0, 'disk_height': 8.0,
+            'shaft_diameter': 20.0, 'eccentricity': 2.5,
+            'driver_circle_diameter': 80.0, 'driver_disk_hole_count': 8,
+            'driver_hole_diameter': 10.0,
+        },
+    }
+
+    # Mapping of parameters to parts they affect (for smart regeneration)
+    PARAM_TO_PARTS = {
+        'tooth_count': ['pinDisk', 'cycloidalDisk1', 'cycloidalDisk2'],
+        'roller_diameter': ['pinDisk', 'cycloidalDisk1', 'cycloidalDisk2'],
+        'roller_circle_diameter': ['pinDisk', 'cycloidalDisk1', 'cycloidalDisk2'],
+        'pressure_angle_limit': ['cycloidalDisk1', 'cycloidalDisk2'],
+        'pressure_angle_offset': ['cycloidalDisk1', 'cycloidalDisk2'],
+        'line_segment_count': ['cycloidalDisk1', 'cycloidalDisk2'],
+        'tooth_pitch': ['cycloidalDisk1', 'cycloidalDisk2'],
+
+        'shaft_diameter': ['pinDisk', 'driverDisk', 'inputShaft', 'cycloidalDisk1', 'cycloidalDisk2', 'eccentricKey', 'outputShaft'],
+        'eccentricity': ['driverDisk', 'inputShaft', 'cycloidalDisk1', 'cycloidalDisk2', 'eccentricKey'],
+
+        'driver_circle_diameter': ['pinDisk', 'driverDisk', 'cycloidalDisk1', 'cycloidalDisk2', 'outputShaft'],
+        'driver_disk_hole_count': ['driverDisk', 'cycloidalDisk1', 'cycloidalDisk2', 'outputShaft'],
+        'driver_hole_diameter': ['driverDisk', 'cycloidalDisk1', 'cycloidalDisk2', 'outputShaft'],
+
+        'base_height': ['pinDisk', 'inputShaft', 'eccentricKey', 'outputShaft'],
+        'disk_height': ['pinDisk', 'driverDisk', 'inputShaft', 'cycloidalDisk1', 'cycloidalDisk2', 'eccentricKey', 'outputShaft'],
+
+        'key_diameter': ['inputShaft', 'eccentricKey', 'outputShaft'],
+        'key_flat_diameter': ['inputShaft', 'eccentricKey', 'outputShaft'],
+
+        'Diameter': ['pinDisk'],
+        'Height': ['inputShaft'],
+        'clearance': ['pinDisk', 'driverDisk', 'inputShaft', 'cycloidalDisk1', 'cycloidalDisk2', 'outputShaft'],
+    }
+
+    def __init__(self, obj):
         self.Dirty = False
+        self.changed_properties = set()  # Track which properties changed
+        self.validation_warnings = []
+
         H = cycloidFun.generate_default_parameters()
-        # read only properites
-        obj.addProperty("App::PropertyString", "Version", "read only", QT_TRANSLATE_NOOP(
-            "App::Property", "The version of CycloidGearBox Workbench used to create this object"), 1).Version = version
-        obj.addProperty("App::PropertyLength",
-                        "Min_Diameter", "read only", "", 1)
-        obj.addProperty("App::PropertyLength",
-                        "Max_Diameter", "read only", "", 1)
-        # pin_disk
-        obj.addProperty("App::PropertyLength",  "roller_diameter",  "pin_disk,input_shaft,eccentric_key", QT_TRANSLATE_NOOP(
-            "App::Property", "roller_diameter")).roller_diameter = H["roller_diameter"]
-        obj.addProperty("App::PropertyLength",  "roller_circle_diameter",  "pin_disk", QT_TRANSLATE_NOOP(
-            "App::Property", "roller_circle_diameter")).roller_circle_diameter = H["roller_circle_diameter"]
-        
-        obj.addProperty("App::PropertyLength",  "disk_height",      "pin_disk,input_shaft,eccentric_key,driver_disk,input_shaft,eccentric_key,cycloidal_disk,input_shaft,eccentric_key",
-                        QT_TRANSLATE_NOOP("App::Property", "base_height")).disk_height = H["disk_height"]
-    
-        obj.addProperty("App::PropertyLength",  "shaft_diameter",   "pin_disk,driver_disk,input_shaft,eccentric_key",
-                        QT_TRANSLATE_NOOP("App::Property", "shaft_diameter")).shaft_diameter = H["shaft_diameter"]
-        
-        obj.addProperty("App::PropertyLength",  "key_diameter",   "input_shaft,eccentric_key",
-                        QT_TRANSLATE_NOOP("App::Property", "key_diameter")).key_diameter = H["key_diameter"]
-        obj.addProperty("App::PropertyLength",  "key_flat_diameter",   "input_shaft,eccentric_key",
-                        QT_TRANSLATE_NOOP("App::Property", "key_diameter")).key_flat_diameter = H["key_flat_diameter"]
 
-        #cycloidal disks
-        obj.addProperty("App::PropertyInteger", "tooth_count",      "pin_disk,cycloidal_disk", QT_TRANSLATE_NOOP(
-            "App::Property", "number of cycloidal teeth, ratio = 1/(tooth_count - 1)")).tooth_count = H["tooth_count"]
-        obj.addProperty("App::PropertyAngle", "tooth_pitch",        "pin_disk,cycloidal_disk",
-                        QT_TRANSLATE_NOOP("App::Property", "Cycloidal Disk")).tooth_pitch = H["tooth_pitch"]
-        obj.addProperty("App::PropertyLength",  "base_height",      "pin_disk",
-                        QT_TRANSLATE_NOOP("App::Property", "base_height")).base_height = H["base_height"]
-        
-        # driver_disk
-        obj.addProperty("App::PropertyLength", "driver_circle_diameter",       "driver_disk,pin_disk",
-                        QT_TRANSLATE_NOOP("APP::Property", "Driver Disk")).driver_circle_diameter = H["driver_circle_diameter"]
-        obj.addProperty("App::PropertyInteger", "driver_disk_hole_count",       "driver_disk,output_shaft,cycloidal_disk",
-                        QT_TRANSLATE_NOOP("APP::Property", "Output Shaft")).driver_disk_hole_count = H["driver_disk_hole_count"]
-        obj.addProperty("App::PropertyLength", "driver_hole_diameter",       "driver_disk,output_shaft,cycloidal_disk",
-                        QT_TRANSLATE_NOOP("APP::Property", "Output Shaft")).driver_hole_diameter = H["driver_hole_diameter"]
-        obj.addProperty("App::PropertyLength", "eccentricity",          "driver_disk,input_shaft,eccentric_key",
-                        QT_TRANSLATE_NOOP("App::Property", "eccentricity")).eccentricity = H["eccentricity"]
-        
-        # input_shaft all properties in other classes
+        # Read-only properties
+        obj.addProperty("App::PropertyString", "Version", "0_Info", QT_TRANSLATE_NOOP(
+            "App::Property", "Workbench version"), 1).Version = version
+        obj.addProperty("App::PropertyString", "ValidationWarnings", "0_Info", QT_TRANSLATE_NOOP(
+            "App::Property", "Parameter validation warnings"), 1).ValidationWarnings = ""
+        obj.addProperty("App::PropertyLength", "Min_Diameter", "0_Info",
+            QT_TRANSLATE_NOOP("App::Property", "Minimum diameter (pressure angle limit)"), 1)
+        obj.addProperty("App::PropertyLength", "Max_Diameter", "0_Info",
+            QT_TRANSLATE_NOOP("App::Property", "Maximum diameter (pressure angle limit)"), 1)
 
-        obj.addProperty("App::PropertyLength", "Height",           "CycloidGearBox",
-                        QT_TRANSLATE_NOOP("App::Property", "gearbox")).Height = H["Height"]
-        obj.addProperty("App::PropertyLength",  "Diameter",       "CycloidGearBox",
-                        QT_TRANSLATE_NOOP("App::Property", "Diameter")).Diameter = H["Diameter"]
-        obj.addProperty("App::PropertyInteger", "line_segment_count", "CycloidGearBox", QT_TRANSLATE_NOOP(
-            "App::Property", "Number of line segments to make up the cycloidal disk")).line_segment_count = H["line_segment_count"]
+        # 1. Roller Assembly (Pin Disk)
+        obj.addProperty("App::PropertyLength", "roller_diameter", "1_Roller_Assembly", QT_TRANSLATE_NOOP(
+            "App::Property", "Diameter of roller pins")).roller_diameter = H["roller_diameter"]
+        obj.addProperty("App::PropertyLength", "roller_circle_diameter", "1_Roller_Assembly", QT_TRANSLATE_NOOP(
+            "App::Property", "Circle diameter where rollers are positioned")).roller_circle_diameter = H["roller_circle_diameter"]
+        obj.addProperty("App::PropertyInteger", "tooth_count", "1_Roller_Assembly", QT_TRANSLATE_NOOP(
+            "App::Property", "Number of cycloidal teeth (gear ratio = 1/tooth_count)")).tooth_count = H["tooth_count"]
+        obj.addProperty("App::PropertyAngle", "tooth_pitch", "1_Roller_Assembly", QT_TRANSLATE_NOOP(
+            "App::Property", "Pitch between teeth")).tooth_pitch = H["tooth_pitch"]
+        obj.addProperty("App::PropertyLength", "base_height", "1_Roller_Assembly", QT_TRANSLATE_NOOP(
+            "App::Property", "Height of base plate")).base_height = H["base_height"]
+        obj.addProperty("App::PropertyLength", "Diameter", "1_Roller_Assembly", QT_TRANSLATE_NOOP(
+            "App::Property", "Outer diameter of gearbox")).Diameter = H["Diameter"]
 
-        # obj.addProperty("App::PropertyLength", "RollerHeight", "CycloidGearBox", QT_TRANSLATE_NOOP("App::Property","Height of the rollers")).RollerHeight = H["RollerHeight"]
-        obj.addProperty("App::PropertyLength", "pressure_angle_limit", "CycloidGearBox", QT_TRANSLATE_NOOP(
-            "App::Property", "Pressure Angle Limit")).pressure_angle_limit = H["pressure_angle_limit"]
-        obj.addProperty("App::PropertyAngle", "pressure_angle_offset", "CycloidGearBox", QT_TRANSLATE_NOOP(
-            "App::Property", "Pressure Angle Offset")).pressure_angle_offset = H["pressure_angle_offset"]
-        obj.addProperty("App::PropertyLength", "clearance", "CycloidGearBox", QT_TRANSLATE_NOOP(
-            "App::Property", "clearance between parts")).clearance = H["clearance"]
-        # input Shaft
-        # shaft diameter also in output shaft
-        # driver_disk_hole_count (also in output shaft)              
+        # 2. Drive System
+        obj.addProperty("App::PropertyLength", "driver_circle_diameter", "2_Drive_System", QT_TRANSLATE_NOOP(
+            "App::Property", "Circle diameter for driver pins")).driver_circle_diameter = H["driver_circle_diameter"]
+        obj.addProperty("App::PropertyInteger", "driver_disk_hole_count", "2_Drive_System", QT_TRANSLATE_NOOP(
+            "App::Property", "Number of driver pins")).driver_disk_hole_count = H["driver_disk_hole_count"]
+        obj.addProperty("App::PropertyLength", "driver_hole_diameter", "2_Drive_System", QT_TRANSLATE_NOOP(
+            "App::Property", "Diameter of driver pin holes")).driver_hole_diameter = H["driver_hole_diameter"]
+        obj.addProperty("App::PropertyLength", "disk_height", "2_Drive_System", QT_TRANSLATE_NOOP(
+            "App::Property", "Height of cycloidal disks and driver disk")).disk_height = H["disk_height"]
+
+        # 3. Shaft Assembly
+        obj.addProperty("App::PropertyLength", "shaft_diameter", "3_Shaft_Assembly", QT_TRANSLATE_NOOP(
+            "App::Property", "Diameter of input/output shafts")).shaft_diameter = H["shaft_diameter"]
+        obj.addProperty("App::PropertyLength", "eccentricity", "3_Shaft_Assembly", QT_TRANSLATE_NOOP(
+            "App::Property", "Eccentricity of input shaft (determines output wobble)")).eccentricity = H["eccentricity"]
+        obj.addProperty("App::PropertyLength", "key_diameter", "3_Shaft_Assembly", QT_TRANSLATE_NOOP(
+            "App::Property", "Diameter of shaft key")).key_diameter = H["key_diameter"]
+        obj.addProperty("App::PropertyLength", "key_flat_diameter", "3_Shaft_Assembly", QT_TRANSLATE_NOOP(
+            "App::Property", "Flat diameter of shaft key")).key_flat_diameter = H["key_flat_diameter"]
+        obj.addProperty("App::PropertyLength", "Height", "3_Shaft_Assembly", QT_TRANSLATE_NOOP(
+            "App::Property", "Total height of gearbox")).Height = H["Height"]
+
+        # 4. Advanced Settings
+        obj.addProperty("App::PropertyInteger", "line_segment_count", "4_Advanced", QT_TRANSLATE_NOOP(
+            "App::Property", "Number of line segments for cycloidal disk curve (higher = smoother)")).line_segment_count = H["line_segment_count"]
+        obj.addProperty("App::PropertyLength", "pressure_angle_limit", "4_Advanced", QT_TRANSLATE_NOOP(
+            "App::Property", "Maximum pressure angle (degrees) - affects min/max diameters")).pressure_angle_limit = H["pressure_angle_limit"]
+        obj.addProperty("App::PropertyAngle", "pressure_angle_offset", "4_Advanced", QT_TRANSLATE_NOOP(
+            "App::Property", "Pressure angle offset for fine-tuning")).pressure_angle_offset = H["pressure_angle_offset"]
+        obj.addProperty("App::PropertyLength", "clearance", "4_Advanced", QT_TRANSLATE_NOOP(
+            "App::Property", "Clearance between parts (for manufacturing)")).clearance = H["clearance"]
+
         self.Type = 'CycloidalGearBox'
         self.Object = obj
         self.doc = App.ActiveDocument
@@ -202,7 +254,10 @@ class CycloidalGearBox():
             prop: Property name that changed
         """
         # Mark for recompute when any property changes
-        self.Dirty = True        
+        self.Dirty = True
+        # Track which property changed for smart regeneration
+        if prop in self.PARAM_TO_PARTS:
+            self.changed_properties.add(prop)        
 
     def checksetProp(self,part, prop):
         """Check if part has property and update if different.
@@ -219,6 +274,45 @@ class CycloidalGearBox():
                 setattr(part.Object, prop, getattr(self.Object, prop))
                 return True
         return False
+
+    def validate_and_warn(self, parameters):
+        """Validate parameters and generate user-friendly warnings.
+
+        Args:
+            parameters: Dictionary of gearbox parameters
+
+        Returns:
+            List of warning strings
+        """
+        warnings = []
+
+        # Check eccentricity vs roller diameter
+        if parameters['eccentricity'] > parameters['roller_diameter'] / 2:
+            warnings.append("⚠ Eccentricity > roller radius - may cause manufacturing issues")
+
+        # Check if driver circle fits
+        min_rad = parameters.get('min_rad', 0)
+        if min_rad > 0 and parameters['driver_circle_diameter'] > min_rad * 2 - parameters['roller_diameter']:
+            warnings.append("⚠ Driver circle may interfere with rollers")
+
+        # Check tooth count for reasonable ratio
+        tooth_count = parameters['tooth_count']
+        if tooth_count < 5:
+            warnings.append("ℹ Very low tooth count - gear ratio 1:{} may be impractical".format(tooth_count))
+        elif tooth_count > 30:
+            warnings.append("ℹ High tooth count - manufacturing may be difficult")
+
+        # Check clearance
+        if parameters['clearance'] < 0.1:
+            warnings.append("⚠ Very small clearance - parts may bind")
+        elif parameters['clearance'] > 2.0:
+            warnings.append("ℹ Large clearance - may cause backlash")
+
+        # Check if outer diameter is sufficient
+        if parameters['Diameter'] <= parameters['roller_circle_diameter']:
+            warnings.append("⚠ Outer diameter too small for roller circle")
+
+        return warnings
 
     def GetParameters(self):
         parameters = {"tooth_count": int(self.Object.__getattribute__("tooth_count")),
@@ -259,22 +353,45 @@ class CycloidalGearBox():
         """Recompute all gearbox parts if parameters changed."""
         if self.Dirty:
             try:
-                cycloidFun.generate_parts(App.ActiveDocument, self.GetParameters())
+                parameters = self.GetParameters()
+
+                # Validate and show warnings
+                warnings = self.validate_and_warn(parameters)
+                if warnings:
+                    warning_text = '\n'.join(warnings)
+                    self.Object.ValidationWarnings = warning_text
+                    # Also print to console for visibility
+                    App.Console.PrintWarning("Gearbox Parameter Warnings:\n")
+                    for warning in warnings:
+                        App.Console.PrintWarning(f"  {warning}\n")
+                else:
+                    self.Object.ValidationWarnings = "✓ All parameters OK"
+
+                # Generate parts
+                cycloidFun.generate_parts(App.ActiveDocument, parameters)
+
+                # Clear changed properties tracking after successful generation
+                self.changed_properties.clear()
+
                 self.Dirty = False
                 App.ActiveDocument.recompute()
+
             except cycloidFun.ParameterValidationError as e:
                 # Show error to user in FreeCAD console
                 App.Console.PrintError(f"Cycloidal Gearbox Parameter Error: {str(e)}\n")
                 App.Console.PrintError("Please adjust the parameters and try again.\n")
+                self.Object.ValidationWarnings = f"❌ ERROR: {str(e)}"
                 raise
             except ValueError as e:
                 App.Console.PrintError(f"Cycloidal Gearbox Math Error: {str(e)}\n")
                 App.Console.PrintError("The current parameters may cause mathematical issues.\n")
+                self.Object.ValidationWarnings = f"❌ ERROR: {str(e)}"
                 raise
             except Exception as e:
                 App.Console.PrintError(f"Cycloidal Gearbox Error: {str(e)}\n")
                 import traceback
                 App.Console.PrintError(traceback.format_exc())
+                self.Object.ValidationWarnings = f"❌ ERROR: {str(e)}"
                 raise
         
     """    def recompute(self):        
