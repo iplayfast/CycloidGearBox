@@ -403,20 +403,30 @@ def newSketch(body,name=''):
     name = name + 'Sketch'
     sketch = body.Document.addObject('Sketcher::SketchObject',name)
 
-    # Try to attach to XY_Plane if it exists - BEFORE adding to body
+    # Set MapMode to enable AttachmentOffset to work properly
+    # This is critical for sketches that will use AttachmentOffset later
+    map_mode_set = False
     try:
+        # Try to attach to XY_Plane if it exists
         xy_plane = body.Document.getObject('XY_Plane')
         if xy_plane and hasattr(sketch, 'Support'):
             sketch.Support = (xy_plane, [''])
             sketch.MapMode = 'FlatFace'
-        elif hasattr(sketch, 'MapMode'):
-            # No XY_Plane, but MapMode exists - use FlatFace
-            # This works in newer FreeCAD versions where bodies don't have XY_Plane
+            map_mode_set = True
+    except (AttributeError, TypeError):
+        pass
+
+    # If MapMode wasn't set via Support, try to set it directly
+    # This is essential for AttachmentOffset to work
+    if not map_mode_set and hasattr(sketch, 'MapMode'):
+        try:
             sketch.MapMode = 'FlatFace'
-    except (AttributeError, TypeError) as e:
-        # FreeCAD version doesn't support Support attribute or MapMode
-        # Sketch will work without explicit attachment in older versions
-        logger.debug(f"Could not set sketch support/mapmode: {e}")
+            map_mode_set = True
+        except:
+            pass
+
+    if not map_mode_set:
+        logger.warning(f"Could not set MapMode for sketch {name} - AttachmentOffset may not work")
 
     # Add sketch to body AFTER setting attachment
     body.addObject(sketch)
