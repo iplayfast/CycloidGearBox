@@ -1,9 +1,9 @@
 # FreeCAD Cycloid Gear Box
 Cycloidal gear box code for FreeCad
 
-This workbench will provide a working model of a cycloidal drive that can be 3d printed. This was done as a workbench since all parts need to be mathematically correct in shape and size in order to work. 
+This workbench will provide a working model of a cycloidal drive that can be 3d printed. This was done as a workbench since all parts need to be mathematically correct in shape and size in order to work. The goal of this workbench is to provide the broad strokes in getting a cycloidal gearbox. It creates all the parametric primitives for each part so you can modify them as you see fit. 
 
-As well as the working model, parametric sketches of all the parts are provided. The sketches are provided as master sketches that can be referenced as needed in order to have the correct sizes and shapes. Things like adding bearings can be added as extras to these master sketches.  In this way you can work out the gear parameters by working with the parts, and then modify as needed for your own designs.
+
 
 See [wikipedia](https://en.wikipedia.org/wiki/Cycloidal_drive) for an explanation.
 
