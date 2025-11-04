@@ -811,13 +811,17 @@ def generate_eccentric_key_part(part,parameters):
     driver_disk_height = parameters["disk_height"]
 
     # First eccentric cam at -eccentricity (for first cycloidal disk)
+    # This cam should be level with cycloidalDisk1: from z=0 to z=disk_height (in part coordinates)
     sketch1 = newSketch(part,'key1')
     SketchCircle(sketch1,-eccentricity,0,shaft_diameter,-1,"Key1")
     pad1 = newPad(part,sketch1,disk_height,'keyPad1')
 
     # Second eccentric cam at +eccentricity (for second cycloidal disk)
-    # In PartDesign, this sketch automatically positions on top of previous pad
+    # This cam should be level with cycloidalDisk2: from z=disk_height to z=2*disk_height (in part coordinates)
+    # Explicitly position at z=disk_height relative to part origin
     sketch2 = newSketch(part,'key2')
+    if hasattr(sketch2, 'AttachmentOffset'):
+        sketch2.AttachmentOffset = Base.Placement(Base.Vector(0,0,disk_height),Base.Rotation(Base.Vector(0,0,1),0))
     SketchCircle(sketch2,eccentricity,0,shaft_diameter,-1,"Key2")
     pad2 = newPad(part,sketch2,disk_height,'keyPad2')
 
