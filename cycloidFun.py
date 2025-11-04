@@ -40,9 +40,11 @@ from Part import BSplineCurve, Shape, Wire, Face, makePolygon, \
 
 from inspect import currentframe    #for debugging
 
-# Setup logging
+# Setup logging - only show warnings and errors by default
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# Only configure if not already configured
+if not logging.getLogger().handlers:
+    logging.basicConfig(level=logging.WARNING, format='%(levelname)s - %(message)s')
 
 # Thread-safe lock for generate_parts
 _generate_parts_lock = threading.Lock()

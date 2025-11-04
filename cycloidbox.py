@@ -97,12 +97,9 @@ class CycloidGearBoxCreateObject():
         if not App.ActiveDocument:
             App.newDocument()
         doc = App.ActiveDocument
-        body = doc.addObject('PartDesign::Body', 'gear_box')        
+        body = doc.addObject('PartDesign::Body', 'gear_box')
         gear_box_obj = doc.addObject("Part::FeaturePython", "GearBoxParameters")
-        gear_box = CycloidalGearBox(gear_box_obj)        
-        print("gearbox created")
-        #gear_box.recompute()
-        print("doc.recompute started")
+        gear_box = CycloidalGearBox(gear_box_obj)
         doc.recompute()
         FreeCADGui.SendMsgToActiveView("ViewFit")
         FreeCADGui.ActiveDocument.ActiveView.viewIsometric()
@@ -113,10 +110,10 @@ class CycloidGearBoxCreateObject():
 
     def Deactivated(self):
         " This function is executed when the workbench is deactivated"
-        print("CycloidalGearBox.Deactivated()\n")
+        pass
 
     def execute(self, obj):
-        print('cycloidgearboxCreateObject execute')
+        pass
 
 
 class CycloidalGearBox():
