@@ -689,13 +689,16 @@ def generate_input_shaft_part(body,parameters):
     innershaftRadius = innershaftDia /2
 
     pinsketch1 = newSketch(body,'Pin1')
-    pinsketch1.AttachmentOffset = Base.Placement(Base.Vector(0,0,base_height-driver_disk_height),Base.Rotation(Base.Vector(0,0,1),0))     
+    pinsketch1.AttachmentOffset = Base.Placement(Base.Vector(0,0,base_height-driver_disk_height),Base.Rotation(Base.Vector(0,0,1),0))
     SketchCircle(pinsketch1,-(innershaftRadius-pin_dia)/2,0,pin_dia,-1,"pin1")
     newPad(body,pinsketch1,driver_disk_height+disk_height,'Pin1');
-    
+
     pinsketch2 = newSketch(body,'Pin2')
-    pinsketch2.AttachmentOffset = Base.Placement(Base.Vector(0,0,base_height-driver_disk_height),Base.Rotation(Base.Vector(0,0,1),0))     
-    SketchCircle(pinsketch2,-(innershaftRadius-(pin_dia)),0,pin_dia,-1,"pin2")
+    pinsketch2.AttachmentOffset = Base.Placement(Base.Vector(0,0,base_height-driver_disk_height),Base.Rotation(Base.Vector(0,0,1),0))
+    # Position Pin2 to fit within cycloidal disk center hole
+    # Must satisfy: distance from (eccentricity, 0) + pin_radius <= cycloidal_hole_radius
+    pin2_x = -(innershaftRadius - pin_dia*1.25)  # Adjusted to fit within constraints
+    SketchCircle(pinsketch2,pin2_x,0,pin_dia,-1,"pin2")
     newPad(body,pinsketch2,driver_disk_height+disk_height,'Pin2');
     
     keysketch = newSketch(body,'InputKey')
@@ -703,8 +706,8 @@ def generate_input_shaft_part(body,parameters):
     inputkey_pocket = newPocket(body,keysketch,base_height+driver_disk_height,'InputKey')
 
     # Move inputShaft up by driver_disk_height to align bottom with pinDisk bottom
-    # Rotate 180 degrees around X axis
-    body.Placement = Base.Placement(Base.Vector(0,0,driver_disk_height),Base.Rotation(Base.Vector(1,0,0),180))
+    # Rotate 180 degrees around Z axis
+    body.Placement = Base.Placement(Base.Vector(0,0,driver_disk_height),Base.Rotation(Base.Vector(0,0,1),180))
 
     # Set the Tip so the last feature is highlighted in the tree
     body.Tip = inputkey_pocket
@@ -816,20 +819,23 @@ def generate_eccentric_key_part(part,parameters):
     innershaftDia = (shaft_diameter  + eccentricity)  #(13+2) = 15
     innershaftRadius = innershaftDia /2 
     pinsketch1 = newSketch(part,'Pin1')
-    pinsketch1.AttachmentOffset = Base.Placement(Base.Vector(0,0,base_height-driver_disk_height),Base.Rotation(Base.Vector(0,0,1),0))     
+    pinsketch1.AttachmentOffset = Base.Placement(Base.Vector(0,0,base_height-driver_disk_height),Base.Rotation(Base.Vector(0,0,1),0))
     SketchCircle(pinsketch1,-(innershaftRadius-pin_dia)/2,0,pin_dia,-1,"pin1")
     pock1 = newPocket(part,pinsketch1,driver_disk_height+disk_height,'Pin1');
     pock1.Reversed = False
 
     pinsketch2 = newSketch(part,'Pin2')
     pinsketch2.AttachmentOffset = Base.Placement(Base.Vector(0,0,base_height-driver_disk_height),Base.Rotation(Base.Vector(0,0,1),0))
-    SketchCircle(pinsketch2,-(innershaftRadius-(pin_dia)),0,pin_dia,-1,"pin2")
+    # Position Pin2 to fit within cycloidal disk center hole
+    # Must satisfy: distance from (eccentricity, 0) + pin_radius <= cycloidal_hole_radius
+    pin2_x = -(innershaftRadius - pin_dia*1.25)  # Adjusted to fit within constraints
+    SketchCircle(pinsketch2,pin2_x,0,pin_dia,-1,"pin2")
     pock2 = newPocket(part,pinsketch2,driver_disk_height+disk_height,'Pin2');
     pock2.Reversed = False
 
     # Position eccentric key on top of inputShaft
-    # Rotate 180 degrees around X axis
-    part.Placement = Base.Placement(Base.Vector(0,0,base_height+driver_disk_height),Base.Rotation(Base.Vector(1,0,0),180))
+    # Rotate 180 degrees around Z axis
+    part.Placement = Base.Placement(Base.Vector(0,0,base_height+driver_disk_height),Base.Rotation(Base.Vector(0,0,1),180))
 
     # Set the Tip so the last feature is highlighted in the tree
     part.Tip = pock2

@@ -117,7 +117,7 @@ class CycloidGearBoxCreateObject():
 
 
 class CycloidalGearBox():
-    def __init__(self, obj):        
+    def __init__(self, obj):
         self.Dirty = False
         H = cycloidFun.generate_default_parameters()
         # read only properites
@@ -130,6 +130,9 @@ class CycloidalGearBox():
         # pin_disk
         obj.addProperty("App::PropertyLength",  "roller_diameter",  "pin_disk,input_shaft,eccentric_key", QT_TRANSLATE_NOOP(
             "App::Property", "roller_diameter")).roller_diameter = H["roller_diameter"]
+
+        # Initialize stored value for roller_diameter change detection
+        self._prev_roller_diameter = H["roller_diameter"]
         obj.addProperty("App::PropertyLength",  "roller_circle_diameter",  "pin_disk", QT_TRANSLATE_NOOP(
             "App::Property", "roller_circle_diameter")).roller_circle_diameter = H["roller_circle_diameter"]
         
@@ -202,7 +205,42 @@ class CycloidalGearBox():
             prop: Property name that changed
         """
         # Mark for recompute when any property changes
-        self.Dirty = True        
+        self.Dirty = True
+
+        # Handle roller_diameter as a driving parameter
+        if prop == "roller_diameter":
+            # Store previous value if not already stored
+            if not hasattr(self, '_prev_roller_diameter'):
+                self._prev_roller_diameter = fp.roller_diameter.Value
+                return
+
+            old_diameter = self._prev_roller_diameter
+            new_diameter = fp.roller_diameter.Value
+
+            # Only recalculate if value actually changed and is valid
+            if abs(new_diameter - old_diameter) > 0.001 and new_diameter > 0:
+                # Calculate scaling ratio
+                ratio = new_diameter / old_diameter
+
+                # Update dependent parameters proportionally
+                fp.roller_circle_diameter = fp.roller_circle_diameter.Value * ratio
+                fp.Diameter = fp.Diameter.Value * ratio
+                fp.driver_circle_diameter = fp.driver_circle_diameter.Value * ratio
+
+                # Clamp eccentricity to max of roller_diameter/2
+                max_eccentricity = new_diameter / 2.0
+                if fp.eccentricity.Value > max_eccentricity:
+                    fp.eccentricity = max_eccentricity
+
+                # Update stored value
+                self._prev_roller_diameter = new_diameter
+
+                FreeCAD.Console.PrintMessage(
+                    f"Roller diameter changed to {new_diameter}mm - dependent parameters updated\n"
+                    f"  roller_circle_diameter: {fp.roller_circle_diameter.Value}mm\n"
+                    f"  Diameter (outer): {fp.Diameter.Value}mm\n"
+                    f"  driver_circle_diameter: {fp.driver_circle_diameter.Value}mm\n"
+                )        
 
     def checksetProp(self,part, prop):
         """Check if part has property and update if different.
