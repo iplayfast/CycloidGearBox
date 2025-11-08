@@ -11,10 +11,10 @@ See [wikipedia](https://en.wikipedia.org/wiki/Cycloidal_drive) for an explanatio
 ![Screen Shot](screenshot.png?raw=true "Screen Shot")
 
 ### Status
-In development 
+released
 
 ### Prerequisites
-* FreeCAD v0.20 or >
+* FreeCAD v1.0 or >
 
 ### Installation
 
