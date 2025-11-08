@@ -81,7 +81,7 @@ todo:
 """
 class CycloidGearBoxCreateObject():
     # """
-    # The part that holds the parameters used to make the phsyical parts
+    # The part that holds the parameters used to make the physical parts
     # """
 
     def GetResources(self):
@@ -120,7 +120,7 @@ class CycloidalGearBox():
     def __init__(self, obj):
         self.Dirty = False
         H = cycloidFun.generate_default_parameters()
-        # read only properites
+        # read only properties
         obj.addProperty("App::PropertyString", "Version", "read only", QT_TRANSLATE_NOOP(
             "App::Property", "The version of CycloidGearBox Workbench used to create this object"), 1).Version = version
         obj.addProperty("App::PropertyLength",

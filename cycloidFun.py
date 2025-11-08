@@ -671,7 +671,7 @@ def generate_input_shaft_part(body,parameters):
     eccentricity = parameters["eccentricity"] #default 2
     base_height = parameters["base_height"]
     shaft_diameter = parameters["shaft_diameter"] # default 13
-    clearance = parameters["clearance"] #defualt .5
+    clearance = parameters["clearance"] #default .5
     disk_height = parameters["disk_height"]
     driver_disk_height = parameters["disk_height"]
     sketch1 = newSketch(body,'Shaft')
