@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
+  <name>CycloidGearBox</name>
+  <description>A workbench providing a working model of a cycloidal drive. Creates all parametric primitives for each part so you can modify them as needed.</description>
+  <version>1.0</version>
+  <date>2025-11-08</date>
+  <maintainer email="cwbruner+github@gmail.com">Chris Bruner</maintainer>
+  <license file="LICENSE">LGPL-2.1</license>
+  <url type="repository" branch="master">https://github.com/iplayfast/CycloidGearBox</url>
+  <icon>icons/cycloidgearbox.svg</icon>
+
+  <content>
+    <workbench>
+      <name>CycloidalGearBox</name>
+      <description>A complete Cycloidal Gear Box that can be modified to suit</description>
+      <classname>CycloidGearBoxWorkbench</classname>
+      <subdirectory>./</subdirectory>
+      <icon>icons/cycloidgearbox.svg</icon>
+      <tag>mechanical</tag>
+      <tag>gears</tag>
+      <tag>parametric</tag>
+      <tag>3d-printing</tag>
+      <version>0.1</version>
+    </workbench>
+  </content>
+
+</package>
